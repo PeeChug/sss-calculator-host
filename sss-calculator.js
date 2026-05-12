@@ -29,6 +29,91 @@
   function initCalculator(__doc, __host) {
 
 /* ============================================================
+   WIX BACKEND BRIDGE
+   ============================================================
+   The calc runs inside a Custom Element with a Shadow DOM. Wix
+   page code can't postMessage to us anymore, so we use a CustomEvent
+   bridge:
+     - sssBackendCall   (calc → page)  request a backend operation
+     - data-backend-response attr on host (page → calc) carries replies
+
+   In the build script, the inline JS gets wrapped as
+     function initCalculator(__doc, __host) { ... }
+   so __host is the Custom Element instance (window scope), and we
+   can safely dispatch from it / observe its attributes from here.
+   When this file is loaded directly (no build) the fallbacks below
+   make backend calls no-op without crashing.
+   ============================================================ */
+const __sssBridge = (function () {
+  const host = (typeof __host !== 'undefined') ? __host : null;
+  const pending = new Map();
+  let seq = 0;
+  let employee = { id: '', email: '' };
+
+  function callBackend(method, args = {}) {
+    if (!host) {
+      // No host = running outside a Custom Element (local dev). Don't crash;
+      // just return a soft failure so callers can fall back to localStorage.
+      return Promise.resolve({ ok: false, error: 'no_bridge' });
+    }
+    return new Promise((resolve) => {
+      const requestId = `r${++seq}_${Date.now()}`;
+      pending.set(requestId, resolve);
+      host.dispatchEvent(new CustomEvent('sssBackendCall', {
+        detail: { requestId, method, args },
+        bubbles: true, composed: true
+      }));
+      // 30s timeout so a dead bridge never wedges the UI.
+      setTimeout(() => {
+        if (pending.has(requestId)) {
+          pending.delete(requestId);
+          resolve({ ok: false, error: 'timeout' });
+        }
+      }, 30000);
+    });
+  }
+
+  if (host) {
+    const obs = new MutationObserver(() => {
+      const raw = host.getAttribute('data-backend-response');
+      if (!raw) return;
+      let parsed;
+      try { parsed = JSON.parse(raw); } catch (e) { return; }
+      if (!parsed) return;
+
+      if (parsed.kind === 'init' && parsed.employee) {
+        employee = parsed.employee;
+        console.log('[SSS Bridge] connected, employee:', employee.email || '(none)');
+      } else if (parsed.kind === 'reply' && parsed.requestId) {
+        const resolver = pending.get(parsed.requestId);
+        if (resolver) {
+          pending.delete(parsed.requestId);
+          resolver(parsed.result);
+        }
+      } else if (parsed.kind === 'finalizeReply') {
+        // Surfaced for the review-step "Sent ✓ SSS-…" badge.
+        window.dispatchEvent(new CustomEvent('sssFinalizeReply', { detail: parsed }));
+      }
+    });
+    obs.observe(host, { attributes: true, attributeFilter: ['data-backend-response'] });
+  }
+
+  return {
+    call: callBackend,
+    getEmployee: () => employee,
+    // Console smoke test: paste `window.__sssBridgeTest()` in the page console.
+    test: async () => {
+      console.log('[SSS Bridge] test: calling getStats…');
+      const res = await callBackend('getStats', {});
+      console.log('[SSS Bridge] test result:', res);
+      return res;
+    }
+  };
+})();
+// Expose smoke-test handle on window for debugging from the Wix page console.
+window.__sssBridgeTest = __sssBridge.test;
+
+/* ============================================================
    PRICING TABLES
    ============================================================ */
 const PRICING = {
