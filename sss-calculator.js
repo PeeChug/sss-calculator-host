@@ -4393,6 +4393,140 @@ function autoSaveDraft() {
 let __cloudSaveInFlight = false;
 let __cloudSavePending  = false;
 
+// Build a Jobber line item ({name, description}) from a project state.
+// The description is a multi-line plain-text block listing every
+// meaningful selection — tier/product/color, measurements/scope,
+// wood condition/prep, paid add-ons w/ qty, custom items, discounts.
+// Lives here in the frontend because all the human-readable labels
+// (PRICING.projectAddons, PROJECT_META, etc.) are calc-side.
+function buildJobberLineItem(p, idx, total) {
+  const PROJ = PROJECT_META[p.type] || {};
+  const TIER_LABELS = { essential: 'Essential', performance: 'Performance', showcase: 'Showcase' };
+  const PROD_LABELS = { water: 'Water-based stain', oil: 'Oil-based stain', hoa: 'HOA-specified product' };
+  const COND_LABELS = { new: 'New / Like new', weathered: 'Weathered', aged: 'Aged' };
+  const WOOD_LABELS = { new: 'New wood', weathered: 'Weathered wood', aged: 'Aged wood' };
+  const PREP_LABELS = { no_wash: 'No prep wash', soft_wash: 'Soft wash', strip_sand: 'Strip & sand' };
+
+  const projectName = (PROJ.name || (p.type || 'Project').replace(/^./, c => c.toUpperCase()));
+  const name = `${projectName} staining${total > 1 ? ` (#${idx + 1})` : ''}`;
+  const lines = [];
+
+  // Tier + product family
+  const tierLabel = TIER_LABELS[p.tier] || p.tier || '';
+  const prodLabel = PROD_LABELS[p.productType] || p.productType || '';
+  if (tierLabel || prodLabel) {
+    lines.push([tierLabel && `${tierLabel} tier`, prodLabel].filter(Boolean).join(' · '));
+  }
+
+  // Color (handles both object and string forms of selectedColor)
+  if (p.selectedColor) {
+    const sc = p.selectedColor;
+    const colorName  = (typeof sc === 'string') ? sc : (sc.name || sc.label || '');
+    const colorBrand = (typeof sc === 'object' && sc.brand) ? sc.brand : '';
+    if (colorName) lines.push(`Color: ${colorName}${colorBrand ? ` (${colorBrand})` : ''}`);
+  }
+
+  // HOA specifics (when HOA product family selected)
+  if (p.productType === 'hoa' && p.hoa) {
+    const hp = [p.hoa.brand, p.hoa.productName, p.hoa.color].filter(Boolean);
+    if (hp.length) lines.push(`HOA-required product: ${hp.join(' / ')}`);
+    if (p.hoa.notes) lines.push(`HOA notes: ${p.hoa.notes}`);
+  }
+
+  // Previous stain (if applicable)
+  if (p.previousStain && p.previousStain.wasStained) {
+    const ps = p.previousStain;
+    const psp = [ps.brand, ps.productName, ps.previousProductType].filter(Boolean);
+    if (psp.length) lines.push(`Previously stained: ${psp.join(' / ')}`);
+    if (ps.colorNotes) lines.push(`Previous color notes: ${ps.colorNotes}`);
+  }
+
+  // Scope / measurements
+  const m = p.measurements || {};
+  let scope = '';
+  if (p.type === 'fence') {
+    if (m.linearft) scope = `${m.linearft} ln ft × ${m.height || 0} ft`;
+    if (m.style)    scope += ` · ${m.style} style`;
+    if (m.oneSided) scope += ` · one-sided staining`;
+  } else if (p.type === 'deck') {
+    const parts = [];
+    if (m.flat)       parts.push(`${m.flat} sq ft flat${m.underneath ? ' (underside included)' : ''}`);
+    if (m.rail)       parts.push(`${m.rail} ln ft railing`);
+    if (m.stairs)     parts.push(`${m.stairs} stairs`);
+    if (m.lattice)    parts.push(`${m.lattice} sq ft lattice`);
+    scope = parts.join(', ');
+  } else if (p.type === 'pergola') {
+    if (m.length && m.width) scope = `${m.length}' × ${m.width}'${m.height ? ` × ${m.height}' tall` : ''}`;
+    else if (m.sqft)         scope = `${m.sqft} sq ft`;
+    if (m.overhead) scope += ` · overhead access`;
+  } else if (p.type === 'barn') {
+    if (m.sqft)         scope = `${m.sqft} sq ft siding`;
+    if (m.trim)         scope += ` · ${m.trim} ln ft trim`;
+    if (m.cupolaCount)  scope += ` · ${m.cupolaCount} cupola${m.cupolaCount > 1 ? 's' : ''}`;
+    if (m.heightPremium) scope += ` · over 12 ft`;
+    if (m.liftDays)     scope += ` · ${m.liftDays} day(s) lift rental`;
+  } else if (p.type === 'ceiling') {
+    if (m.sqft)        scope = `${m.sqft} sq ft`;
+    if (m.tng)         scope += ` · T&G premium`;
+    if (m.beamLnFt)    scope += ` · ${m.beamLnFt} ln ft beams`;
+    if (m.fixtures)    scope += ` · ${m.fixtures} fixture${m.fixtures > 1 ? 's' : ''}`;
+    if (m.fans)        scope += ` · ${m.fans} fan${m.fans > 1 ? 's' : ''}`;
+  }
+  if (scope) lines.push(`Scope: ${scope}`);
+
+  // Wood age / condition
+  if (p.woodAge)   lines.push(`Wood: ${WOOD_LABELS[p.woodAge] || p.woodAge}`);
+  if (p.condition) {
+    const prepLbl = PREP_LABELS[p.condition] || COND_LABELS[p.condition] || p.condition;
+    lines.push(`Prep: ${prepLbl}`);
+  }
+
+  // Paid add-ons (project-specific + stain upgrades)
+  const addonDefs = [
+    ...(PRICING.projectAddons[p.type] || []),
+    ...(PRICING.stainUpgrades || [])
+  ];
+  const checkedAddons = Object.entries(p.addons || {})
+    .filter(([_, v]) => v)
+    .map(([id, v]) => ({ id, v }));
+  if (checkedAddons.length) {
+    const labels = checkedAddons.map(({ id, v }) => {
+      const def = addonDefs.find(a => a.id === id);
+      const lbl = def ? def.name : id;
+      const qty = (v && typeof v === 'object' && v.qty) ? v.qty : null;
+      return qty ? `${lbl} × ${qty}` : lbl;
+    });
+    lines.push('');
+    lines.push('Add-ons:');
+    labels.forEach(l => lines.push(`• ${l}`));
+  }
+
+  // Custom add-ons (rep-entered)
+  if (p.customAddons && p.customAddons.length) {
+    lines.push('');
+    lines.push('Custom items:');
+    p.customAddons.forEach(ca => {
+      const price = ca.price ? ` ($${Math.round(ca.price).toLocaleString()})` : '';
+      lines.push(`• ${ca.name || 'Custom item'}${price}`);
+    });
+  }
+
+  // Project-level discounts applied
+  if (p.selectedDiscounts && p.selectedDiscounts.length) {
+    const discountDefs = PRICING.discounts || [];
+    const labels = p.selectedDiscounts.map(id => {
+      const def = discountDefs.find(d => d.id === id);
+      return def ? (def.label || def.name || id) : id;
+    });
+    if (labels.length) {
+      lines.push('');
+      lines.push(`Discounts applied: ${labels.join(', ')}`);
+    }
+  }
+
+  return { name, description: lines.join('\n') };
+}
+
 function buildCloudPayload() {
   // Reject obviously-empty drafts so we don't litter the dashboard with
   // junk rows the rep didn't really start.
@@ -4412,20 +4546,34 @@ function buildCloudPayload() {
       email:   state.customer.email   || '',
       address: state.customer.address || ''
     },
-    // Pass through the quoting-employee field from the customer form so
-    // the backend stamps employeeName / lastEditedBy correctly even when
-    // the visitor isn't logged in as a Wix Member (whoami returns blank).
     employee: state.customer.employee || '',
     jobberJobNum: state.customer.jobberNum || '',
-    projects: allProjects.map(p => ({
-      type: p.type, productType: p.productType, tier: p.tier,
-      condition: p.condition, selectedColor: p.selectedColor,
-      hoa: p.hoa, previousStain: p.previousStain,
-      measurements: p.measurements,
-      addons: p.addons, serviceAddons: p.serviceAddons,
-      customAddons: p.customAddons || [],
-      selectedDiscounts: p.selectedDiscounts || []
-    })),
+    projects: allProjects.map((p, idx) => {
+      // Pre-build the Jobber line item (name + rich multi-line description)
+      // here in the frontend where we have full access to PRICING tables
+      // and label helpers — the backend doesn't need to re-implement them.
+      let jobberLine = { name: '', description: '' };
+      try { jobberLine = buildJobberLineItem(p, idx, allProjects.length); }
+      catch (e) { console.warn('[SSS] buildJobberLineItem threw:', e); }
+
+      return {
+        type: p.type, productType: p.productType, tier: p.tier,
+        condition: p.condition, woodAge: p.woodAge,
+        selectedColor: p.selectedColor,
+        hoa: p.hoa, previousStain: p.previousStain,
+        measurements: p.measurements,
+        addons: p.addons, serviceAddons: p.serviceAddons,
+        customAddons: p.customAddons || [],
+        selectedDiscounts: p.selectedDiscounts || [],
+        // Subtotal as a top-level field — survives cloud round-trips where
+        // _cached gets stripped. The backend uses this for line item unitPrice.
+        subtotal: (p._cached && p._cached.subtotal) || 0,
+        // Pre-built Jobber line item content so the backend can drop it
+        // straight into quoteCreate without re-deriving labels.
+        _jobberName: jobberLine.name,
+        _jobberDescription: jobberLine.description
+      };
+    }),
     totals: {
       sumBeforeBundle: totals.sumBeforeBundle,
       bundleDiscount:  totals.bundleDiscount,
