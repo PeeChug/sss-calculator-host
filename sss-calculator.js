@@ -3878,12 +3878,16 @@ async function pushFinishedQuoteToJobber(rowId, force) {
         ? `<div style="font-size:12px;color:var(--slate);margin-top:2px;">Quote #${escapeHtml(data.jobberQuoteNumber)}</div>`
         : '';
       const wasAlready = data.alreadyPushed ? ' (already in Jobber)' : '';
+      const openLink = data.jobberWebUri
+        ? `<a href="${escapeHtml(data.jobberWebUri)}" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:10px;font-size:12px;padding:6px 12px;text-decoration:none;display:inline-block;margin-right:6px;">↗ Open in Jobber</a>`
+        : '';
       box.innerHTML = `
         <div class="jobber-push-row success">
           <span class="ico">✓</span>
           <div style="flex: 1;">
             <div><strong>Sent to Jobber${escapeHtml(wasAlready)}</strong></div>
             ${numberLine}
+            ${openLink}
             <button class="btn btn-secondary" style="margin-top:10px;font-size:12px;padding:6px 12px;" onclick="resendFinishedToJobber('${escapeHtml(rowId)}')">🔄 Re-send to Jobber</button>
           </div>
         </div>`;
@@ -5005,17 +5009,29 @@ function renderViewMode(q) {
   const jobberFailed = jobberStatusText.indexOf('push_failed') === 0;
   const rowId = q._id;
 
+  // Display Jobber's human-readable quote number if we have it; fall
+  // back to the opaque ID otherwise.
+  const jobberLabel = q.jobberQuoteNumber
+    ? `Quote #${q.jobberQuoteNumber}`
+    : q.jobberQuoteId;
+  const openLink = q.jobberWebUri
+    ? `<a href="${escapeHtml(q.jobberWebUri)}" target="_blank" rel="noopener" class="btn btn-primary vs-jobber-btn" style="text-decoration:none;display:inline-flex;align-items:center;">↗ Open in Jobber</a>`
+    : '';
+
   const jobberBlockHtml = `
     <h3>Jobber</h3>
     <div class="vs-jobber ${jobberPushed ? 'success' : jobberFailed ? 'error' : 'pending'}">
       <div class="vs-jobber-status">
-        ${jobberPushed ? `<span class="ico">✓</span><span><strong>Pushed to Jobber</strong>${q.jobberQuoteId ? ` · <span style="font-family:ui-monospace,monospace;font-size:12px;">${escapeHtml(q.jobberQuoteId)}</span>` : ''}</span>`
+        ${jobberPushed ? `<span class="ico">✓</span><span><strong>Pushed to Jobber</strong>${jobberLabel ? ` · <span style="font-family:ui-monospace,monospace;font-size:12px;">${escapeHtml(jobberLabel)}</span>` : ''}</span>`
           : jobberFailed ? `<span class="ico">⚠️</span><span><strong>Push failed</strong> — ${escapeHtml(jobberStatusText.replace('push_failed:', ''))}</span>`
           : `<span class="ico">○</span><span>Not yet pushed to Jobber</span>`}
       </div>
-      <button class="btn btn-secondary vs-jobber-btn" onclick="resendViewedQuoteToJobber('${escapeHtml(rowId)}', ${jobberPushed})">
-        🔄 ${jobberPushed ? 'Re-send to Jobber' : 'Push to Jobber'}
-      </button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${openLink}
+        <button class="btn btn-secondary vs-jobber-btn" onclick="resendViewedQuoteToJobber('${escapeHtml(rowId)}', ${jobberPushed})">
+          🔄 ${jobberPushed ? 'Re-send to Jobber' : 'Push to Jobber'}
+        </button>
+      </div>
     </div>`;
 
   summaryEl.innerHTML = `
