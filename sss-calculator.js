@@ -68,14 +68,13 @@ const PRICING = {
   ],
   projectAddons: {
     fence: [
-      { id: 'wood_caps', name: 'Decorative wood post caps', priceType: 'each', rate: 15, qtyLabel: 'caps' },
-      { id: 'copper_caps', name: 'Copper post caps', priceType: 'each', rate: 45, qtyLabel: 'caps' },
-      { id: 'finial_caps', name: 'Decorative finial caps', priceType: 'each', rate: 35, qtyLabel: 'caps' },
-      { id: 'lattice_top', name: 'Lattice top accent staining', priceType: 'per_unit', rate: 4.00 },
-      { id: 'board_replace', name: 'Damaged board replacement', priceType: 'each', rate: 25, qtyLabel: 'boards' },
+      { id: 'wood_caps', name: 'Black wood post caps', priceType: 'each', rate: 15, qtyLabel: 'caps' },
+      { id: 'copper_caps', name: 'Copper post caps', priceType: 'each', rate: 15, qtyLabel: 'caps' },
+      { id: 'finial_caps', name: 'Decorative caps', priceType: 'each', rate: 45, qtyLabel: 'caps' },
+      { id: 'solar_caps', name: 'Solar light fence post caps', priceType: 'each', rate: 25, qtyLabel: 'caps' },
       { id: 'picket_replace', name: 'Picket replacement', priceType: 'each', rate: 25, qtyLabel: 'pickets' },
-      { id: 'nail_resecure', name: 'Loose nail / staple re-secure', priceType: 'flat', rate: 50 },
-      { id: 'gate_adjust', name: 'Sagging gate adjust / re-hang', priceType: 'each', rate: 75, qtyLabel: 'gates' },
+      { id: 'nail_resecure', name: 'Loose nail / staple re-secure', priceType: 'flat', rate: 0 },
+      { id: 'gate_adjust', name: 'Sagging gate adjust / re-hang', priceType: 'each', rate: 100, qtyLabel: 'gates' },
       { id: 'mailbox_match', name: 'Mailbox / trash enclosure match', priceType: 'flat', rate: 150 }
     ],
     deck: [
