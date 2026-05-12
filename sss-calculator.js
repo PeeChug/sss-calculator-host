@@ -53,16 +53,16 @@ const PRICING = {
   // that are checkmarked-by-default and always free — they're a feel-good
   // confirmation of what's included rather than billable line items.
   serviceAddons: [
-    { id: 'touch_up_90', name: '90-day touch-up visit', priceType: 'flat', rate: 0,
-      desc: 'If you spot any miss or thin spot in the first 90 days, we come back and touch it up at no charge. Included free on Performance and Showcase tiers.', defaultOn: true },
-    { id: 'plant_protect', name: 'Plant & landscape protection', priceType: 'flat', rate: 0,
-      desc: 'Tarping, plastic sheeting, and gentle watering before and after application — we treat the yard like our own.', defaultOn: true },
+    { id: 'touch_up_90', name: '30-day touch-up visit', priceType: 'flat', rate: 0,
+      desc: 'If you spot any miss or thin spot in the first 30 days, we come back and touch it up at no charge. Included free on Performance and Showcase tiers.', defaultOn: true },
+    { id: 'plant_protect', name: 'Siding & hardware protection', priceType: 'flat', rate: 0,
+      desc: "Tarping, plastic sheeting, and masking around your siding, gutters, downspouts, light fixtures, and outdoor hardware so no overspray or splash ends up where it shouldn't.", defaultOn: true },
     { id: 'weather_resched', name: 'Free weather rescheduling', priceType: 'flat', rate: 0,
       desc: 'Stain needs dry weather to bond properly. If rain rolls in we reschedule at no charge — never an upcharge for the weather.', defaultOn: true },
     { id: 'pdf_quote', name: 'Detailed PDF quote emailed to you', priceType: 'flat', rate: 0,
       desc: 'You leave with a line-by-line PDF of every cost — measurements, tier, prep, add-ons, discounts. Easy to share with a spouse or partner, or pull up later for a referral.', defaultOn: true },
-    { id: 'before_after', name: 'Before-and-after photo documentation', priceType: 'flat', rate: 0,
-      desc: 'We document each project with photos. Useful for your records, warranty claims, and showing off the work to friends or your insurer.', defaultOn: true },
+    { id: 'message_support', name: '7-day message support after job completion', priceType: 'flat', rate: 0,
+      desc: "Direct text-message line to the project lead for 7 days after we wrap. Questions about cure time, first wash, weather, anything — straight answer, no phone tag.", defaultOn: true },
     { id: 'maint_reminder', name: 'Annual maintenance reminder', priceType: 'flat', rate: 0,
       desc: "A friendly email at the 12-month mark to check the finish and plan any touch-up or recoat work proactively — before small issues become big ones.", defaultOn: true }
   ],
@@ -418,8 +418,8 @@ const TIER_META = {
       product: 'SW Woodscapes (2 coats)',
       tagline: 'Our most-recommended water-based job',
       life: '4–5 years',
-      details: 'Two full coats of SW Woodscapes Solid stain. Coverage rate ~150 sq ft per gallon. Includes a free 90-day touch-up visit. Re-coats easily down the road.',
-      pros: ['Best value water-based — most popular', 'Even color, no streaks', 'Strong UV fade resistance', '90-day touch-up visit included', 'Full coat depth for proper film thickness'],
+      details: 'Two full coats of SW Woodscapes Solid stain. Coverage rate ~150 sq ft per gallon. Includes a free 30-day touch-up visit. Re-coats easily down the road.',
+      pros: ['Best value water-based — most popular', 'Even color, no streaks', 'Strong UV fade resistance', '30-day touch-up visit included', 'Full coat depth for proper film thickness'],
       cons: ['Less self-cleaning behavior than Showcase Rain Refresh'],
       bestFor: 'Most homeowners — full-sun decks, privacy fences, family homes'
     },
@@ -428,7 +428,7 @@ const TIER_META = {
       tagline: 'Self-cleaning solid stain — stays cleaner, longer',
       life: '5–7 years',
       details: 'SW Woodscapes Rain Refresh is a separate SW solid-color exterior stain with Self-Cleaning Technology — rainfall lifts surface dirt off so the finish stays looking new. Carries a 10-year limited manufacturer warranty.',
-      pros: ['Self-cleaning surface (SW Self-Cleaning Technology)', '10-year limited manufacturer warranty', '90-day touch-up included', 'Premium feel and look'],
+      pros: ['Self-cleaning surface (SW Self-Cleaning Technology)', '10-year limited manufacturer warranty', '30-day touch-up included', 'Premium feel and look'],
       cons: ['Higher up-front cost', 'Solid color only (no transparency)'],
       bestFor: 'High-humidity climates, premium decks, customers who hate maintenance'
     }
@@ -449,7 +449,7 @@ const TIER_META = {
       tagline: 'Our most-recommended oil job',
       life: '3–4 years',
       details: 'EXPERT Stain & Seal — a deep-penetrating semi-transparent or semi-solid oil-based stain with real pigment for UV protection. EXPERT\'s recoat schedule is every 24 months on horizontal surfaces, every 36 months on vertical. 2-year manufacturer warranty. Coverage ~125–150 sq ft per gallon. Available in 18 colors.',
-      pros: ['Best value oil-based — most popular', 'Deep penetration into wood pores', 'Strong UV protection from real pigment', '2-year manufacturer warranty', '90-day touch-up included', '18 color options (transparent + semi-solid)'],
+      pros: ['Best value oil-based — most popular', 'Deep penetration into wood pores', 'Strong UV protection from real pigment', '2-year manufacturer warranty', '30-day touch-up included', '18 color options (transparent + semi-solid)'],
       cons: ['Stronger odor during application', 'Longer dry time (oil)'],
       bestFor: 'Most homeowners with full-sun exposure — decks, fences, pergolas'
     },
@@ -458,7 +458,7 @@ const TIER_META = {
       tagline: 'Premium oil for timber — longest manufacturer-backed warranty in our lineup',
       life: '4–5 years',
       details: 'EXPERT Log & Timber Oil — a semi-transparent premium oil designed for log homes and exposed timbers. Applies in temperatures from 10°F to 110°F. Natural carpenter-bee deterrence. 3-year manufacturer warranty (longest in the EXPERT line). Eligible for the EXPERT Limited Lifetime guarantee via the 3-Step System on qualifying new wood.',
-      pros: ['3-year manufacturer warranty', 'Eligible for the EXPERT Limited Lifetime guarantee via 3-Step System', 'Natural insect defense (carpenter bees, wasps)', 'Application range 10°F to 110°F', '90-day touch-up included', 'Best for log siding & exposed timbers'],
+      pros: ['3-year manufacturer warranty', 'Eligible for the EXPERT Limited Lifetime guarantee via 3-Step System', 'Natural insect defense (carpenter bees, wasps)', 'Application range 10°F to 110°F', '30-day touch-up included', 'Best for log siding & exposed timbers'],
       cons: ['Highest up-front cost', 'Semi-transparent only — limited color range (8 colors)'],
       bestFor: 'Log cabins, exposed-beam homes, mountain properties, high-elevation customers'
     }
@@ -1585,7 +1585,7 @@ function renderTierCards() {
     if (product === 'oil' && t === 'essential') {
       // Clear sealer — no color, no warranty against color failure
       included = [
-        '✓ Plant &amp; landscape protection during application',
+        '✓ Siding &amp; hardware protection during application',
         '✓ Full job-site cleanup after we leave',
         '✓ EXPERT 3-Step System prep included',
         '✓ Fully insured &amp; licensed in South Carolina'
@@ -1593,8 +1593,8 @@ function renderTierCards() {
     } else if (product === 'oil' && t === 'performance') {
       included = [
         '✓ <strong>EXPERT manufacturer warranty</strong> — 2 yrs on semi-trans, 3 yrs on semi-solid',
-        '✓ Plant &amp; landscape protection during application',
-        '✓ Free 90-day touch-up visit if you spot any miss',
+        '✓ Siding &amp; hardware protection during application',
+        '✓ Free 30-day touch-up visit if you spot any miss',
         '✓ EXPERT 3-Step System (qualifies for Limited Lifetime guarantee)',
         '✓ Fully insured &amp; licensed work'
       ];
@@ -1602,14 +1602,14 @@ function renderTierCards() {
       included = [
         '✓ <strong>EXPERT Log &amp; Timber Oil</strong> — 3-year manufacturer warranty',
         '✓ Eligible for the <strong>EXPERT Limited Lifetime guarantee</strong> via the 3-Step System (qualifying new wood, conditions apply)',
-        '✓ Plant &amp; landscape protection during application',
-        '✓ Free 90-day touch-up visit',
+        '✓ Siding &amp; hardware protection during application',
+        '✓ Free 30-day touch-up visit',
         '✓ Natural carpenter-bee &amp; wood-boring-insect deterrence',
         '✓ Fully insured &amp; licensed work'
       ];
     } else if (product === 'water' && t === 'essential') {
       included = [
-        '✓ Plant &amp; landscape protection during application',
+        '✓ Siding &amp; hardware protection during application',
         '✓ Full job-site cleanup',
         '✓ Single-coat SW Woodscapes Solid application',
         '✓ Fully insured &amp; licensed work'
@@ -1617,21 +1617,21 @@ function renderTierCards() {
     } else if (product === 'water' && t === 'performance') {
       included = [
         '✓ Two full coats of SW Woodscapes Solid for proper film build',
-        '✓ Plant &amp; landscape protection during application',
-        '✓ Free 90-day touch-up visit',
+        '✓ Siding &amp; hardware protection during application',
+        '✓ Free 30-day touch-up visit',
         '✓ Fully insured &amp; licensed work'
       ];
     } else if (product === 'water' && t === 'showcase') {
       included = [
         '✓ Two coats of <strong>SW Woodscapes Rain Refresh</strong> with Self-Cleaning Technology',
         '✓ <strong>10-year limited manufacturer warranty</strong> (per Sherwin-Williams)',
-        '✓ Plant &amp; landscape protection during application',
-        '✓ Free 90-day touch-up visit',
+        '✓ Siding &amp; hardware protection during application',
+        '✓ Free 30-day touch-up visit',
         '✓ Fully insured &amp; licensed work'
       ];
     } else {
       included = [
-        '✓ Plant &amp; landscape protection during application',
+        '✓ Siding &amp; hardware protection during application',
         '✓ Full job-site cleanup',
         '✓ Fully insured &amp; licensed work'
       ];
@@ -2613,7 +2613,7 @@ function renderFinalBreakdown() {
       <h4>You're covered</h4>
       <ul>
         <li><strong>Fully licensed &amp; insured</strong> in South Carolina — no risk to you</li>
-        ${(state.activeProject.tier === 'performance' || state.activeProject.tier === 'showcase') ? '<li><strong>Free 90-day touch-up visit</strong> — if you spot any miss, we come back free</li>' : ''}
+        ${(state.activeProject.tier === 'performance' || state.activeProject.tier === 'showcase') ? '<li><strong>Free 30-day touch-up visit</strong> — if you spot any miss, we come back free</li>' : ''}
         ${state.activeProject.tier === 'showcase' ? '<li><strong>Extended warranty available</strong> — add it on Step 8</li>' : ''}
         <li><strong>We don't get paid until you're happy</strong> — only 25% deposit at scheduling; balance after completion (or financing through Wisetack)</li>
         <li><strong>Quote is final &amp; transparent</strong> — no hidden fees, no surprise upsells on-site</li>
@@ -2851,7 +2851,7 @@ function renderBundleOnlyBreakdown(totals) {
       <h4>You're covered</h4>
       <ul>
         <li><strong>Fully licensed &amp; insured</strong> in South Carolina — no risk to you</li>
-        <li><strong>Free 90-day touch-up visit</strong> on Performance and Showcase tiers — if you spot any miss, we come back free</li>
+        <li><strong>Free 30-day touch-up visit</strong> on Performance and Showcase tiers — if you spot any miss, we come back free</li>
         <li><strong>We don't get paid until you're happy</strong> — only 25% deposit at scheduling; balance after completion (or financing through Wisetack)</li>
         <li><strong>Quote is final &amp; transparent</strong> — no hidden fees, no surprise upsells on-site</li>
       </ul>
@@ -3656,7 +3656,7 @@ const INFO_TOPICS = {
     body: `<p>The three tiers represent escalating levels of protection, longevity, and value:</p>
       <ul>
         <li><strong>Essential</strong> — budget-friendly basic protection. Use for rental properties, fences in shade, or short-term needs. Will need a refresh in 18–24 months.</li>
-        <li><strong>Performance ★ (Recommended)</strong> — our most-quoted tier. Best balance of price and longevity (3–5 years). 90-day touch-up visit included.</li>
+        <li><strong>Performance ★ (Recommended)</strong> — our most-quoted tier. Best balance of price and longevity (3–5 years). 30-day touch-up visit included.</li>
         <li><strong>Showcase</strong> — premium-level protection (4–7 years). The cost-per-year is often lower than going cheap and re-doing the work sooner.</li>
       </ul>
       <p>The cost-per-year number under each price is the most useful comparison — it shows what you're really paying over the life of the stain.</p>`
