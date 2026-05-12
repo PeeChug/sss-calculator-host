@@ -3888,13 +3888,22 @@ async function pushFinishedQuoteToJobber(rowId, force) {
           </div>
         </div>`;
     } else {
-      const detail = data && (data.error || JSON.stringify(data.detail || data));
+      // Log the full response so it's grabbable from console too.
+      console.error('[Jobber push] full response:', data);
+      const err = (data && data.error) || 'unknown error';
+      const detailJson = data && data.detail
+        ? '<pre style="font-size:11px;background:#fff;padding:6px;border-radius:4px;margin-top:6px;max-height:120px;overflow:auto;text-align:left;">' + escapeHtml(JSON.stringify(data.detail, null, 2)) + '</pre>'
+        : '';
+      const inputJson = data && data.input
+        ? '<pre style="font-size:11px;background:#fff;padding:6px;border-radius:4px;margin-top:6px;max-height:120px;overflow:auto;text-align:left;">' + escapeHtml(JSON.stringify(data.input, null, 2)) + '</pre>'
+        : '';
       box.innerHTML = `
         <div class="jobber-push-row error">
           <span class="ico">⚠️</span>
           <div style="flex: 1;">
-            <div><strong>Jobber push failed</strong></div>
-            <div style="font-size:12px;color:var(--slate);margin-top:2px;">${escapeHtml(String(detail || 'unknown error'))}</div>
+            <div><strong>Jobber push failed:</strong> ${escapeHtml(err)}</div>
+            ${detailJson}
+            ${inputJson}
             <button class="btn btn-secondary" style="margin-top:8px;font-size:12px;padding:6px 12px;" onclick="pushFinishedQuoteToJobber('${escapeHtml(rowId)}')">🔄 Retry push</button>
           </div>
         </div>`;
@@ -5075,7 +5084,12 @@ async function resendViewedQuoteToJobber(rowId, alreadyPushed) {
     });
     const data = await r.json();
     if (!data || !data.ok) {
-      alert('Jobber push failed: ' + (data && (data.error || JSON.stringify(data.detail)) || 'unknown'));
+      // Log the full response so it's grabbable from console too.
+      console.error('[Jobber push] full response:', data);
+      const err = (data && data.error) || 'unknown';
+      const detail = data && data.detail ? '\n\nDetail:\n' + JSON.stringify(data.detail, null, 2) : '';
+      const input = data && data.input ? '\n\nSent:\n' + JSON.stringify(data.input, null, 2) : '';
+      alert('Jobber push failed: ' + err + detail + input);
     }
     // Refresh the view from the (now-updated) cloud row so the block reflects reality.
     const fetched = await __sssBridge.call('getQuote', { quoteRowId: rowId });
