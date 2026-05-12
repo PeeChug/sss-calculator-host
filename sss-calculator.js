@@ -3460,11 +3460,13 @@ function finalizeQuote() {
   generatePDF();
   try { __host.dispatchEvent(new CustomEvent('sssQuoteFinalize', { detail: payload, bubbles: true, composed: true })); } catch (e) { console.warn('CustomEvent dispatch failed:', e); }
 
-  // Cloud: persist final state then mark the row as finished. If there's
-  // no cloud row yet (e.g., user blew through the whole calc faster than
-  // the debounced auto-save), create one inline.
+  // Cloud: flush any pending debounced save, wait for it to settle, then
+  // do a final write + status flip. This sequence guarantees measurements
+  // typed seconds before "Send Quote" are captured in the finished row.
   (async () => {
     try {
+      flushPendingSaves();
+      await awaitSaveSettled();
       const finalPayload = buildCloudPayload();
       if (!state.cloudRowId && finalPayload && typeof __sssBridge !== 'undefined') {
         const r = await __sssBridge.call('createQuote', { payload: finalPayload });
@@ -3547,9 +3549,12 @@ function closeSideTracker() {
 
 function saveAndReturnToDashboard() {
   // Force-save the current draft, then navigate back to dashboard.
-  // (autoSaveDraft skips when there's nothing meaningful entered, which is fine —
-  //  the dashboard will just show as empty.)
-  autoSaveDraft();
+  // flushPendingSaves cancels the debounce and runs the save right now —
+  // protects against losing in-progress measurements when the rep walks
+  // away after only typing a value (no further interaction would have
+  // triggered the 1.5s debounce yet).
+  if (typeof flushPendingSaves === 'function') flushPendingSaves();
+  else autoSaveDraft();
   closeSideTracker();
   // Hide all stages, show the dashboard
   __doc.querySelectorAll('.stage').forEach(s => s.classList.remove('visible'));
@@ -3987,23 +3992,56 @@ function buildCloudPayload() {
   };
 }
 
-async function cloudSaveDraft() {
+// Ring buffer of recent save attempts — accessible at
+// window.__sssSaveLog from the browser console. Helps diagnose
+// "my quote didn't save" reports without speculation.
+const __sssSaveLog = [];
+function logSave(entry) {
+  __sssSaveLog.push({ ts: new Date().toISOString(), ...entry });
+  if (__sssSaveLog.length > 40) __sssSaveLog.shift();
+}
+window.__sssSaveLog = __sssSaveLog;
+
+// Promise that resolves when there's no save in flight / pending. Used by
+// finalize and stage-navigation paths to guarantee the in-flight write
+// lands before we move on or before we mark the row "finished".
+let __saveSettledResolver = null;
+let __saveSettledPromise = Promise.resolve();
+function markSaveStart() {
+  if (!__saveSettledResolver) {
+    __saveSettledPromise = new Promise(r => { __saveSettledResolver = r; });
+  }
+}
+function markSaveDone() {
+  if (!__cloudSaveInFlight && !__cloudSavePending && __saveSettledResolver) {
+    const r = __saveSettledResolver; __saveSettledResolver = null;
+    r();
+  }
+}
+function awaitSaveSettled() { return __saveSettledPromise; }
+
+async function cloudSaveDraft(attempt = 0) {
   if (typeof __sssBridge === 'undefined' || !__sssBridge.call) return;
   // Coalesce concurrent saves: one in flight + one queued.
-  if (__cloudSaveInFlight) { __cloudSavePending = true; return; }
+  if (__cloudSaveInFlight) { __cloudSavePending = true; markSaveStart(); return; }
   const payload = buildCloudPayload();
   if (!payload) return;
 
   __cloudSaveInFlight = true;
+  markSaveStart();
   if (typeof setSavePill === 'function') setSavePill('saving');
+
+  // Diagnostic: log the payload SIZE (not contents — could be large)
+  // so out-of-bounds writes are visible in the log.
+  let payloadBytes = 0;
+  try { payloadBytes = JSON.stringify(payload).length; } catch (e) {}
+
   try {
     let res;
     if (!state.cloudRowId) {
       res = await __sssBridge.call('createQuote', { payload });
       if (res && res.ok && res.quote && res.quote._id) {
         state.cloudRowId = res.quote._id;
-        // The server assigns a sequential quoteId; adopt it so the
-        // human-readable label matches what's in the database.
         if (res.quote.quoteId) {
           state.quoteId = res.quote.quoteId;
           const qnEl = __doc.getElementById('quoteNum');
@@ -4014,24 +4052,50 @@ async function cloudSaveDraft() {
       res = await __sssBridge.call('updateQuote', { quoteRowId: state.cloudRowId, patch: payload });
     }
     if (res && res.ok) {
-      if (typeof setSavePill === 'function') {
-        __lastSavedAt = Date.now();
-        setSavePill('saved');
-      }
+      __lastSavedAt = Date.now();
+      if (typeof setSavePill === 'function') setSavePill('saved');
+      logSave({ ok: true, kind: state.cloudRowId ? 'update' : 'create', bytes: payloadBytes, quoteId: state.quoteId, rowId: state.cloudRowId, attempt });
     } else {
       console.warn('[SSS Cloud] save failed:', res);
-      if (typeof setSavePill === 'function') setSavePill('failed');
+      logSave({ ok: false, kind: 'rejected', bytes: payloadBytes, quoteId: state.quoteId, rowId: state.cloudRowId, attempt, error: res && res.error });
+      // Retry with backoff: 1s, 3s, 8s. After three tries, give up but
+      // leave the pill in 'failed' state so the rep knows.
+      if (attempt < 3) {
+        const wait = [1000, 3000, 8000][attempt];
+        setTimeout(() => cloudSaveDraft(attempt + 1), wait);
+      } else if (typeof setSavePill === 'function') {
+        setSavePill('failed');
+      }
     }
   } catch (e) {
     console.warn('[SSS Cloud] save threw:', e);
-    if (typeof setSavePill === 'function') setSavePill('failed');
+    logSave({ ok: false, kind: 'threw', bytes: payloadBytes, quoteId: state.quoteId, rowId: state.cloudRowId, attempt, error: String(e && e.message || e) });
+    if (attempt < 3) {
+      const wait = [1000, 3000, 8000][attempt];
+      setTimeout(() => cloudSaveDraft(attempt + 1), wait);
+    } else if (typeof setSavePill === 'function') {
+      setSavePill('failed');
+    }
   } finally {
     __cloudSaveInFlight = false;
     if (__cloudSavePending) {
       __cloudSavePending = false;
       // Run again on next tick so the new state is captured.
-      setTimeout(cloudSaveDraft, 0);
+      setTimeout(() => cloudSaveDraft(0), 0);
+    } else {
+      markSaveDone();
     }
+  }
+}
+
+// Force any pending debounced save to run immediately. Useful before
+// navigation/finalize so the latest measurements always land before
+// the row is marked finished or the rep leaves the page.
+function flushPendingSaves() {
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = null;
+    try { autoSaveDraft(); } catch (e) { console.warn('[SSS] flush autoSaveDraft threw:', e); }
   }
 }
 
@@ -4061,45 +4125,95 @@ function fmtMoney(n) {
   return '$' + Math.round(v).toLocaleString();
 }
 
+function setStatsLoading() {
+  const sw  = __doc.getElementById('statWeekCount');
+  const swt = __doc.getElementById('statWeekTotal');
+  const sm  = __doc.getElementById('statMonthCount');
+  const smt = __doc.getElementById('statMonthTotal');
+  if (sw)  sw.textContent  = '…';
+  if (swt) swt.textContent = ' ';
+  if (sm)  sm.textContent  = '…';
+  if (smt) smt.textContent = ' ';
+}
+
+function applyStatsResult(stats) {
+  const sw  = __doc.getElementById('statWeekCount');
+  const swt = __doc.getElementById('statWeekTotal');
+  const sm  = __doc.getElementById('statMonthCount');
+  const smt = __doc.getElementById('statMonthTotal');
+  if (stats && stats.ok && stats.stats) {
+    if (sw)  sw.textContent  = stats.stats.week.count;
+    if (swt) swt.textContent = fmtMoney(stats.stats.week.total) + ' quoted';
+    if (sm)  sm.textContent  = stats.stats.month.count;
+    if (smt) smt.textContent = fmtMoney(stats.stats.month.total) + ' quoted';
+    return true;
+  }
+  if (sw)  sw.textContent  = '—';
+  if (swt) swt.textContent = 'stats unavailable';
+  if (sm)  sm.textContent  = '—';
+  if (smt) smt.textContent = 'stats unavailable';
+  return false;
+}
+
+// Stats fetch is independent of the list fetches so a stale/late
+// list response can't suppress the stats UI. Retries up to 3x with
+// short backoff to cover the common race where the returning rep
+// beats the setQuoteStatus('finished') write to the DB.
+async function refreshStats({ attempts = 3, delayMs = 700 } = {}) {
+  if (typeof __sssBridge === 'undefined' || !__sssBridge.call) return false;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const stats = await __sssBridge.call('getStats', {});
+      if (applyStatsResult(stats)) return true;
+    } catch (e) { console.warn('[SSS Cloud] stats attempt', i + 1, 'failed:', e); }
+    if (i < attempts - 1) await new Promise(r => setTimeout(r, delayMs * (i + 1)));
+  }
+  return false;
+}
+
 async function loadDashboardData() {
-  // Fetch all four folders in parallel + stats. If cloud is unreachable
-  // we fall back to localStorage drafts so the rep still sees something.
   if (typeof __sssBridge === 'undefined' || !__sssBridge.call) {
     dashState.cache.draft = getDrafts().map(localDraftToView);
     dashState.cache.finished = []; dashState.cache.archived = []; dashState.cache.trashed = [];
     dashState.loaded = true;
     return;
   }
-  try {
-    const [drafts, finished, archived, trashed, stats] = await Promise.all([
-      __sssBridge.call('listQuotes', { status: 'draft',    limit: 200 }),
-      __sssBridge.call('listQuotes', { status: 'finished', limit: 200 }),
-      __sssBridge.call('listQuotes', { status: 'archived', limit: 200 }),
-      __sssBridge.call('listQuotes', { status: 'trashed',  limit: 200 }),
-      __sssBridge.call('getStats',   {})
-    ]);
-    dashState.cache.draft    = (drafts    && drafts.ok)    ? drafts.items    : [];
-    dashState.cache.finished = (finished  && finished.ok)  ? finished.items  : [];
-    dashState.cache.archived = (archived  && archived.ok)  ? archived.items  : [];
-    dashState.cache.trashed  = (trashed   && trashed.ok)   ? trashed.items   : [];
-    dashState.loaded = true;
 
-    if (stats && stats.ok && stats.stats) {
-      const sw = __doc.getElementById('statWeekCount');
-      const swt = __doc.getElementById('statWeekTotal');
-      const sm = __doc.getElementById('statMonthCount');
-      const smt = __doc.getElementById('statMonthTotal');
-      if (sw)  sw.textContent  = stats.stats.week.count;
-      if (swt) swt.textContent = fmtMoney(stats.stats.week.total) + ' quoted';
-      if (sm)  sm.textContent  = stats.stats.month.count;
-      if (smt) smt.textContent = fmtMoney(stats.stats.month.total) + ' quoted';
+  setStatsLoading();
+  // Kick stats off in parallel but don't await — let it self-heal in
+  // its own retry loop while the rest of the dashboard renders.
+  refreshStats();
+
+  // Promise.allSettled (not Promise.all) so one slow/failed folder
+  // request doesn't cascade into a catch that blanks all caches.
+  // Previously: any one rejection → catch → caches reset → user sees
+  // an empty dashboard for a beat. Now each folder updates independently.
+  const results = await Promise.allSettled([
+    __sssBridge.call('listQuotes', { status: 'draft',    limit: 200 }),
+    __sssBridge.call('listQuotes', { status: 'finished', limit: 200 }),
+    __sssBridge.call('listQuotes', { status: 'archived', limit: 200 }),
+    __sssBridge.call('listQuotes', { status: 'trashed',  limit: 200 })
+  ]);
+  const folders = ['draft', 'finished', 'archived', 'trashed'];
+  results.forEach((r, i) => {
+    if (r.status === 'fulfilled' && r.value && r.value.ok) {
+      dashState.cache[folders[i]] = r.value.items || [];
+    } else {
+      console.warn(`[SSS Cloud] ${folders[i]} fetch failed:`,
+        r.status === 'rejected' ? r.reason : r.value);
+      // Keep the previous cache rather than blanking it.
+      dashState.cache[folders[i]] = dashState.cache[folders[i]] || [];
     }
-  } catch (e) {
-    console.warn('[SSS Cloud] dashboard load failed:', e);
-    // Soft fallback to local drafts only
-    dashState.cache.draft = getDrafts().map(localDraftToView);
-    dashState.loaded = true;
+  });
+  // If the drafts fetch failed entirely, surface localStorage drafts so
+  // the rep isn't blocked.
+  if (results[0].status !== 'fulfilled' || !(results[0].value && results[0].value.ok)) {
+    const localOnly = getDrafts().map(localDraftToView);
+    if (localOnly.length > 0 && dashState.cache.draft.length === 0) {
+      dashState.cache.draft = localOnly;
+    }
   }
+  dashState.loaded = true;
 }
 
 // Map a localStorage draft snapshot to the same shape as a cloud row,
