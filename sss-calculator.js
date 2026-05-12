@@ -1,0 +1,3794 @@
+// sss-calculator.js — auto-generated from calculator.html
+// =============================================================
+// Renders the Superior Stain Solutions calculator as a Custom
+// Element (<sss-calculator>) inside a Shadow DOM. This avoids
+// iOS Safari's cross-origin iframe touch-capture issue that
+// caused scrolling to 'catch' on cards.
+//
+// To rebuild after editing calculator.html, run:
+//   python3 build-custom-element.py
+// =============================================================
+(function () {
+  if (window.customElements && customElements.get('sss-calculator')) return;
+
+  // Lazy-load jsPDF once for the whole page.
+  function loadJsPDF() {
+    if (window.jspdf) return Promise.resolve();
+    return new Promise((resolve) => {
+      const s = document.createElement('script');
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+      s.onload = resolve;
+      s.onerror = resolve;  // continue without PDF capability
+      document.head.appendChild(s);
+    });
+  }
+
+  const STYLE = ":root {\n    --navy: #1a2540; --navy-light: #2d3d5f;\n    --green: #2d6e4e; --green-light: #5a8d68; --green-pale: #e8f3eb;\n    --gold: #c89b3c; --gold-pale: #fef9ed;\n    --coral: #c84d3a; --coral-pale: #fde0d8;\n    --slate: #5a6378; --cream: #f7f5f1;\n    --paper: #ffffff; --line: #ece9e3; --line-soft: #f0ede7;\n    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);\n    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);\n    --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);\n    --radius: 12px; --radius-lg: 16px;\n  }\n  * { box-sizing: border-box; margin: 0; padding: 0; }\n  html, body {\n    font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif;\n    background: var(--cream); color: var(--navy); line-height: 1.5;\n    -webkit-font-smoothing: antialiased;\n  }\n  /* Auto-resize iframe model: the calculator grows to fit its content and\n     the parent Wix page handles scrolling. Works consistently across phone,\n     tablet, and desktop without per-device tuning \u2014 at the cost of being\n     unable to pin elements (steps bar, sidebar) to the user's viewport. */\n  html, body { overflow: visible; }\n  button { font-family: inherit; cursor: pointer; border: none; background: none; }\n  /* Allow native browser scroll. Iframe touch-capture on iOS still\n     sometimes \"catches\" on cards but at least normal scrolling works. */\n  body, body * { touch-action: pan-y; }\n  .progress { touch-action: pan-x !important; }\n  input, textarea, select { touch-action: auto !important; }\n\n  /* Remove the iOS tap-highlight blue flash on every interactive element \u2014\n     it lingers briefly on touchstart and can make scroll feel \"stuck\"\n     because the visual feedback fires before the drag is interpreted. */\n  * { -webkit-tap-highlight-color: transparent; }\n\n  /* Disable accidental text selection on drag everywhere EXCEPT inputs.\n     On iOS, a finger drag across card text sometimes triggers the system's\n     text-selection mode instead of scrolling \u2014 disabling user-select on\n     non-input surfaces forces the gesture to be interpreted as scroll. */\n  body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }\n  input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }\n  input, select { font-family: inherit; font-size: inherit; }\n\n  /* Disable hover-state transforms on touch-primary devices. On tablets the\n     browser briefly applies :hover when a finger lands on a card, then the\n     transform shifts the element under the finger and can confuse the scroll\n     gesture. (hover:none) targets touch-primary devices that don't truly hover. */\n  @media (hover: none), (pointer: coarse) {\n    .selectable-card:hover,\n    .tier-card:hover,\n    .condition-card:hover,\n    .product-choice-card:hover,\n    .color-swatch:hover,\n    .toggle-row:hover,\n    .radio-row:hover,\n    .wood-age-btn:hover,\n    .project-bubble:hover,\n    .draft-card:hover,\n    .mini-tier-row:hover,\n    .mini-toggle:hover { transform: none !important; box-shadow: var(--shadow-sm) !important; }\n  }\n\n  .app { min-height: 100vh; display: flex; flex-direction: column; }\n\n  /* HEADER \u2014 scrolls away so the step nav (below) can pin to the top */\n  .app-header {\n    background: var(--paper); border-bottom: 1px solid var(--line);\n    padding: 14px 28px; display: flex; align-items: center; gap: 20px;\n    box-shadow: var(--shadow-sm);\n  }\n  .brand-mark { display: flex; align-items: center; gap: 12px; }\n  .brand-mark .logo {\n    width: 40px; height: 40px; background: var(--green); border-radius: 10px;\n    display: flex; align-items: center; justify-content: center;\n    color: white; font-weight: 800; font-size: 18px; letter-spacing: -0.5px;\n  }\n  .brand-mark .name { font-weight: 700; font-size: 15px; color: var(--navy); }\n  .brand-mark .sub { font-size: 11px; color: var(--slate); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }\n  .header-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }\n  .quote-id-tag { font-size: 12px; color: var(--slate); }\n  .quote-id-tag span { font-family: ui-monospace, monospace; color: var(--navy); font-weight: 600; }\n  .total-pill {\n    background: var(--green); color: white;\n    padding: 8px 16px; border-radius: 100px;\n    display: flex; flex-direction: column; align-items: flex-start;\n    min-width: 110px; transition: transform 0.3s, background 0.3s;\n  }\n  .total-pill .lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.85; font-weight: 700; line-height: 1; }\n  .total-pill .amt { font-size: 17px; font-weight: 800; line-height: 1.1; margin-top: 2px; }\n  .total-pill.pulse { animation: pulse 0.6s; }\n  .total-pill.secondary { background: var(--paper); color: var(--navy); border: 1.5px solid var(--line); padding: 7px 14px; }\n  .total-pill.secondary .lbl { color: var(--slate); }\n  @keyframes pulse {\n    0%, 100% { transform: scale(1); }\n    50% { transform: scale(1.06); background: var(--green-light); }\n  }\n\n  /* PROJECT BUBBLES \u2014 multi-project navigator above the step progress bar */\n  .project-bubbles {\n    background: var(--cream); padding: 10px 28px;\n    border-bottom: 1px solid var(--line);\n    display: flex; gap: 10px; align-items: center; overflow-x: auto;\n  }\n  .project-bubbles-label {\n    font-size: 11px; font-weight: 700; color: var(--slate);\n    text-transform: uppercase; letter-spacing: 0.08em;\n    margin-right: 6px; flex-shrink: 0;\n  }\n  .project-bubble {\n    display: inline-flex; align-items: center; gap: 8px;\n    padding: 8px 14px; background: var(--paper);\n    border: 2px solid var(--line); border-radius: 100px;\n    font-size: 13px; font-weight: 600; color: var(--navy);\n    cursor: pointer; transition: all 0.15s;\n    flex-shrink: 0; white-space: nowrap;\n  }\n  .project-bubble:hover { border-color: var(--green-light); }\n  .project-bubble.active {\n    background: var(--navy); color: white; border-color: var(--navy);\n    box-shadow: 0 2px 8px rgba(26, 37, 64, 0.2);\n  }\n  .project-bubble .pb-ico { font-size: 16px; }\n  .project-bubble .pb-price { font-size: 11px; opacity: 0.75; }\n  .project-bubble.add-new {\n    background: transparent; border-style: dashed; color: var(--green);\n    font-weight: 700;\n  }\n  .project-bubble.add-new:hover { background: var(--green-pale); border-color: var(--green); }\n\n  /* PROGRESS \u2014 sticks to the top of the iframe viewport so the customer\n     always sees which step they're on as the body scrolls underneath. */\n  .progress {\n    background: var(--paper); padding: 14px 28px;\n    border-bottom: 1px solid var(--line);\n    display: flex; gap: 6px; overflow-x: auto;\n    position: sticky; top: 0; z-index: 80;\n    box-shadow: var(--shadow-sm);\n  }\n  .progress-step {\n    flex: 1; min-width: 90px;\n    padding: 8px 10px; background: var(--line-soft); border-radius: 8px;\n    font-size: 11px; font-weight: 600; color: var(--slate);\n    text-align: center; transition: all 0.25s;\n    cursor: not-allowed; user-select: none; border: 2px solid transparent;\n    opacity: 0.55;\n  }\n  .progress-step.reachable { cursor: pointer; opacity: 1; }\n  .progress-step.reachable:hover { background: var(--line); }\n  .progress-step .step-num { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px; opacity: 0.7; }\n  .progress-step.active { background: var(--navy); color: white; border-color: var(--navy); opacity: 1; cursor: pointer; }\n  .progress-step.done { background: var(--green-pale); color: var(--green); border-color: var(--green); opacity: 1; cursor: pointer; }\n  .progress-step.done::before { content: \"\u2713 \"; }\n  .progress-step.skipped {\n    background: var(--line-soft); color: var(--slate);\n    opacity: 0.55; cursor: not-allowed; text-decoration: line-through;\n  }\n\n  /* Generous side padding on stage-wrap = there's always a finger-width strip\n     of empty space on the left and right where a touch drag definitely\n     scrolls the page instead of landing on a card. */\n  .stage-wrap { flex: 1; padding: 32px 44px 60px; max-width: 1400px; margin: 0 auto; width: 100%; }\n  .stage { display: none; animation: fadeUp 0.4s cubic-bezier(0.4, 0, 0.2, 1); }\n  .stage.visible { display: block; }\n  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }\n  .stage-title { color: var(--green); font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px; }\n  .stage h1 { font-size: 30px; font-weight: 700; color: var(--navy); margin-bottom: 8px; letter-spacing: -0.5px; }\n  .stage .lead { color: var(--slate); font-size: 15px; margin-bottom: 28px; max-width: 720px; }\n\n  /* CARDS */\n  /* Gap bumped from 14px to 22px \u2014 every gap pixel is a \"scroll-safe\" zone\n     between cards where a finger drag isn't on a card and definitely passes\n     through to the parent Wix page for scrolling. Has been the most effective\n     iframe-scroll improvement we've tried. */\n  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 22px; margin-bottom: 28px; }\n  .card-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }\n  .card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }\n  .card-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }\n  .card-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }\n  @media (max-width: 1100px) { .card-grid.cols-5, .card-grid.cols-4 { grid-template-columns: repeat(2, 1fr); } }\n  @media (max-width: 760px) { .card-grid.cols-3, .card-grid.cols-2, .card-grid.cols-4, .card-grid.cols-5 { grid-template-columns: 1fr; } }\n\n  .selectable-card {\n    background: var(--paper); border: 2px solid var(--line);\n    border-radius: var(--radius); text-align: left;\n    transition: all 0.2s; position: relative; overflow: hidden; padding: 0;\n  }\n  .selectable-card:hover { border-color: var(--green-light); transform: translateY(-2px); box-shadow: var(--shadow-md); }\n  .selectable-card.selected { border-color: var(--green); box-shadow: 0 0 0 4px rgba(45, 110, 78, 0.12); }\n  .selectable-card.selected::after {\n    content: \"\u2713\"; position: absolute; top: 12px; right: 12px;\n    width: 28px; height: 28px; background: var(--green); color: white;\n    border-radius: 50%; display: flex; align-items: center; justify-content: center;\n    font-weight: 700; font-size: 14px; z-index: 2;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.2);\n  }\n\n  .card-image {\n    width: 100%; height: 240px;\n    background-size: cover; background-position: center 55%;\n    background-color: var(--line-soft);\n    background-repeat: no-repeat;\n    border-bottom: 1px solid var(--line);\n    position: relative;\n  }\n  /* Per-card framing tweaks \u2014 some source images have sky/whitespace bias that needs nudging */\n  .selectable-card[data-project=\"pergola\"] .card-image { background-position: center 70%; }\n  .selectable-card[data-project=\"ceiling\"] .card-image { background-position: center 60%; }\n  .card-image::after {\n    content: ''; position: absolute; inset: 0;\n    background: linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.25));\n  }\n  .selectable-card.selected .card-image {\n    box-shadow: inset 0 0 0 3px var(--green-pale);\n  }\n  .card-body { padding: 18px 22px 22px; }\n  .card-body .title { font-size: 19px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }\n  .card-body .desc { font-size: 14px; color: var(--slate); line-height: 1.5; }\n  .card-body .badge {\n    display: inline-block; margin-top: 10px;\n    padding: 3px 8px; background: var(--green-pale); color: var(--green);\n    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;\n    text-transform: uppercase; border-radius: 4px;\n  }\n\n  /* TIER CARDS */\n  .tier-card {\n    background: var(--paper); border: 2px solid var(--line);\n    border-radius: var(--radius-lg); padding: 24px; text-align: left;\n    transition: all 0.25s; display: flex; flex-direction: column; position: relative;\n  }\n  .tier-card:hover { border-color: var(--green-light); transform: translateY(-4px); box-shadow: var(--shadow-lg); }\n  .tier-card.selected { border-color: var(--green); box-shadow: 0 0 0 4px rgba(45, 110, 78, 0.12), var(--shadow-md); }\n  .tier-card.recommended { border-color: var(--gold); background: linear-gradient(180deg, var(--gold-pale) 0%, var(--paper) 60%); }\n  .tier-card.recommended.selected { border-color: var(--green); }\n  .tier-card .reco-flag {\n    position: absolute; top: -10px; left: 20px;\n    background: var(--gold); color: white;\n    font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 100px;\n    letter-spacing: 0.1em; text-transform: uppercase;\n  }\n  .tier-card .tier-name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--slate); margin-bottom: 4px; }\n  .tier-card .tier-product { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 8px; line-height: 1.25; }\n  .tier-card .tier-tagline { font-size: 12px; color: var(--slate); font-style: italic; margin-bottom: 10px; min-height: 32px; }\n  .tier-card .tier-price { font-size: 30px; font-weight: 800; color: var(--green); margin: 8px 0 2px; letter-spacing: -0.5px; }\n  .tier-card .tier-cost-per-year { font-size: 12px; color: var(--slate); font-weight: 500; }\n  .tier-card .tier-life {\n    font-size: 12px; color: var(--gold); font-weight: 700;\n    margin: 8px 0 14px; text-transform: uppercase; letter-spacing: 0.06em;\n    padding: 6px 10px; background: var(--gold-pale); border-radius: 6px; display: inline-block;\n    cursor: help; position: relative;\n  }\n  .tier-card .tier-life::after {\n    content: ' \u24d8'; font-size: 10px; opacity: 0.7;\n  }\n  /* Tooltip on hover/focus over the lifespan badge */\n  .tier-life-tooltip {\n    position: absolute; bottom: calc(100% + 8px); left: 50%;\n    transform: translateX(-50%);\n    background: var(--navy); color: white;\n    padding: 10px 14px; border-radius: 8px;\n    font-size: 12px; font-weight: 500; line-height: 1.5;\n    letter-spacing: 0; text-transform: none;\n    width: 280px; max-width: 90vw;\n    box-shadow: 0 8px 24px rgba(0,0,0,0.25);\n    opacity: 0; pointer-events: none;\n    transition: opacity 0.18s, transform 0.18s;\n    z-index: 50; text-align: left;\n  }\n  .tier-life-tooltip::after {\n    content: ''; position: absolute; top: 100%; left: 50%;\n    transform: translateX(-50%);\n    border: 6px solid transparent; border-top-color: var(--navy);\n  }\n  .tier-card .tier-life:hover .tier-life-tooltip,\n  .tier-card .tier-life:focus-within .tier-life-tooltip {\n    opacity: 1; transform: translateX(-50%) translateY(-2px);\n  }\n  .tier-card .tier-pros { list-style: none; margin: 0 0 12px; }\n  .tier-card .tier-pros li { font-size: 13px; color: var(--navy); padding: 5px 0 5px 22px; position: relative; }\n  .tier-card .tier-pros li::before { content: \"\u2713\"; position: absolute; left: 0; color: var(--green); font-weight: 700; }\n  .tier-card .tier-pros li.standout { font-weight: 700; color: var(--gold); }\n  .tier-card .tier-pros li.standout::before { color: var(--gold); content: \"\u2605\"; }\n  .tier-card .tier-cons { list-style: none; margin: 8px 0 0; padding-top: 10px; border-top: 1px dashed var(--line); }\n  .tier-card .tier-cons li { font-size: 12px; color: var(--slate); padding: 4px 0 4px 22px; position: relative; }\n  .tier-card .tier-cons li::before { content: \"\u2014\"; position: absolute; left: 4px; color: var(--slate); }\n  .tier-card .best-for {\n    margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line);\n    font-size: 12px; color: var(--slate);\n  }\n  .tier-card .best-for strong { color: var(--navy); display: block; margin-bottom: 2px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }\n  /* What's Included footer on tier cards */\n  .tier-card .whats-included {\n    margin: 12px 0 0; padding: 12px;\n    background: var(--green-pale); border-radius: 8px;\n    border: 1px solid rgba(45, 110, 78, 0.2);\n  }\n  .tier-card .whats-included-label {\n    font-size: 10px; font-weight: 700;\n    color: var(--green); text-transform: uppercase;\n    letter-spacing: 0.1em; margin-bottom: 6px;\n  }\n  .tier-card .whats-included ul { list-style: none; margin: 0; padding: 0; }\n  .tier-card .whats-included li {\n    font-size: 12px; color: #1f4d36;\n    line-height: 1.5; padding: 2px 0;\n  }\n  /* Risk reversal box on Review screen */\n  .risk-reversal-box {\n    background: linear-gradient(135deg, var(--green-pale) 0%, #f0f7f3 100%);\n    border: 1px solid var(--green);\n    border-radius: var(--radius);\n    padding: 18px 22px; margin-top: 18px;\n  }\n  .risk-reversal-box h4 {\n    color: var(--green); font-size: 13px; font-weight: 700;\n    text-transform: uppercase; letter-spacing: 0.08em;\n    margin-bottom: 8px;\n  }\n  .risk-reversal-box ul { list-style: none; margin: 0; padding: 0; }\n  .risk-reversal-box li {\n    font-size: 13px; color: #1f4d36; line-height: 1.6;\n    padding: 3px 0; padding-left: 22px; position: relative;\n  }\n  .risk-reversal-box li::before {\n    content: \"\u2713\"; position: absolute; left: 0; top: 3px;\n    color: var(--green); font-weight: 800; font-size: 14px;\n  }\n  /* Side-tracker notes section */\n  .side-tracker-notes {\n    padding: 16px 18px; border-top: 1px solid var(--line);\n    background: var(--cream);\n  }\n  .side-tracker-notes label {\n    display: block; color: var(--navy); font-size: 13px;\n    font-weight: 700; margin-bottom: 8px;\n  }\n  .side-tracker-notes label small {\n    display: block; font-weight: 500; color: var(--slate);\n    font-size: 11px; margin-top: 2px;\n  }\n  .side-tracker-notes textarea {\n    width: 100%; min-height: 110px; resize: vertical;\n    background: var(--paper); color: var(--navy);\n    border: 1.5px solid var(--line); border-radius: 8px;\n    padding: 10px 12px; font-size: 13px; line-height: 1.5;\n    font-family: inherit;\n  }\n  .side-tracker-notes textarea::placeholder { color: var(--slate); opacity: 0.7; }\n  .side-tracker-notes textarea:focus {\n    outline: none; border-color: var(--green);\n    box-shadow: 0 0 0 3px rgba(45, 110, 78, 0.2);\n  }\n  /* \"Save & Exit\" button in side-tracker footer \u2014 compact so it doesn't crowd the total */\n  .btn-save-exit {\n    padding: 6px 12px;\n    background: rgba(200, 155, 60, 0.2); color: var(--gold);\n    border: 1px solid var(--gold);\n    border-radius: 7px;\n    font-weight: 600; font-size: 12px; cursor: pointer;\n    transition: all 0.15s; white-space: nowrap;\n  }\n  .btn-save-exit:hover {\n    background: var(--gold); color: white;\n  }\n\n  /* Notes panel on Review screen */\n  .review-notes-box {\n    margin-top: 18px; padding: 16px 20px;\n    background: var(--cream); border-left: 4px solid var(--gold);\n    border-radius: 8px;\n  }\n  .review-notes-box h4 {\n    font-size: 12px; color: var(--gold); font-weight: 700;\n    text-transform: uppercase; letter-spacing: 0.08em;\n    margin-bottom: 6px;\n  }\n  .review-notes-box p {\n    font-size: 14px; color: var(--navy); line-height: 1.55;\n    white-space: pre-wrap; /* preserve customer's line breaks */\n  }\n\n  /* DIY cost comparison on Review */\n  .diy-comparison {\n    margin-top: 16px;\n    padding: 18px 22px;\n    background: var(--paper);\n    border: 1px dashed var(--slate);\n    border-radius: var(--radius);\n  }\n  .diy-comparison h4 {\n    font-size: 13px; color: var(--slate);\n    text-transform: uppercase; letter-spacing: 0.08em;\n    font-weight: 700; margin-bottom: 4px;\n  }\n  .diy-comparison .diy-blurb {\n    font-size: 13px; color: var(--slate); margin-bottom: 14px;\n  }\n  .diy-comparison .diy-row {\n    display: flex; justify-content: space-between;\n    padding: 8px 0; border-bottom: 1px dashed var(--line);\n    font-size: 13px; color: var(--navy);\n  }\n  .diy-comparison .diy-row.diy-total {\n    border-bottom: none; padding-top: 10px; margin-top: 4px;\n    font-weight: 700; font-size: 15px;\n    border-top: 2px solid var(--navy);\n  }\n  .diy-comparison .diy-conclusion {\n    margin-top: 14px; padding: 12px 14px;\n    background: var(--gold-pale); border-radius: 8px;\n    font-size: 13px; color: #5a4a1f; line-height: 1.55;\n  }\n  .diy-comparison .diy-conclusion strong { color: var(--navy); }\n\n  /* Quote expiration banner */\n  .quote-expiry-banner {\n    background: var(--navy); color: white;\n    padding: 12px 18px; border-radius: 8px;\n    margin-bottom: 16px; display: flex; align-items: center;\n    gap: 12px; font-size: 13px;\n  }\n  .quote-expiry-banner .icon { font-size: 18px; }\n  .quote-expiry-banner strong { color: var(--gold); }\n  /* Stackable discount checkbox + summary line */\n  .radio-row .dot-outer.square {\n    border-radius: 5px;\n  }\n  .radio-row .dot-outer.square::after {\n    content: '\u2713'; width: auto; height: auto; background: transparent;\n    color: white; font-size: 14px; font-weight: 800; line-height: 1;\n    border-radius: 0;\n  }\n  .radio-row.checked .dot-outer.square {\n    background: var(--green); border-color: var(--green);\n  }\n  .discount-sum-line {\n    display: flex; justify-content: space-between; align-items: center;\n    background: var(--navy); color: white;\n    padding: 16px 20px; border-radius: 12px; margin-top: 14px;\n    font-size: 14px;\n  }\n  .discount-sum-line strong { display: block; margin-bottom: 2px; }\n  .discount-sum-line #discountSumText { font-size: 12px; opacity: 0.85; }\n  .discount-sum-rate {\n    color: var(--gold); font-size: 22px; font-weight: 800;\n    letter-spacing: -0.5px;\n  }\n\n  /* Grouped color sections */\n  .color-group { margin-bottom: 28px; }\n  .color-group-label {\n    font-size: 14px; font-weight: 700; color: var(--navy);\n    text-transform: uppercase; letter-spacing: 0.08em;\n    margin-bottom: 12px; padding-bottom: 6px;\n    border-bottom: 1px solid var(--line);\n  }\n  .color-group-label small {\n    font-weight: 500; color: var(--slate);\n    text-transform: none; letter-spacing: 0; font-size: 12px;\n  }\n  .color-swatch.custom-swatch .chip {\n    background-image: linear-gradient(135deg, transparent 0%, transparent 45%, var(--gold) 45%, var(--gold) 55%, transparent 55%) !important;\n    background-color: var(--cream) !important;\n    border: 2px dashed var(--gold) !important;\n  }\n  .custom-color-entry {\n    display: none; padding: 18px; margin-top: 14px;\n    background: var(--gold-pale);\n    border: 2px solid var(--gold); border-radius: 12px;\n  }\n  .custom-color-entry.visible { display: block; }\n\n  /* LARGER add-on cards \u2014 easier to see product images */\n  .toggle-row .addon-img {\n    width: 96px !important; height: 96px !important;\n    border-radius: 12px;\n  }\n  .addon-section .toggle-row {\n    padding: 16px 18px;\n    gap: 14px;\n    min-height: 116px;\n  }\n  .toggle-row .addon-desc .ad-name { font-size: 16px; font-weight: 700; }\n  .toggle-row .addon-desc .ad-sub { font-size: 13px; margin-top: 4px; line-height: 1.5; }\n  .toggle-row .price { font-size: 15px; }\n  /* Single-column for the stain-product-upgrades section so the images get even more room */\n  .addon-section:first-of-type .addon-grid {\n    grid-template-columns: 1fr;\n  }\n\n  /* Confetti animation overlay */\n  .confetti-piece {\n    position: fixed; width: 10px; height: 14px;\n    pointer-events: none; z-index: 999;\n    animation: confetti-fall 1.6s ease-out forwards;\n  }\n  @keyframes confetti-fall {\n    0% { transform: translateY(0) rotate(0); opacity: 1; }\n    100% { transform: translateY(120vh) rotate(720deg); opacity: 0; }\n  }\n\n  /* Bigger bundle savings celebration */\n  .bundle-savings-pill {\n    display: inline-flex; align-items: center; gap: 8px;\n    background: linear-gradient(135deg, var(--green) 0%, var(--green-light) 100%);\n    color: white; padding: 10px 18px;\n    border-radius: 100px; font-weight: 700; font-size: 15px;\n    margin-bottom: 16px;\n    box-shadow: 0 4px 12px rgba(45, 110, 78, 0.3);\n    animation: bundle-celebrate 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);\n  }\n  @keyframes bundle-celebrate {\n    0% { transform: scale(0.5); opacity: 0; }\n    60% { transform: scale(1.1); }\n    100% { transform: scale(1); opacity: 1; }\n  }\n  .tier-card.disabled {\n    opacity: 0.5; cursor: not-allowed; background: var(--line-soft);\n    filter: grayscale(70%);\n  }\n  .tier-card.disabled:hover { transform: none; box-shadow: none; border-color: var(--line); }\n\n  /* PRODUCT CHOICE CARDS */\n  .product-choice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }\n  @media (max-width: 980px) { .product-choice-grid { grid-template-columns: 1fr; } }\n  .product-choice-card {\n    background: var(--paper); border: 2px solid var(--line);\n    border-radius: var(--radius); padding: 0;\n    cursor: pointer; transition: all 0.2s;\n    position: relative; text-align: left;\n    display: flex; flex-direction: column;\n    overflow: hidden;\n  }\n  .product-choice-card:hover { border-color: var(--green-light); transform: translateY(-2px); box-shadow: var(--shadow-md); }\n  .product-choice-card.selected { border-color: var(--green); box-shadow: 0 0 0 4px rgba(45, 110, 78, 0.12); }\n  .product-choice-card.selected::after {\n    content: \"\u2713\"; position: absolute; top: 12px; right: 12px;\n    width: 28px; height: 28px; background: var(--green); color: white;\n    border-radius: 50%; display: flex; align-items: center; justify-content: center;\n    font-weight: 700; font-size: 14px; z-index: 2;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.2);\n  }\n  .product-choice-card.recommended { border-color: var(--gold); }\n  .product-choice-card.recommended.selected { border-color: var(--green); }\n  .product-choice-card .reco-flag {\n    position: absolute; top: 12px; left: 12px;\n    background: var(--gold); color: white;\n    font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 100px;\n    letter-spacing: 0.1em; text-transform: uppercase; z-index: 2;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.2);\n  }\n  .product-choice-card .prod-image {\n    width: 100%; height: 200px;\n    background-size: cover; background-position: center 50%;\n    background-color: var(--line-soft); border-bottom: 1px solid var(--line);\n    background-repeat: no-repeat;\n    position: relative;\n  }\n  /* HOA image is wide-angle of rooftops with lots of sky \u2014 anchor to bottom so the houses show */\n  .product-choice-card[data-product=\"hoa\"] .prod-image { background-position: center 85%; }\n  .product-choice-card .prod-image::after {\n    content: ''; position: absolute; inset: 0;\n    background: linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.2));\n  }\n  .product-choice-card .prod-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 6px; flex: 1; }\n  .product-choice-card .icon { font-size: 24px; }\n  .product-choice-card .h { font-size: 18px; font-weight: 700; color: var(--navy); }\n  .product-choice-card .d { font-size: 13px; color: var(--slate); line-height: 1.5; }\n  .product-choice-card .pros { font-size: 12px; color: var(--green); font-weight: 600; margin-top: auto; padding-top: 6px; }\n  /* Pros / cons bullet lists inside product family cards */\n  .product-choice-card .prod-pros, .product-choice-card .prod-cons {\n    list-style: none; margin: 8px 0 0; padding: 0;\n  }\n  .product-choice-card .prod-pros li {\n    font-size: 12.5px; color: var(--navy); line-height: 1.45;\n    padding: 4px 0 4px 20px; position: relative;\n  }\n  .product-choice-card .prod-pros li::before {\n    content: \"\u2713\"; position: absolute; left: 2px; top: 4px;\n    color: var(--green); font-weight: 700; font-size: 13px;\n  }\n  .product-choice-card .prod-cons {\n    margin-top: 8px; padding-top: 8px;\n    border-top: 1px dashed var(--line);\n  }\n  .product-choice-card .prod-cons li {\n    font-size: 12px; color: var(--slate); line-height: 1.45;\n    padding: 3px 0 3px 20px; position: relative;\n  }\n  .product-choice-card .prod-cons li::before {\n    content: \"\u2014\"; position: absolute; left: 6px; top: 3px;\n    color: var(--slate); font-weight: 700;\n  }\n  .product-choice-card .prod-recommend-note {\n    /* margin-top:auto pushes this box to the bottom of the flex column so all\n       three product cards have their \"When to pick this\" boxes aligned on the\n       same baseline regardless of how long the pros/cons lists are. */\n    margin-top: auto; padding: 10px 12px;\n    background: var(--cream); border-left: 3px solid var(--gold);\n    border-radius: 6px;\n    font-size: 12px; line-height: 1.5; color: var(--navy);\n  }\n  /* Ensure the pros/cons block leaves room above the bottom-pinned note */\n  .product-choice-card .prod-cons { margin-bottom: 8px; }\n  .product-choice-card .prod-recommend-note strong {\n    color: var(--gold); display: block; margin-bottom: 2px;\n    font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;\n  }\n  .product-choice-card.recommended .prod-recommend-note {\n    background: var(--gold-pale);\n  }\n\n  /* COLOR SWATCHES \u2014 now with images */\n  .color-grid {\n    display: grid;\n    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));\n    gap: 14px; margin-bottom: 24px;\n  }\n  .color-swatch {\n    background: var(--paper); border: 3px solid var(--line);\n    border-radius: var(--radius); padding: 10px;\n    cursor: pointer; transition: all 0.18s;\n    text-align: center; user-select: none;\n  }\n  .color-swatch:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--green-light); }\n  .color-swatch.selected { border-color: var(--green); box-shadow: 0 0 0 4px rgba(45, 110, 78, 0.15); }\n  .color-swatch .chip {\n    width: 100%; aspect-ratio: 1 / 1; border-radius: 8px;\n    border: 1px solid rgba(0,0,0,0.12);\n    background-size: cover; background-position: center;\n    background-color: var(--line-soft);\n    margin-bottom: 8px;\n  }\n  /* Hex fallback (used when no image URL) */\n  .color-swatch .chip.hex-only {\n    box-shadow: inset 0 -8px 12px rgba(0,0,0,0.15), inset 0 8px 12px rgba(255,255,255,0.08);\n  }\n  .color-swatch .name { font-size: 13px; font-weight: 700; color: var(--navy); line-height: 1.2; }\n  .color-swatch .code { font-size: 10px; color: var(--slate); margin-top: 2px; font-family: ui-monospace, monospace; }\n\n  /* FORMS */\n  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }\n  @media (max-width: 760px) { .form-grid { grid-template-columns: 1fr; } }\n  .form-grid.full { grid-template-columns: 1fr; }\n  .field label { display: block; font-size: 12px; font-weight: 700; color: var(--slate); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }\n  .field input, .field select, .field textarea {\n    width: 100%; background: var(--paper);\n    border: 2px solid var(--line); border-radius: 10px;\n    padding: 12px 14px; font-size: 15px; color: var(--navy);\n    transition: border-color 0.15s, box-shadow 0.15s;\n  }\n  .field textarea { min-height: 70px; resize: vertical; font-family: inherit; }\n  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(45, 110, 78, 0.12); }\n  .field .hint { font-size: 12px; color: var(--slate); margin-top: 4px; }\n  .field .err { font-size: 12px; color: var(--coral); margin-top: 4px; font-weight: 600; display: none; }\n  .field.invalid input, .field.invalid select { border-color: var(--coral); background: var(--coral-pale); }\n  .field.invalid .err { display: block; }\n\n  /* TOGGLES */\n  .toggle-row {\n    display: flex; align-items: center; gap: 12px;\n    padding: 12px 14px; background: var(--paper);\n    border: 2px solid var(--line); border-radius: 10px;\n    cursor: pointer; transition: all 0.15s; margin-bottom: 8px; user-select: none;\n  }\n  .toggle-row:hover { border-color: var(--green-light); }\n  .toggle-row.checked { background: var(--green-pale); border-color: var(--green); }\n  .toggle-row .box {\n    width: 20px; height: 20px; border: 2px solid var(--line); border-radius: 5px;\n    background: var(--paper); flex-shrink: 0;\n    display: flex; align-items: center; justify-content: center;\n    color: white; font-weight: 700; font-size: 12px; transition: all 0.15s;\n  }\n  .toggle-row.checked .box { background: var(--green); border-color: var(--green); }\n  .toggle-row.checked .box::after { content: \"\u2713\"; }\n  .toggle-row .name { flex: 1; font-size: 14px; font-weight: 600; color: var(--navy); }\n  .toggle-row .name .restr { font-size: 10px; color: var(--coral); font-weight: 700; text-transform: uppercase; margin-left: 6px; letter-spacing: 0.05em; }\n  .toggle-row .price { color: var(--green); font-weight: 700; font-size: 14px; white-space: nowrap; }\n  .toggle-row .qty-input { width: 70px; padding: 4px 6px; font-size: 12px; border: 1px solid var(--line); border-radius: 6px; margin-right: 8px; }\n\n  /* RADIO ROW (for discounts \u2014 single-select) */\n  .radio-row {\n    display: flex; align-items: center; gap: 14px;\n    padding: 12px 16px 12px 12px; background: var(--paper);\n    border: 2px solid var(--line); border-radius: 12px;\n    cursor: pointer; transition: all 0.15s; margin-bottom: 10px;\n  }\n  .radio-row:hover { border-color: var(--green-light); transform: translateY(-1px); }\n  .radio-row.checked { background: var(--green-pale); border-color: var(--green); }\n  .radio-row .disc-img {\n    width: 76px; height: 76px; border-radius: 10px;\n    background-size: cover; background-position: center;\n    background-color: var(--line-soft);\n    flex-shrink: 0; border: 1px solid var(--line);\n  }\n  .radio-row.no-img { padding-left: 16px; }\n  .radio-row .dot-outer {\n    width: 22px; height: 22px; border: 2px solid var(--line); border-radius: 50%;\n    flex-shrink: 0; display: flex; align-items: center; justify-content: center;\n    transition: all 0.15s;\n  }\n  .radio-row.checked .dot-outer { border-color: var(--green); }\n  .radio-row .dot-outer::after {\n    content: ''; width: 10px; height: 10px; border-radius: 50%;\n    background: var(--green); opacity: 0; transition: opacity 0.15s;\n  }\n  .radio-row.checked .dot-outer::after { opacity: 1; }\n  .radio-row .label { flex: 1; }\n  .radio-row .label .head { font-size: 14px; font-weight: 700; color: var(--navy); }\n  .radio-row .label .sub { font-size: 12px; color: var(--slate); margin-top: 2px; line-height: 1.4; }\n  .radio-row .value { color: var(--green); font-weight: 700; font-size: 16px; white-space: nowrap; }\n  /* Informational rows (e.g. cash payment) \u2014 neutral palette so it doesn't read as a percentage discount */\n  .radio-row.informational .value { color: var(--navy); font-size: 13px; }\n  .radio-row.informational.checked { background: var(--cream); border-color: var(--navy); }\n  .radio-row.informational.checked .dot-outer.square { background: var(--navy); border-color: var(--navy); }\n\n  /* INFO PANELS */\n  .info-panel { background: var(--paper); border: 2px solid var(--line); border-radius: var(--radius-lg); padding: 22px; margin-bottom: 20px; }\n  .info-panel.highlighted { border-color: var(--gold); background: linear-gradient(180deg, var(--gold-pale) 0%, var(--paper) 50%); }\n  .info-panel.previous { border-color: #3a7095; background: linear-gradient(180deg, #e6f0f7 0%, var(--paper) 50%); }\n  .info-panel h3 { font-size: 15px; color: var(--navy); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }\n  .info-panel .panel-hint { font-size: 13px; color: var(--slate); margin-bottom: 16px; }\n\n  /* RECOMMENDATION BANNER */\n  .reco-banner {\n    background: linear-gradient(135deg, var(--gold-pale) 0%, #fff7e0 100%);\n    border-left: 4px solid var(--gold);\n    border-radius: var(--radius); padding: 14px 18px;\n    margin-bottom: 20px; display: flex; align-items: flex-start; gap: 12px;\n  }\n  .reco-banner .reco-ico { font-size: 20px; flex-shrink: 0; }\n  .reco-banner .reco-content { flex: 1; font-size: 13px; color: #5a4a1f; line-height: 1.5; }\n  .reco-banner .reco-content strong { color: var(--navy); display: block; margin-bottom: 2px; }\n\n  /* TIP BOXES (employee-facing scripts) */\n  .tip-box {\n    background: linear-gradient(135deg, #fff 0%, #f7fbf8 100%);\n    border-left: 4px solid var(--green);\n    border-radius: 10px;\n    padding: 14px 16px; margin-bottom: 16px;\n    font-size: 13px; line-height: 1.55;\n    display: flex; gap: 12px; align-items: flex-start;\n  }\n  .tip-box .tip-ico { font-size: 18px; flex-shrink: 0; line-height: 1.3; }\n  .tip-box .tip-body { flex: 1; color: var(--navy); }\n  .tip-box .tip-body strong { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--green); margin-bottom: 4px; }\n  .tip-box .tip-body em { font-style: italic; color: var(--slate); }\n  /* (Script tip variant removed \u2014 all tips are now customer-facing facts) */\n\n  /* Wood-age 3-button selector on Step 3 */\n  .wood-age-buttons {\n    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;\n  }\n  @media (max-width: 760px) { .wood-age-buttons { grid-template-columns: 1fr; } }\n  .wood-age-btn {\n    display: flex; align-items: center; gap: 12px;\n    padding: 14px 16px; background: var(--paper);\n    border: 2px solid var(--line); border-radius: 12px;\n    cursor: pointer; transition: all 0.15s;\n    text-align: left;\n  }\n  .wood-age-btn:hover { border-color: var(--green-light); transform: translateY(-1px); }\n  .wood-age-btn.selected {\n    border-color: var(--green); background: var(--green-pale);\n    box-shadow: 0 0 0 3px rgba(45, 110, 78, 0.15);\n  }\n  .wood-age-btn .wa-ico { font-size: 28px; flex-shrink: 0; }\n  .wood-age-btn .wa-label { font-size: 14px; font-weight: 700; color: var(--navy); line-height: 1.25; }\n  .wood-age-btn .wa-label small { display: block; font-weight: 500; color: var(--slate); margin-top: 2px; font-size: 11px; }\n  .wood-age-btn.selected .wa-label small { color: var(--green); }\n\n  /* Disabled condition cards (gated by wood age) */\n  .condition-card.locked {\n    opacity: 0.45; cursor: not-allowed; filter: grayscale(70%);\n    pointer-events: none;\n  }\n  .condition-card.locked .reco-flag,\n  .condition-card.locked.recommended { background: var(--line-soft); border-color: var(--line); }\n  .condition-card .locked-badge {\n    position: absolute; top: 12px; left: 12px;\n    background: var(--slate); color: white; z-index: 2;\n    font-size: 10px; font-weight: 700; padding: 4px 10px;\n    border-radius: 100px; letter-spacing: 0.08em; text-transform: uppercase;\n    box-shadow: 0 2px 6px rgba(0,0,0,0.2);\n  }\n\n  /* MEASUREMENTS */\n  .measure-section { background: var(--paper); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-sm); margin-bottom: 16px; }\n  .measure-section h3 { font-size: 16px; color: var(--navy); margin-bottom: 4px; }\n  .measure-section .section-hint { font-size: 13px; color: var(--slate); margin-bottom: 16px; }\n\n  /* ALERTS */\n  .alert { padding: 14px 18px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 12px; }\n  .alert .ico { font-size: 18px; line-height: 1.2; flex-shrink: 0; }\n  .alert.info { background: #e6f0f7; border-left: 4px solid #3a7095; color: #234862; }\n  .alert.warn { background: var(--gold-pale); border-left: 4px solid var(--gold); color: #5a4a1f; }\n  .alert.success { background: var(--green-pale); border-left: 4px solid var(--green); color: #1f4d36; }\n  .alert.error { background: var(--coral-pale); border-left: 4px solid var(--coral); color: #5a2519; }\n  .alert strong { display: block; margin-bottom: 2px; }\n\n  /* CONDITION CARDS \u2014 image-based */\n  .condition-card {\n    background: var(--paper); border: 2px solid var(--line);\n    border-radius: var(--radius);\n    cursor: pointer; transition: all 0.2s;\n    text-align: left; display: flex; flex-direction: column;\n    padding: 0; overflow: hidden;\n    position: relative;\n  }\n  .condition-card:hover { border-color: var(--green-light); transform: translateY(-2px); box-shadow: var(--shadow-md); }\n  .condition-card.selected { border-color: var(--green); box-shadow: 0 0 0 4px rgba(45, 110, 78, 0.12); }\n  .condition-card.selected::after {\n    content: \"\u2713\"; position: absolute; top: 10px; right: 10px;\n    width: 26px; height: 26px; background: var(--green); color: white;\n    border-radius: 50%; display: flex; align-items: center; justify-content: center;\n    font-weight: 700; font-size: 13px; z-index: 2;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.2);\n  }\n  .condition-card .card-image { height: 130px; }\n  .condition-card .cond-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }\n  .condition-card .cond-name { font-size: 15px; font-weight: 700; color: var(--navy); }\n  .condition-card .cond-prep { color: var(--slate); font-size: 12px; line-height: 1.45; }\n  .condition-card .cond-add {\n    font-size: 15px; color: var(--coral); font-weight: 700;\n    margin-top: auto; padding-top: 10px; border-top: 1px dashed var(--line);\n  }\n  .condition-card.selected .cond-add { color: var(--green); }\n  .condition-card.recommended {\n    border-color: var(--gold);\n    background: linear-gradient(180deg, var(--gold-pale) 0%, var(--paper) 25%);\n  }\n  .condition-card.recommended .reco-flag {\n    position: absolute; top: 12px; left: 12px;\n    background: var(--gold); color: white;\n    font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 100px;\n    letter-spacing: 0.1em; text-transform: uppercase;\n    z-index: 2; box-shadow: 0 2px 8px rgba(0,0,0,0.2);\n  }\n  .condition-card.recommended.selected { border-color: var(--green); }\n\n  /* Bullet point sections inside condition cards */\n  .cond-bullets-group { margin-top: 10px; }\n  .cond-bullets-label {\n    font-size: 10px; font-weight: 700; color: var(--slate);\n    text-transform: uppercase; letter-spacing: 0.08em;\n    margin-bottom: 4px;\n  }\n  .cond-bullets { list-style: none; margin: 0 0 6px 0; padding: 0; }\n  .cond-bullets li {\n    font-size: 12px; color: var(--navy); line-height: 1.4;\n    padding: 3px 0 3px 18px; position: relative;\n  }\n  .cond-bullets li::before {\n    content: \"\u2022\"; position: absolute; left: 4px; color: var(--green); font-weight: 700;\n  }\n  .cond-bullets.process li::before { content: \"\u2192\"; color: var(--gold); font-size: 11px; }\n  .cond-timing {\n    font-size: 11px; color: var(--gold); font-weight: 700;\n    background: var(--gold-pale); padding: 4px 8px;\n    border-radius: 6px; margin-top: 8px;\n    display: inline-block; text-transform: uppercase; letter-spacing: 0.04em;\n  }\n\n  /* Service-includes section \u2014 checkmarked-by-default, never billable, never togglable */\n  .service-includes-section { background: linear-gradient(180deg, var(--green-pale) 0%, var(--paper) 80%); border: 1px solid rgba(45, 110, 78, 0.25); }\n  .service-includes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }\n  @media (max-width: 760px) { .service-includes-grid { grid-template-columns: 1fr; } }\n  .service-include-row {\n    display: flex; align-items: center; gap: 12px;\n    padding: 12px 14px; background: var(--paper);\n    border: 1.5px solid rgba(45, 110, 78, 0.25);\n    border-radius: 10px;\n  }\n  .service-include-row .check {\n    width: 28px; height: 28px; flex-shrink: 0;\n    background: var(--green); color: white;\n    border-radius: 50%;\n    display: flex; align-items: center; justify-content: center;\n    font-weight: 800; font-size: 14px;\n  }\n  .service-include-row .addon-desc { flex: 1; }\n  .service-include-row .addon-desc .ad-name { font-size: 14px; font-weight: 700; color: var(--navy); }\n  .service-include-row .addon-desc .ad-sub { font-size: 12px; color: var(--slate); margin-top: 2px; line-height: 1.45; }\n  .service-include-row .price { color: var(--green); font-weight: 700; font-size: 12px; letter-spacing: 0.06em; }\n\n  /* ADD-ONS */\n  .addon-section { background: var(--paper); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 14px; box-shadow: var(--shadow-sm); }\n  .addon-section h4 { font-size: 14px; color: var(--navy); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }\n  .addon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }\n  @media (max-width: 760px) { .addon-grid { grid-template-columns: 1fr; } }\n  .toggle-row .addon-img {\n    width: 44px; height: 44px; border-radius: 8px;\n    background-size: cover; background-position: center;\n    background-color: var(--line-soft); flex-shrink: 0;\n    border: 1px solid var(--line);\n  }\n  .toggle-row .addon-desc {\n    flex: 1; display: flex; flex-direction: column;\n  }\n  .toggle-row .addon-desc .ad-name { font-size: 14px; font-weight: 600; color: var(--navy); }\n  .toggle-row .addon-desc .ad-sub { font-size: 11px; color: var(--slate); margin-top: 2px; line-height: 1.4; }\n  .toggle-row .addon-desc .ad-name .restr { font-size: 10px; color: var(--coral); font-weight: 700; text-transform: uppercase; margin-left: 6px; letter-spacing: 0.05em; }\n  /* Custom addon button */\n  .custom-add-btn {\n    background: var(--navy); color: white;\n    padding: 6px 12px; border-radius: 6px;\n    font-size: 12px; font-weight: 600;\n  }\n  .custom-add-btn:hover { background: var(--navy-light); }\n  .custom-add-form {\n    background: var(--cream); padding: 14px;\n    border-radius: 10px; margin-top: 12px;\n    border: 1px dashed var(--slate);\n  }\n  .custom-add-form .form-row { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 8px; align-items: end; }\n  @media (max-width: 760px) { .custom-add-form .form-row { grid-template-columns: 1fr; } }\n  .custom-add-form input, .custom-add-form select {\n    width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px;\n    font-size: 13px; background: white;\n  }\n  .custom-add-form label { font-size: 11px; color: var(--slate); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; display: block; }\n  .custom-add-form .btn-save { background: var(--green); color: white; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 13px; }\n  .custom-add-form .btn-cancel { background: transparent; color: var(--slate); padding: 8px 8px; font-size: 13px; }\n  .custom-item-row {\n    display: flex; align-items: center; gap: 12px;\n    padding: 10px 14px; background: #fff7e6;\n    border: 1.5px dashed var(--gold); border-radius: 10px;\n    margin-bottom: 6px;\n  }\n  .custom-item-row .name { flex: 1; font-size: 14px; font-weight: 600; color: var(--navy); }\n  .custom-item-row .price { color: var(--green); font-weight: 700; font-size: 14px; margin-right: 8px; }\n  .custom-item-row .remove-btn { color: var(--coral); font-size: 18px; padding: 2px 8px; }\n  .employee-badge {\n    display: inline-block; background: var(--navy); color: white;\n    font-size: 9px; font-weight: 700; padding: 2px 8px;\n    border-radius: 4px; letter-spacing: 0.08em; text-transform: uppercase;\n  }\n\n  /* STAGE NAV */\n  .stage-nav { display: flex; gap: 12px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); }\n  .btn { padding: 14px 28px; border-radius: 10px; font-size: 15px; font-weight: 700; transition: all 0.15s; display: inline-flex; align-items: center; gap: 8px; }\n  .btn-primary { background: var(--green); color: white; }\n  .btn-primary:hover { background: var(--green-light); transform: translateY(-1px); box-shadow: var(--shadow-md); }\n  .btn-primary:disabled { background: var(--line); color: var(--slate); cursor: not-allowed; transform: none; box-shadow: none; }\n  .btn-secondary { background: transparent; color: var(--navy); border: 2px solid var(--line); }\n  .btn-secondary:hover { border-color: var(--navy); background: var(--paper); }\n  .btn-ghost { background: transparent; color: var(--slate); }\n  .btn-ghost:hover { color: var(--navy); }\n  .btn .arr-l { margin-right: -2px; }\n  .btn .arr-r { margin-left: -2px; }\n\n  /* BUNDLE */\n  .saved-projects { background: var(--paper); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 18px; border: 1px solid var(--line); }\n  .bundle-stack-title { font-size: 12px; color: var(--slate); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; margin-bottom: 8px; }\n  .saved-project-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px dashed var(--line); gap: 10px; }\n  .saved-project-row:last-child { border-bottom: none; }\n  .saved-project-row .ico { font-size: 22px; }\n  .saved-project-row .meta { flex: 1; padding-left: 4px; }\n  .saved-project-row .meta .nm { font-weight: 700; color: var(--navy); font-size: 14px; }\n  .saved-project-row .meta .det { font-size: 12px; color: var(--slate); margin-top: 2px; }\n  .saved-project-row .amt { color: var(--green); font-weight: 700; font-size: 16px; margin-right: 6px; }\n  .saved-project-row .row-actions { display: flex; gap: 6px; }\n  .saved-project-row .row-actions button { padding: 6px 12px; border-radius: 7px; font-size: 12px; font-weight: 600; transition: all 0.12s; }\n  .saved-project-row .row-actions .edit-btn { background: var(--navy); color: white; }\n  .saved-project-row .row-actions .edit-btn:hover { background: var(--navy-light); }\n  .saved-project-row .row-actions .remove-btn { background: transparent; color: var(--coral); border: 1px solid var(--coral); }\n  .saved-project-row .row-actions .remove-btn:hover { background: var(--coral-pale); }\n\n  /* FINAL BREAKDOWN */\n  .final-grid { display: grid; grid-template-columns: 1fr 380px; gap: 24px; align-items: start; }\n  @media (max-width: 980px) { .final-grid { grid-template-columns: 1fr; } }\n  .final-main { background: var(--paper); border-radius: var(--radius-lg); padding: 28px; box-shadow: var(--shadow-md); }\n  .final-main h3 { font-size: 14px; color: var(--green); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; margin-bottom: 16px; }\n  .breakdown-line { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--line); gap: 12px; }\n  .breakdown-line:last-child { border-bottom: none; }\n  .breakdown-line .desc { font-size: 14px; color: var(--navy); font-weight: 500; }\n  .breakdown-line .desc small { display: block; font-size: 12px; color: var(--slate); font-weight: 400; margin-top: 2px; }\n  .breakdown-line .val { font-weight: 700; color: var(--navy); white-space: nowrap; }\n  .breakdown-line.discount .val { color: var(--green); }\n  .breakdown-line.minimum { background: var(--gold-pale); margin: 4px -12px; padding: 10px 12px; border-radius: 6px; border: none; }\n  .breakdown-line.minimum .desc { color: #5a4a1f; }\n  .breakdown-line.minimum .val { color: var(--gold); }\n  .breakdown-section { margin-bottom: 18px; padding-bottom: 12px; border-bottom: 2px solid var(--line); }\n  .breakdown-section h4 { font-size: 12px; color: var(--slate); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; margin-bottom: 6px; }\n  .breakdown-section:last-child { border-bottom: none; }\n\n  .color-pill { display: inline-flex; align-items: center; gap: 8px; background: var(--cream); padding: 4px 10px; border-radius: 100px; font-size: 12px; font-weight: 600; color: var(--navy); margin-top: 4px; }\n  .color-pill .dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.15); background-size: cover; background-position: center; }\n  .color-pill.hoa { background: var(--gold-pale); color: #5a4a1f; }\n  .color-pill.hoa .dot { background: var(--gold); border-color: #8e6e26; }\n\n  .grand-total { margin-top: 12px; padding: 18px 20px; background: var(--navy); border-radius: var(--radius); color: white; display: flex; justify-content: space-between; align-items: center; }\n  .grand-total .label { font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; opacity: 0.85; max-width: 50%; }\n  .grand-total .amount { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; display: block; }\n  .grand-total .grand-total-amount-block { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }\n  .grand-total .grand-total-savings {\n    display: block; font-size: 12px; color: var(--gold);\n    font-weight: 600; margin-top: 4px; letter-spacing: 0;\n    text-transform: none;\n  }\n  /* Math walk-through \u2014 explicit calculation lines above Grand Total */\n  .math-walk {\n    margin-top: 14px; padding: 14px 18px;\n    background: var(--cream); border: 1px solid var(--line);\n    border-radius: 10px;\n  }\n  .math-walk h4 {\n    font-size: 11px; color: var(--slate);\n    text-transform: uppercase; letter-spacing: 0.08em;\n    font-weight: 700; margin-bottom: 10px;\n  }\n  .math-walk-row {\n    display: flex; justify-content: space-between;\n    padding: 5px 0; font-size: 13px; color: var(--navy);\n  }\n  .math-walk-row.math-walk-subtotal {\n    border-top: 1px solid var(--line); margin-top: 4px; padding-top: 8px;\n    font-weight: 700;\n  }\n  .math-walk-row.math-walk-discount {\n    color: var(--green); font-weight: 600;\n  }\n  .math-walk-row.math-walk-total-savings {\n    border-top: 1px dashed var(--line); margin-top: 4px; padding-top: 8px;\n    color: var(--green); font-weight: 800; font-size: 14px;\n  }\n  /* Collapse-project button on the active breakdown header */\n  .breakdown-header-row {\n    display: flex; justify-content: space-between; align-items: center;\n    gap: 12px; margin-bottom: 16px;\n  }\n  .breakdown-header-row h3 {\n    flex: 1; min-width: 0;\n  }\n  .btn-collapse-project {\n    background: transparent; color: var(--slate);\n    border: 1px solid var(--line); border-radius: 7px;\n    padding: 6px 12px; font-size: 12px; font-weight: 600;\n    cursor: pointer; transition: all 0.15s;\n    white-space: nowrap; flex-shrink: 0;\n  }\n  .btn-collapse-project:hover {\n    border-color: var(--navy); color: var(--navy);\n    background: var(--cream);\n  }\n\n  /* Project Total \u2014 sits in the middle of the breakdown; less prominent than the bottom Grand Total */\n  .project-total {\n    margin-top: 12px; padding: 14px 18px;\n    background: var(--cream); border: 1.5px solid var(--navy);\n    border-radius: 10px; color: var(--navy);\n    display: flex; justify-content: space-between; align-items: center;\n  }\n  .project-total .label {\n    font-size: 12px; text-transform: uppercase;\n    letter-spacing: 0.1em; font-weight: 700; color: var(--slate);\n  }\n  .project-total .amount {\n    font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: var(--navy);\n  }\n  /* DIY per-project breakdown (when multiple projects in the quote) */\n  .diy-project-list {\n    background: var(--cream); border-radius: 8px;\n    padding: 10px 14px; margin-bottom: 12px;\n    border: 1px dashed var(--line);\n  }\n  .diy-project-item {\n    display: flex; justify-content: space-between;\n    padding: 5px 0; font-size: 12px; color: var(--slate);\n    border-bottom: 1px dashed rgba(0,0,0,0.06);\n  }\n  .diy-project-item:last-child { border-bottom: none; }\n\n  .final-side { background: var(--paper); border-radius: var(--radius-lg); padding: 22px; box-shadow: var(--shadow-md); position: sticky; top: 90px; }\n  .final-side h3 { font-size: 14px; color: var(--navy); margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }\n  .side-section { margin-bottom: 18px; }\n  .side-section h4 { font-size: 11px; color: var(--slate); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; font-weight: 700; }\n  .mini-tier-row { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; transition: all 0.15s; font-size: 13px; }\n  .mini-tier-row:hover { border-color: var(--green-light); }\n  .mini-tier-row.active { border-color: var(--green); background: var(--green-pale); font-weight: 700; }\n  .mini-tier-row .label { font-weight: 600; color: var(--navy); }\n  .mini-tier-row .price { color: var(--green); font-weight: 700; }\n\n  .mini-toggle { display: flex; align-items: center; gap: 8px; padding: 6px 10px; cursor: pointer; border-radius: 6px; transition: background 0.12s; font-size: 13px; }\n  .mini-toggle:hover { background: var(--line-soft); }\n  .mini-toggle.checked { background: var(--green-pale); color: var(--green); }\n  .mini-toggle .check { width: 16px; height: 16px; border: 1.5px solid var(--line); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; }\n  .mini-toggle.checked .check { background: var(--green); border-color: var(--green); }\n  .mini-toggle.checked .check::after { content: \"\u2713\"; }\n  .mini-toggle .name { flex: 1; }\n  .mini-toggle .price { color: var(--green); font-weight: 600; font-size: 12px; }\n  .mini-toggle .mini-qty-input {\n    width: 48px; padding: 3px 6px; font-size: 12px;\n    border: 1px solid var(--line); border-radius: 4px;\n    text-align: center; margin-right: 6px;\n    background: white;\n  }\n  .mini-toggle .mini-qty-input:focus { outline: none; border-color: var(--green); }\n\n  .payment-pill { display: inline-flex; align-items: center; gap: 6px; background: var(--gold-pale); color: #5a4a1f; padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: 700; margin-left: 8px; }\n\n  .action-bar { margin-top: 28px; padding: 24px; background: var(--paper); border-radius: var(--radius-lg); display: flex; gap: 12px; box-shadow: var(--shadow-md); flex-wrap: wrap; justify-content: space-between; align-items: center; }\n  .action-bar .left { display: flex; gap: 8px; flex-wrap: wrap; }\n  .action-bar .right { display: flex; gap: 10px; flex-wrap: wrap; }\n\n  .success-screen { text-align: center; padding: 48px 24px; background: var(--paper); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }\n  .success-icon { width: 72px; height: 72px; background: var(--green); border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 20px; animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }\n  @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }\n\n  .editing-banner { background: var(--gold-pale); border-left: 4px solid var(--gold); padding: 10px 16px; border-radius: 8px; font-size: 13px; color: #5a4a1f; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }\n  .editing-banner strong { color: var(--navy); }\n  .editing-banner button { font-size: 12px; padding: 4px 10px; border-radius: 6px; background: var(--navy); color: white; font-weight: 600; }\n  /* Cancel-add button inside the \"Adding another project\" banner */\n  .btn-cancel-add {\n    margin-left: auto; padding: 8px 14px;\n    background: var(--paper); color: var(--navy);\n    border: 1.5px solid var(--navy); border-radius: 8px;\n    font-size: 12px; font-weight: 700; cursor: pointer;\n    transition: all 0.15s; white-space: nowrap;\n  }\n  .btn-cancel-add:hover { background: var(--navy); color: white; }\n\n  @media print { .app-header, .progress, .stage-nav, .action-bar, .final-side, .side-tracker, .side-tracker-tab, .info-modal { display: none !important; } }\n\n  /* DASHBOARD */\n  .dashboard-actions {\n    display: flex; gap: 12px; flex-wrap: wrap;\n    margin-bottom: 24px; padding-bottom: 24px;\n    border-bottom: 1px solid var(--line);\n  }\n  .draft-card {\n    display: flex; align-items: center; gap: 16px;\n    padding: 18px 22px; background: var(--paper);\n    border: 1.5px solid var(--line); border-radius: 12px;\n    margin-bottom: 12px; transition: all 0.15s;\n  }\n  .draft-card:hover { border-color: var(--green-light); transform: translateY(-1px); box-shadow: var(--shadow-md); }\n  .draft-card-main { flex: 1; }\n  .draft-customer { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }\n  .draft-meta {\n    display: flex; gap: 6px; flex-wrap: wrap; align-items: center;\n    font-size: 12px; color: var(--slate);\n  }\n  .quote-id-mono { font-family: ui-monospace, monospace; color: var(--navy); font-weight: 600; }\n  .draft-running-total {\n    color: var(--green); font-weight: 700; font-size: 14px; margin-top: 6px;\n  }\n  .draft-card-actions { display: flex; gap: 8px; align-items: center; }\n  .btn-ghost-danger {\n    background: transparent; color: var(--coral);\n    border: 1px solid var(--coral); padding: 10px 12px;\n    border-radius: 8px; font-size: 14px; cursor: pointer;\n    transition: all 0.12s;\n  }\n  .btn-ghost-danger:hover { background: var(--coral-pale); }\n  .empty-drafts {\n    text-align: center; padding: 48px 24px;\n    background: var(--paper); border-radius: 12px;\n    border: 1px dashed var(--line); margin-top: 16px;\n  }\n  .empty-drafts .empty-icon { font-size: 48px; opacity: 0.5; margin-bottom: 12px; }\n  .empty-drafts h3 { color: var(--navy); margin-bottom: 6px; }\n  .empty-drafts p { color: var(--slate); font-size: 14px; max-width: 400px; margin: 0 auto; }\n\n  /* UI POLISH \u2014 iPad portrait breakpoint (768\u20131024px) */\n  @media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {\n    .stage-wrap { padding: 24px 18px 80px; }\n    .card-grid.cols-3 { grid-template-columns: 1fr 1fr; }\n    .final-grid { grid-template-columns: 1fr; }\n    .final-side { position: relative; top: 0; }\n    .app-header { padding: 12px 18px; }\n    .progress { padding: 12px 18px; }\n    .progress-step { min-width: 80px; font-size: 10px; }\n    /* Bigger touch targets on tablet */\n    .btn { padding: 16px 28px; font-size: 16px; min-height: 52px; }\n    .toggle-row { padding: 16px 16px; min-height: 56px; }\n    .radio-row { padding: 14px 16px; }\n    .selectable-card .card-body { padding: 20px 22px 24px; }\n    .progress-step { padding: 10px 12px; min-height: 44px; }\n    .wood-age-btn { padding: 18px 18px; min-height: 64px; }\n  }\n  /* Phone-specific tweaks (below 760px) \u2014 sticky stage-nav is global now so\n     no duplicate position rule needed here. */\n  @media (max-width: 760px) {\n    .stage-wrap { padding-bottom: 24px; }\n    /* Bigger touch targets across the board */\n    .btn { padding: 14px 22px; font-size: 15px; min-height: 50px; }\n    .toggle-row { padding: 14px 14px; min-height: 56px; }\n    .radio-row { padding: 14px 14px; min-height: 64px; }\n    .selectable-card .card-body { padding: 16px 18px; }\n    .wood-age-btn { padding: 16px; min-height: 60px; }\n    /* Side-tracker becomes a bottom sheet on phones \u2014 much better thumb reach */\n    .side-tracker {\n      top: auto !important;\n      bottom: 0;\n      left: 0; right: 0;\n      width: 100%; max-width: 100%;\n      height: 85vh;\n      border-radius: 16px 16px 0 0;\n      transform: translateY(100%);\n    }\n    .side-tracker.open { transform: translateY(0); }\n    .side-tracker-tab {\n      writing-mode: horizontal-tb; text-orientation: mixed;\n      top: auto !important;\n      bottom: 16px;\n      right: 16px;\n      padding: 10px 16px;\n      border-radius: 100px;\n      transform: none !important;\n    }\n    .side-tracker-tab .count { margin-top: 0; margin-left: 6px; }\n    /* Progress bar \u2014 scroll horizontally, smaller text */\n    .progress { padding: 10px 12px; gap: 4px; }\n    .progress-step { min-width: 72px; font-size: 10px; padding: 8px 8px; min-height: 44px; }\n    .progress-step .step-num { font-size: 8px; }\n    /* Header \u2014 compact on phone */\n    .app-header { padding: 10px 14px; gap: 8px; }\n    .app-header .brand-mark .sub { display: none; }\n    .total-pill { min-width: 90px; padding: 6px 12px; }\n    .total-pill .amt { font-size: 15px; }\n    /* Quote-id tag \u2014 hide on tiny screens to keep header tight */\n    .quote-id-tag { display: none; }\n    /* Stage header text scales down */\n    .stage h1 { font-size: 22px; }\n    .stage .lead { font-size: 14px; margin-bottom: 20px; }\n  }\n\n  /* ============ SIDE TRACKER PANEL ============ */\n  /* The old floating side-tracker tab is hidden entirely \u2014 it depended on\n     position:fixed reliably anchoring to the visible viewport, which isn't\n     possible in a content-sized iframe. The sidebar now opens from the\n     header button instead, which lives at the top of the iframe and is\n     always reachable via the auto-scroll-to-top behavior. */\n  .side-tracker-tab { display: none !important; }\n\n  /* Header-mounted \"Your Quote\" button \u2014 sits in the sticky-ish header area\n     so it's reachable whenever the user is anywhere near the top of the\n     calculator. Clicking it scrolls the page back to the calculator top and\n     opens the sidebar in one motion. */\n  .header-tracker-btn {\n    display: inline-flex; align-items: center; gap: 6px;\n    padding: 7px 14px; background: var(--green); color: white;\n    border-radius: 100px; font-weight: 700; font-size: 13px;\n    letter-spacing: 0.02em; cursor: pointer; border: none;\n    transition: background 0.15s, transform 0.1s;\n    white-space: nowrap;\n  }\n  .header-tracker-btn:hover { background: var(--green-light); }\n  .header-tracker-btn:active { transform: scale(0.97); }\n  .header-tracker-btn .header-tracker-count {\n    background: white; color: var(--green);\n    padding: 2px 8px; border-radius: 100px;\n    font-size: 11px; font-weight: 800; min-width: 22px; text-align: center;\n  }\n\n  .side-tracker {\n    position: fixed; right: 0; top: 0; bottom: 0;\n    width: 360px; max-width: 90vw;\n    background: var(--paper); box-shadow: -8px 0 24px rgba(0,0,0,0.12);\n    z-index: 95; transform: translateX(100%);\n    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n    display: flex; flex-direction: column;\n  }\n  .side-tracker.open { transform: translateX(0); }\n  .side-tracker-header {\n    padding: 16px 20px; border-bottom: 1px solid var(--line);\n    display: flex; align-items: center; justify-content: space-between;\n    background: var(--navy); color: white;\n  }\n  .side-tracker-header h3 { font-size: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin: 0; }\n  .side-tracker-header .close-btn {\n    background: rgba(255,255,255,0.15); color: white;\n    width: 30px; height: 30px; border-radius: 8px;\n    font-size: 18px; font-weight: 700;\n    display: flex; align-items: center; justify-content: center;\n    transition: background 0.15s;\n  }\n  .side-tracker-header .close-btn:hover { background: rgba(255,255,255,0.25); }\n  .side-tracker-body {\n    flex: 1 1 auto; min-height: 0; overflow-y: auto;\n    padding: 16px 20px;\n    /* Touch scrolling on iPad/iPhone */\n    touch-action: pan-y;\n    -webkit-overflow-scrolling: touch;\n    overscroll-behavior: contain;\n  }\n  .side-tracker-body .empty-state {\n    text-align: center; padding: 30px 10px; color: var(--slate);\n    font-size: 13px;\n  }\n  .tracker-section { margin-bottom: 18px; }\n  .tracker-section h4 {\n    font-size: 11px; color: var(--slate);\n    text-transform: uppercase; letter-spacing: 0.08em;\n    font-weight: 700; margin-bottom: 8px;\n    padding-bottom: 6px; border-bottom: 1px solid var(--line);\n  }\n  .tracker-row {\n    display: flex; align-items: center; gap: 10px;\n    padding: 8px 0; border-bottom: 1px dashed var(--line);\n    font-size: 13px;\n  }\n  .tracker-row:last-child { border-bottom: none; }\n  .tracker-row .tr-label { color: var(--slate); font-size: 11px; font-weight: 600; width: 70px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.04em; }\n  .tracker-row .tr-value { flex: 1; color: var(--navy); font-weight: 600; }\n  .tracker-row .tr-actions { display: flex; gap: 4px; }\n  .tracker-row .tr-actions button {\n    width: 26px; height: 26px; border-radius: 5px;\n    font-size: 12px; display: flex; align-items: center; justify-content: center;\n    transition: background 0.12s;\n  }\n  .tracker-row .tr-actions .edit { background: var(--line-soft); color: var(--navy); }\n  .tracker-row .tr-actions .edit:hover { background: var(--green-pale); color: var(--green); }\n  .tracker-row .tr-actions .clear { background: var(--line-soft); color: var(--coral); }\n  .tracker-row .tr-actions .clear:hover { background: var(--coral-pale); }\n  .side-tracker-footer {\n    padding: 16px 20px 20px;\n    border-top: 2px solid var(--green-pale);\n    background: var(--green-pale);\n    display: flex; align-items: center; gap: 14px;\n  }\n  .side-tracker-footer .tot-block {\n    flex: 1; display: flex; flex-direction: column;\n    align-items: flex-start; line-height: 1.1;\n  }\n  .side-tracker-footer .tot-label {\n    font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;\n    color: var(--slate); font-weight: 700;\n    align-self: flex-start;\n  }\n  .side-tracker-footer .tot-amt {\n    font-size: 24px; font-weight: 800; color: var(--green); letter-spacing: -0.5px;\n    margin-top: 4px;\n    align-self: center; /* price centered under the wider label per request */\n  }\n  .side-tracker-overlay {\n    position: fixed; inset: 0;\n    background: rgba(0,0,0,0.3);\n    z-index: 94; opacity: 0; pointer-events: none;\n    transition: opacity 0.25s;\n  }\n  .side-tracker-overlay.visible { opacity: 1; pointer-events: auto; }\n\n  /* ============ INFO BUTTON + MODAL ============ */\n  .info-btn {\n    display: inline-flex; align-items: center; justify-content: center;\n    width: 18px; height: 18px; border-radius: 50%;\n    background: var(--slate); color: white;\n    font-size: 11px; font-weight: 800; font-family: serif;\n    cursor: pointer; vertical-align: middle;\n    margin-left: 6px; user-select: none;\n    transition: all 0.15s;\n  }\n  .info-btn:hover, .info-btn:focus { background: var(--navy); transform: scale(1.1); outline: none; }\n  /* Modal backdrop \u2014 absolute (not fixed) so it can be JS-positioned at the\n     user's current Y in iframe-content coordinates. position:fixed inside a\n     content-sized iframe pins to the iframe element box, which is much taller\n     than the user's visible viewport, so the modal would render far below\n     where they're looking. */\n  .info-modal-backdrop {\n    position: absolute; left: 0; right: 0;\n    width: 100%; min-height: 100vh;\n    background: rgba(26, 37, 64, 0.55);\n    z-index: 200; display: none;\n    align-items: flex-start; justify-content: center;\n    padding: 48px 24px;\n  }\n  .info-modal-backdrop.open { display: flex; animation: fadeIn 0.2s; }\n  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }\n  .info-modal {\n    background: var(--paper); border-radius: 16px;\n    max-width: 540px; width: 100%;\n    max-height: 85vh; overflow-y: auto;\n    box-shadow: var(--shadow-lg);\n    animation: modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);\n  }\n  @keyframes modalPop { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }\n  .info-modal-header {\n    padding: 18px 22px; border-bottom: 1px solid var(--line);\n    display: flex; justify-content: space-between; align-items: center;\n  }\n  .info-modal-header h3 { margin: 0; font-size: 18px; color: var(--navy); }\n  .info-modal-header .close-x {\n    background: var(--line-soft); color: var(--slate);\n    width: 28px; height: 28px; border-radius: 6px;\n    font-size: 16px; font-weight: 700;\n    display: flex; align-items: center; justify-content: center;\n  }\n  .info-modal-header .close-x:hover { background: var(--coral-pale); color: var(--coral); }\n  .info-modal-body { padding: 20px 22px; font-size: 14px; line-height: 1.6; color: var(--navy); }\n  .info-modal-body p { margin-bottom: 12px; }\n  .info-modal-body strong { color: var(--green); }\n  .info-modal-body ul { margin: 8px 0 12px 20px; }\n  .info-modal-body li { margin-bottom: 6px; }\n  .info-modal-body .info-img {\n    width: 100%; max-height: 200px; object-fit: cover;\n    border-radius: 10px; margin-bottom: 14px;\n  }";
+  const HTML  = "<div class=\"app\">\n\n  <header class=\"app-header\">\n    <div class=\"brand-mark\">\n      <div class=\"logo\">SS</div>\n      <div>\n        <div class=\"name\">Superior Stain Solutions</div>\n        <div class=\"sub\">Quote Builder \u00b7 Internal</div>\n      </div>\n    </div>\n    <div class=\"header-right\">\n      <div class=\"quote-id-tag\">Quote <span class=\"quote-num\" id=\"quoteNum\">\u2014</span></div>\n      <div class=\"total-pill secondary\" id=\"activeProjectPill\" style=\"display:none\">\n        <div class=\"lbl\">This Project</div>\n        <div class=\"amt\" id=\"activeProjectAmount\">$0</div>\n      </div>\n      <div class=\"total-pill\" id=\"totalPill\">\n        <div class=\"lbl\">Quote Total</div>\n        <div class=\"amt\" id=\"totalAmount\">$0</div>\n      </div>\n      <button type=\"button\" id=\"headerSideTrackerBtn\" class=\"header-tracker-btn\" onclick=\"openSideTracker()\" style=\"display:none;\">\n        \ud83d\udccb Your Quote <span class=\"header-tracker-count\" id=\"headerSideTrackerCount\">0</span>\n      </button>\n    </div>\n  </header>\n\n  <!-- PROJECT BUBBLES \u2014 shows all projects in this quote, lets employee jump\n       between them. Numbers repeat-types (\"Fence #1\", \"Fence #2\") automatically. -->\n  <div class=\"project-bubbles\" id=\"projectBubbles\" style=\"display:none;\"></div>\n\n  <!-- PROGRESS \u2014 10 steps -->\n  <nav class=\"progress\" id=\"progress\">\n    <div class=\"progress-step active reachable\" data-stage=\"1\"><span class=\"step-num\">Step 1</span>Customer</div>\n    <div class=\"progress-step\" data-stage=\"2\"><span class=\"step-num\">Step 2</span>Project</div>\n    <div class=\"progress-step\" data-stage=\"3\"><span class=\"step-num\">Step 3</span>Measurements</div>\n    <div class=\"progress-step\" data-stage=\"4\"><span class=\"step-num\">Step 4</span>Condition</div>\n    <div class=\"progress-step\" data-stage=\"5\"><span class=\"step-num\">Step 5</span>Product</div>\n    <div class=\"progress-step\" data-stage=\"6\"><span class=\"step-num\">Step 6</span>Tier</div>\n    <div class=\"progress-step\" data-stage=\"7\"><span class=\"step-num\">Step 7</span>Color</div>\n    <div class=\"progress-step\" data-stage=\"8\"><span class=\"step-num\">Step 8</span>Add-ons</div>\n    <div class=\"progress-step\" data-stage=\"9\"><span class=\"step-num\">Step 9</span>Discounts</div>\n    <div class=\"progress-step\" data-stage=\"10\"><span class=\"step-num\">Step 10</span>Review</div>\n  </nav>\n\n  <main class=\"stage-wrap\">\n\n    <!-- DASHBOARD \u2014 shown first when calculator loads (employee-only). Lists in-progress drafts. -->\n    <section class=\"stage visible\" id=\"stage-dashboard\">\n      <div class=\"stage-title\">Employee Dashboard</div>\n      <h1>Welcome back. Pick up where you left off?</h1>\n      <p class=\"lead\">Your in-progress quotes are auto-saved here. Resume one or start fresh.</p>\n\n      <div class=\"dashboard-actions\">\n        <button class=\"btn btn-primary\" onclick=\"startNewQuote()\">\uff0b Start New Quote</button>\n        <button class=\"btn btn-secondary\" onclick=\"clearAllDrafts()\" id=\"clearDraftsBtn\" style=\"display:none;\">\ud83d\uddd1 Clear All Drafts</button>\n      </div>\n\n      <div id=\"draftsList\"></div>\n    </section>\n\n\n    <!-- STAGE 1: CUSTOMER -->\n    <section class=\"stage\" id=\"stage-1\">\n      <div class=\"stage-title\">Step 1 of 10</div>\n      <h1>Let's start with the customer.</h1>\n      <p class=\"lead\">Confirm contact details. If a Jobber job number is open, paste it for reference (the final quote can be pushed to Jobber via Zapier).</p>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83d\udccb</span>\n        <div class=\"tip-body\">\n          <strong>What to expect</strong>\n          This builder walks through every detail of the project step by step \u2014 surface type, measurements, condition, product selection, color, add-ons, and discounts \u2014 so you can see exactly how the price is calculated. The final breakdown at the end is fully adjustable; you can change anything and watch the total update in real time before we send the quote.\n        </div>\n      </div>\n\n      <div class=\"form-grid\">\n        <div class=\"field\"><label>Customer Name</label><input type=\"text\" id=\"custName\" placeholder=\"Full name\" autocomplete=\"off\"><div class=\"err\">Required</div></div>\n        <div class=\"field\"><label>Phone Number</label><input type=\"tel\" id=\"custPhone\" placeholder=\"(864) 555-0123\" autocomplete=\"off\"><div class=\"err\">Required</div></div>\n        <div class=\"field\"><label>Email</label><input type=\"email\" id=\"custEmail\" placeholder=\"customer@email.com\" autocomplete=\"off\"><div class=\"err\">Valid email required</div></div>\n        <div class=\"field\"><label>Property Address</label><input type=\"text\" id=\"custAddress\" placeholder=\"123 Main St, City, SC\" autocomplete=\"off\"><div class=\"err\">Required</div></div>\n        <div class=\"field\"><label>Jobber Job Number <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(optional)</span></label><input type=\"text\" id=\"jobberNum\" placeholder=\"Paste from Jobber if available\" autocomplete=\"off\"></div>\n        <div class=\"field\"><label>Quoting Employee</label><input type=\"text\" id=\"employeeName\" placeholder=\"Your name\" autocomplete=\"off\"><div class=\"err\">Required</div></div>\n      </div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-primary\" onclick=\"nextStage()\">Next: Project Type <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 2: PROJECT TYPE -->\n    <section class=\"stage\" id=\"stage-2\">\n      <div class=\"stage-title\">Step 2 of 10</div>\n      <h1>What are we staining?</h1>\n      <p class=\"lead\">Pick the surface type. Each project type has its own measurement and pricing logic \u2014 you can bundle multiple projects at the end for 10% off.</p>\n\n      <div id=\"editingBanner\" style=\"display:none\"></div>\n      <div id=\"addingAnotherBanner\" style=\"display:none;\" class=\"alert info\" role=\"status\">\n        <span class=\"ico\">\u2795</span>\n        <div>\n          <strong>Adding another project to this quote</strong>\n          Pick the surface type for the new project. Changed your mind? Use the button on the right to cancel and return to the review screen.\n        </div>\n        <button class=\"btn-cancel-add\" onclick=\"cancelAddProject()\" type=\"button\">Cancel &amp; return to review</button>\n      </div>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83d\udce6</span>\n        <div class=\"tip-body\">\n          <strong>Bundle savings <span class=\"info-btn\" role=\"button\" tabindex=\"0\" data-info=\"bundle_discount\" aria-label=\"More info\">i</span></strong>\n          If you have more than one wood surface that needs staining \u2014 fence + deck, pergola + ceiling, etc. \u2014 you can add multiple projects to a single quote and an automatic <strong>10% bundle discount</strong> applies to the total. Each project is priced individually first, then the bundle discount comes off everything except prep labor.\n        </div>\n      </div>\n\n      <div class=\"card-grid cols-3\" id=\"projectTypeCards\"></div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" id=\"stage2Next\" onclick=\"nextStage()\" disabled>Next: Measurements <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 3: MEASUREMENTS -->\n    <section class=\"stage\" id=\"stage-3\">\n      <div class=\"stage-title\">Step 3 of 10</div>\n      <h1 id=\"measureTitle\">Measurements</h1>\n      <p class=\"lead\">Enter measurements as accurately as possible \u2014 this drives the base price. Not sure of exact numbers? Tap the help link below for tips.</p>\n      <div id=\"measureTip\"></div>\n      <div id=\"measureContainer\"></div>\n\n      <div style=\"margin-top: 12px; text-align: center;\">\n        <button type=\"button\" class=\"btn-link\" onclick=\"openMeasureTutorial()\" style=\"background: none; border: none; color: var(--green); font-weight: 700; font-size: 14px; cursor: pointer; padding: 8px 14px; text-decoration: underline;\">\ud83e\udd14 Don't know the exact measurements? Tap here for tips.</button>\n      </div>\n\n      <!-- WOOD AGE \u2014 3-option selector. Drives the condition recommendation on Step 4\n           and disables incompatible options (e.g. No Wash on 2+ year wood). -->\n      <div class=\"wood-age-section\">\n        <h3 style=\"font-size:16px;color:var(--navy);margin-bottom:6px;margin-top:24px;\">How old is the wood?</h3>\n        <p style=\"font-size:13px;color:var(--slate);margin-bottom:14px;\">Wood that's been exposed to weather more than 6 months has typically picked up surface greying, mildew, or UV damage. This drives the prep recommendation \u2014 and at 2+ years, a restoration wash is required because no-prep staining will fail. <span class=\"info-btn\" role=\"button\" tabindex=\"0\" data-info=\"six_month_rule\" aria-label=\"Why does this matter?\">i</span></p>\n        <div class=\"wood-age-buttons\" id=\"woodAgeButtons\">\n          <button type=\"button\" class=\"wood-age-btn\" data-wood-age=\"new\">\n            <span class=\"wa-ico\">\ud83c\udf31</span>\n            <span class=\"wa-label\">Brand-new<br><small>Under 6 months</small></span>\n          </button>\n          <button type=\"button\" class=\"wood-age-btn\" data-wood-age=\"weathered\">\n            <span class=\"wa-ico\">\ud83c\udf24\ufe0f</span>\n            <span class=\"wa-label\">Weathered<br><small>6 months \u2013 2 years</small></span>\n          </button>\n          <button type=\"button\" class=\"wood-age-btn\" data-wood-age=\"aged\">\n            <span class=\"wa-ico\">\ud83c\udf42</span>\n            <span class=\"wa-label\">Aged<br><small>2+ years old</small></span>\n          </button>\n        </div>\n      </div>\n\n      <!-- WAS PREVIOUSLY STAINED \u2014 moved from Step 5 so it can inform the condition recommendation -->\n      <div class=\"prev-stain-section\">\n        <h3 style=\"font-size:16px;color:var(--navy);margin-bottom:6px;margin-top:24px;\">Has this wood been stained before?</h3>\n        <p style=\"font-size:13px;color:var(--slate);margin-bottom:14px;\">This helps us recommend the right prep for Step 4 and the most compatible product on Step 5.</p>\n        <div class=\"toggle-row\" data-toggle=\"wasStained\">\n          <span class=\"box\"></span>\n          <span class=\"name\">\ud83e\udeb5 Yes, this wood has had stain applied to it before <span class=\"info-btn\" role=\"button\" tabindex=\"0\" data-info=\"why_prev_stain\" style=\"margin-left:8px;\" aria-label=\"More info\">i</span></span>\n        </div>\n\n        <div class=\"info-panel previous\" id=\"prevStainPanel\" style=\"display:none;\">\n          <h3>\ud83e\uddd0 What was previously used?</h3>\n          <p class=\"panel-hint\">Knowing what was used before helps us pick the right stain to recoat with. Switching stain types (oil \u2194 water) requires a full strip, while staying with the same type usually only needs a soft wash.</p>\n          <div class=\"form-grid\">\n            <div class=\"field\">\n              <label>Type Previously Used</label>\n              <select id=\"prevProductType\">\n                <option value=\"\">\u2014 Select type \u2014</option>\n                <option value=\"water\">Water-Based</option>\n                <option value=\"oil\">Oil-Based</option>\n                <option value=\"unsure\">Unsure</option>\n              </select>\n            </div>\n            <div class=\"field\"><label>Condition of existing finish</label>\n              <select id=\"prevCondition\">\n                <option value=\"\">\u2014 Select \u2014</option>\n                <option value=\"intact\">Intact (faded but not peeling)</option>\n                <option value=\"peeling\">Peeling, flaking, or chipping</option>\n                <option value=\"unsure\">Unsure</option>\n              </select>\n            </div>\n            <div class=\"field\"><label>Brand <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(if known)</span></label><select id=\"prevBrand\"><option value=\"\">\u2014 Select brand \u2014</option></select></div>\n            <div class=\"field\"><label>Transparency <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(if known)</span></label><select id=\"prevTransparency\"><option value=\"\">\u2014 Select transparency \u2014</option></select></div>\n            <div class=\"field\"><label>Product Name <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(if known)</span></label><input type=\"text\" id=\"prevProductName\" placeholder=\"e.g. SuperDeck Semi-Trans\" autocomplete=\"off\"></div>\n            <div class=\"field\"><label>Color / Notes <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(optional)</span></label><input type=\"text\" id=\"prevColorNotes\" placeholder=\"e.g. Cedar tone, applied 2020\" autocomplete=\"off\"></div>\n          </div>\n        </div>\n      </div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" id=\"stage3Next\" onclick=\"nextStage()\">Next: Condition <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 4: CONDITION -->\n    <section class=\"stage\" id=\"stage-4\">\n      <div class=\"stage-title\">Step 4 of 10</div>\n      <h1>What's the current condition?</h1>\n      <p class=\"lead\">Prep is the biggest cost driver after measurement, and the condition tells us what kind of stain will work best on this wood.</p>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83d\udccb</span>\n        <div class=\"tip-body\">\n          <strong>Why prep matters</strong>\n          Improper prep is the #1 reason stain jobs fail early. Greyed wood has dead surface fibers and an unbalanced pH \u2014 without a wash and brightener, new stain can't bond properly. Previously stained wood needs the old finish stripped so the new product penetrates fresh wood. Spending an extra $300 on prep can be the difference between re-staining in 2 years vs. 5.\n        </div>\n      </div>\n\n      <div class=\"card-grid cols-3\" id=\"conditionCards\"></div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" id=\"stage4Next\" onclick=\"nextStage()\" disabled>Next: Product <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 5: PRODUCT + HOA + PREVIOUS STAIN -->\n    <section class=\"stage\" id=\"stage-5\">\n      <div class=\"stage-title\">Step 5 of 10</div>\n      <h1>Pick a product family.</h1>\n      <p class=\"lead\">Water vs. oil-based has a big impact on look, longevity, and compatibility with what's already on the wood. We'll recommend one based on the condition.</p>\n\n      <div class=\"reco-banner\" id=\"recoBanner\" style=\"display:none\">\n        <span class=\"reco-ico\">\u2b50</span>\n        <div class=\"reco-content\" id=\"recoBannerText\"></div>\n      </div>\n\n      <div class=\"product-choice-grid\" id=\"productChoiceCards\"><!-- rendered by renderProductCards() --></div>\n\n      <!-- \"wasStained\" block moved to Step 3 (Measurements) -->\n\n      <div class=\"info-panel highlighted\" id=\"hoaPanel\" style=\"display:none; margin-top:20px;\">\n        <h3>\ud83c\udfd8\ufe0f HOA-Required Color &amp; Product <span class=\"info-btn\" role=\"button\" tabindex=\"0\" data-info=\"hoa_explained\" aria-label=\"More info\">i</span></h3>\n        <p class=\"panel-hint\">Capture every detail of what the HOA requires so there's no dispute later. Your standard color picker will be skipped \u2014 we'll use exactly what they specify.</p>\n        <div class=\"form-grid\">\n          <div class=\"field\"><label>Brand</label><select id=\"hoaBrand\"><option value=\"\">\u2014 Select brand \u2014</option></select></div>\n          <div class=\"field\"><label>Transparency / Product Type</label><select id=\"hoaTransparency\"><option value=\"\">\u2014 Select transparency \u2014</option></select></div>\n          <div class=\"field\"><label>Specific Product Name</label><input type=\"text\" id=\"hoaProductName\" placeholder=\"e.g. SuperDeck Solid SD7-150\" autocomplete=\"off\"></div>\n          <div class=\"field\"><label>Required Color / Code</label><input type=\"text\" id=\"hoaColor\" placeholder=\"e.g. SW 3001 Shagbark\" autocomplete=\"off\"></div>\n        </div>\n        <div class=\"field\"><label>HOA Documentation Reference <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(optional)</span></label><textarea id=\"hoaNotes\" placeholder=\"HOA approval doc # or other reference info\"></textarea></div>\n      </div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" id=\"stage5Next\" onclick=\"nextStage()\" disabled>Next: Tier <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 6: TIER -->\n    <section class=\"stage\" id=\"stage-6\">\n      <div class=\"stage-title\">Step 6 of 10</div>\n      <h1>Pick the tier. <span class=\"info-btn\" role=\"button\" tabindex=\"0\" data-info=\"tier_help\" aria-label=\"More info\" style=\"vertical-align:middle;width:22px;height:22px;font-size:13px;\">i</span></h1>\n      <p class=\"lead\"><strong>Performance is what we recommend for almost every homeowner.</strong> Compare the three side-by-side and notice the cost-per-year \u2014 that's where the value of going up a tier really shows.</p>\n\n      <div class=\"alert info\" id=\"productLockIndicator\"><span class=\"ico\">\ud83d\udca1</span><div id=\"productLockText\"></div></div>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83d\udcca</span>\n        <div class=\"tip-body\">\n          <strong>Reading the cost-per-year number</strong>\n          Each tier card shows a \"cost-per-year amortized\" number \u2014 the total project price divided by the expected lifespan. This is often the most useful way to compare tiers: a higher tier costs more upfront but spreads across more years, so the cost per year is sometimes <em>lower</em> than going cheap and re-doing the work sooner.\n        </div>\n      </div>\n\n      <!-- Previously-stained context \u2014 only renders when prev stain info is set -->\n      <div id=\"prevStainContext\"></div>\n\n      <div class=\"card-grid cols-3\" id=\"tierCards\"></div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" id=\"stage6Next\" onclick=\"nextStage()\" disabled>Next: Color <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 7: COLOR -->\n    <section class=\"stage\" id=\"stage-7\">\n      <div class=\"stage-title\">Step 7 of 10</div>\n      <h1 id=\"colorTitle\">Pick a color.</h1>\n      <p class=\"lead\" id=\"colorLead\">Show the customer the swatches below. Final appearance varies based on wood species and grain.</p>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83c\udfa8</span>\n        <div class=\"tip-body\">\n          <strong>About these colors</strong>\n          The swatches below are real product samples from EXPERT's site (applied to Western Red Cedar). Final appearance varies with your specific wood species, grain pattern, and time of day. When the job is scheduled we'll do a sample patch in your chosen color directly on your wood so you can approve it in real light before we commit to the full job.\n        </div>\n      </div>\n\n      <div class=\"color-grid\" id=\"colorGrid\"></div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" id=\"stage7Next\" onclick=\"nextStage()\" disabled>Next: Add-ons <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 8: ADD-ONS -->\n    <section class=\"stage\" id=\"stage-8\">\n      <div class=\"stage-title\">Step 8 of 10</div>\n      <h1>Any upgrades or add-ons?</h1>\n      <p class=\"lead\">Walk through the relevant options. Anything checked here adds to the running total at the top of the screen \u2014 the customer sees it in real time.</p>\n\n      <div id=\"addonsContainer\"></div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" onclick=\"nextStage()\">Next: Discounts <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 9: DISCOUNTS (NEW) -->\n    <section class=\"stage\" id=\"stage-9\">\n      <div class=\"stage-title\">Step 9 of 10</div>\n      <h1>Discounts &amp; savings.</h1>\n      <p class=\"lead\">Pick any that apply \u2014 most stack. Discounts stack up to <strong>10% off the project</strong>, with the Bundle discount applied separately on top when there are 2+ projects.</p>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83d\udcb8</span>\n        <div class=\"tip-body\">\n          <strong>How discounts work</strong>\n          Project-level discounts stack up to <strong>10% combined</strong>. Some are mutually exclusive \u2014 you can pick veteran <em>or</em> teacher (not both), and referral <em>or</em> repeat customer (not both). Cash/check payments aren't a discount \u2014 they just skip our ~2.9% card-processing fee, which is reflected on the quote. The <strong>Bundle discount</strong> (10% when 2+ projects are on the quote) stacks separately on top of everything.\n        </div>\n      </div>\n\n      <div id=\"discountsContainer\"></div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" onclick=\"nextStage()\">Next: Review &amp; Quote <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 10: REVIEW -->\n    <section class=\"stage\" id=\"stage-10\">\n      <div class=\"stage-title\">Step 10 of 10</div>\n      <h1>Final breakdown.</h1>\n      <p class=\"lead\">Walk through this line-by-line with the customer. Adjust anything on the right and the price updates instantly. When they're ready, choose payment and generate the quote.</p>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83d\udcdd</span>\n        <div class=\"tip-body\">\n          <strong>Review your quote</strong>\n          The breakdown below shows every cost line item \u2014 measurements, tier base, prep work, add-ons, and any discount. The panel on the right lets you toggle anything on or off and the total updates instantly. When you're ready, choose a payment option and we'll email you the PDF quote.\n        </div>\n      </div>\n\n      <div id=\"bundleStackBlock\" style=\"display:none\"></div>\n\n      <div class=\"final-grid\">\n        <div>\n          <div class=\"final-main\" id=\"breakdownMain\"></div>\n          <div class=\"action-bar\">\n            <div class=\"left\">\n              <button class=\"btn btn-secondary\" onclick=\"addAnotherProject()\">\uff0b Add Another Project (Bundle 10%)</button>\n            </div>\n            <div class=\"right\">\n              <button class=\"btn btn-ghost\" onclick=\"generatePDF()\">\ud83d\udcc4 Preview PDF</button>\n              <button class=\"btn btn-primary\" onclick=\"finalizeQuote()\">\u2713 Generate &amp; Send Quote</button>\n            </div>\n          </div>\n          <div class=\"alert success\" style=\"margin-top:16px\">\n            <span class=\"ico\">\ud83d\udce6</span>\n            <div><strong>Bundle multiple projects?</strong>Click \"Add Another Project\" to start a second project \u2014 bundling 2+ projects automatically applies 10% off (best discount wins, no stacking).</div>\n          </div>\n        </div>\n        <aside class=\"final-side\" id=\"editPanel\"></aside>\n      </div>\n    </section>\n\n    <section class=\"stage\" id=\"stage-success\">\n      <div class=\"success-screen\">\n        <div class=\"success-icon\">\u2713</div>\n        <h1>Quote sent.</h1>\n        <p class=\"lead\" style=\"margin: 12px auto 28px;\">The customer's been emailed the breakdown PDF. The quote is saved in your Wix dashboard, and a webhook fired to Zapier \u2014 the Jobber estimate should appear within seconds.</p>\n        <div style=\"display:flex; gap:12px; justify-content:center; flex-wrap:wrap;\">\n          <button class=\"btn btn-primary\" onclick=\"resetQuote()\">Start New Quote</button>\n          <button class=\"btn btn-secondary\" onclick=\"generatePDF()\">\ud83d\udcc4 Re-download PDF</button>\n        </div>\n      </div>\n    </section>\n\n  </main>\n</div>\n\n<!-- SIDE TRACKER PANEL -->\n<div class=\"side-tracker-tab\" id=\"sideTrackerTab\" onclick=\"openSideTracker()\">\n  Your Quote <div class=\"count\" id=\"sideTrackerCount\">0</div>\n</div>\n<div class=\"side-tracker-overlay\" id=\"sideTrackerOverlay\" onclick=\"closeSideTracker()\"></div>\n<aside class=\"side-tracker\" id=\"sideTracker\" aria-label=\"Quote progress tracker\">\n  <div class=\"side-tracker-header\">\n    <h3>\ud83d\udccb Your Quote</h3>\n    <button class=\"close-btn\" onclick=\"closeSideTracker()\" aria-label=\"Close\">\u00d7</button>\n  </div>\n  <!-- Quote-level notes \u2014 placed above the items list so they're always\n       visible the moment the sidebar opens, no scrolling required. -->\n  <div class=\"side-tracker-notes\">\n    <label for=\"quoteNotesField\">\n      \ud83d\udcdd Quote notes <small>(visible on Review \u00b7 sent to Jobber)</small>\n    </label>\n    <textarea id=\"quoteNotesField\" placeholder=\"Anything to remember for this job? Pets in the yard, gate code, customer prefers afternoon visits, neighbor concerns, off-list color request, etc.\"></textarea>\n  </div>\n\n  <div class=\"side-tracker-body\" id=\"sideTrackerBody\"></div>\n\n  <div class=\"side-tracker-footer\">\n    <button class=\"btn-save-exit\" onclick=\"saveAndReturnToDashboard()\" title=\"Save this draft and return to the dashboard\">\ud83d\udcbe Save &amp; Exit</button>\n    <div class=\"tot-block\">\n      <span class=\"tot-label\">Running Total</span>\n      <span class=\"tot-amt\" id=\"sideTrackerTotal\">$0</span>\n    </div>\n  </div>\n</aside>\n\n<!-- INFO MODAL -->\n<div class=\"info-modal-backdrop\" id=\"infoModalBackdrop\" onclick=\"if(event.target===this)closeInfoModal()\">\n  <div class=\"info-modal\">\n    <div class=\"info-modal-header\">\n      <h3 id=\"infoModalTitle\">Info</h3>\n      <button class=\"close-x\" onclick=\"closeInfoModal()\" aria-label=\"Close\">\u00d7</button>\n    </div>\n    <div class=\"info-modal-body\" id=\"infoModalBody\"></div>\n  </div>\n</div>\n\n<!-- MEASUREMENT TUTORIAL MODAL \u2014 opens from Step 3 \"Don't know exact measurements?\" link -->\n<div class=\"info-modal-backdrop\" id=\"measureTutorialBackdrop\" onclick=\"if(event.target===this)closeMeasureTutorial()\" style=\"display:none;\">\n  <div class=\"info-modal\" style=\"max-width: 640px;\">\n    <div class=\"info-modal-header\">\n      <h3 id=\"measureTutorialTitle\">How to estimate measurements</h3>\n      <button class=\"close-x\" onclick=\"closeMeasureTutorial()\" aria-label=\"Close\">\u00d7</button>\n    </div>\n    <div class=\"info-modal-body\" id=\"measureTutorialBody\"></div>\n    <div style=\"padding: 12px 24px 20px; text-align: right; border-top: 1px solid var(--line);\">\n      <button class=\"btn btn-primary\" onclick=\"closeMeasureTutorial()\" style=\"padding: 10px 20px; font-size: 14px;\">Got it</button>\n    </div>\n  </div>\n</div>";
+
+  function initCalculator(__doc, __host) {
+
+/* ============================================================
+   PRICING TABLES
+   ============================================================ */
+const PRICING = {
+  fence: { tiers: { essential: 9.20, performance: 11.20, showcase: 15.00 }, styleMultipliers: { privacy: 1.0, charleston: 1.0, shadowbox: 1.25, bob: 1.25, charleston_bob: 1.25, farm: 0.85 }, oneSidedFactor: 0.65, prep: { no_wash: 0, soft_wash: 3.00, strip_sand: 5.00 }, unit: 'ln ft' },
+  deck:  { tiers: { essential: 0.80, performance: 1.0, showcase: 1.30 }, rates: { flat: 4.00, railing: 6.00, stair: 25.00, lattice: 3.00 }, underneathMultiplier: 2, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
+  pergola: { tiers: { essential: 4.40, performance: 5.50, showcase: 7.15 }, overheadAccessFlat: 200, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
+  barn:    { tiers: { essential: 2.60, performance: 3.25, showcase: 4.23 }, heightPremium: 1.30, liftRentalPerDay: 400, trimRate: 1.50, cupolaFlat: 200, prep: { no_wash: 0, soft_wash: 0.85, strip_sand: 2.10 }, unit: 'sq ft' },
+  ceiling: { tiers: { essential: 2.60, performance: 3.25, showcase: 4.23 }, tngPremium: 0.50, beamRate: 8.00, fixtureRemoval: 50, fanRemoval: 100, furnitureProtFlat: 100, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
+  stainUpgrades: [
+    { id: 'citronella',  name: 'EXPERT Natural Defense additive', restr: 'Oil only', product: 'oil',
+      priceType: 'per_unit', rate: 1.50, minCharge: 70,
+      img: 'https://stainandsealsupply.com/cdn/shop/files/stain-and-seal-supply-expert-natural-defense-1_1024x.jpg?v=1752858115',
+      desc: 'Blend of citronella, cedarwood, cinnamon, geraniol, and lemongrass essential oils. Mixed at the can. Deters carpenter bees, wasps, termites, and 12+ outdoor pests without harming the wood finish. $1.50/ln ft with a $70 minimum.' },
+    { id: 'two_tone',    name: 'Two-tone application (boards vs. rails)', priceType: 'percent', rate: 0.40,
+      img: 'https://static.wixstatic.com/media/6616da_591f17ae70b64c7995bb55ada0093914~mv2.png',
+      desc: 'Different stain color on rails/posts vs. boards. Adds significant labor — masking, separate cure times, and two full application passes. +40% of base price.' },
+    { id: 'custom_color',name: 'Custom color match (you provide a sample or code)', priceType: 'flat', rate: 0,
+      desc: 'Bring a paint chip, a photo, or a Sherwin-Williams color code. For water-based stains we use the SW color-match tool directly — no extra step. For oil-based custom colors we work with the nearest EXPERT swatch.' }
+  ],
+  // "Service add-ons" are now a curated list of complimentary services
+  // that are checkmarked-by-default and always free — they're a feel-good
+  // confirmation of what's included rather than billable line items.
+  serviceAddons: [
+    { id: 'color_consult',  name: 'Free color consultation when job is scheduled', priceType: 'flat', rate: 0, desc: 'In-person color review on-site — we bring real samples to compare against your existing exterior, trim, and roof.', defaultOn: true },
+    { id: 'plant_protect',  name: 'Plant & landscape protection', priceType: 'flat', rate: 0, desc: 'Tarping, plastic sheeting, and gentle watering before and after application — we treat the yard like our own.', defaultOn: true },
+    { id: 'jobsite_cleanup',name: 'Full job-site cleanup', priceType: 'flat', rate: 0, desc: 'All masking, drop cloths, leftover pails, and trim removed. Driveway and walkways swept. We leave it cleaner than we found it.', defaultOn: true },
+    { id: 'sample_match',   name: 'In-person stain sample on real wood', priceType: 'flat', rate: 0, desc: "We bring a physical wood sample stained in your chosen color and stand it next to your actual fence or deck so you can see how it looks in real light — your wood, your sun, your eyes — before we commit to the full job.", defaultOn: true },
+    { id: 'touch_up_90',    name: '90-day touch-up visit (Performance + Showcase tiers)', priceType: 'flat', rate: 0, desc: 'If you spot any miss or thin spot in the first 90 days, we come back and touch it up at no charge. Included free on Performance and Showcase tiers.', defaultOn: true },
+    { id: 'weather_resched', name: 'Free weather rescheduling', priceType: 'flat', rate: 0, desc: 'Stain needs dry weather to bond properly. If rain rolls in we reschedule at no charge — never an upcharge for the weather.', defaultOn: true }
+  ],
+  projectAddons: {
+    fence: [
+      { id: 'wood_caps', name: 'Decorative wood post caps', priceType: 'each', rate: 15, qtyLabel: 'caps' },
+      { id: 'copper_caps', name: 'Copper post caps', priceType: 'each', rate: 45, qtyLabel: 'caps' },
+      { id: 'finial_caps', name: 'Decorative finial caps', priceType: 'each', rate: 35, qtyLabel: 'caps' },
+      { id: 'lattice_top', name: 'Lattice top accent staining', priceType: 'per_unit', rate: 4.00 },
+      { id: 'board_replace', name: 'Damaged board replacement', priceType: 'each', rate: 25, qtyLabel: 'boards' },
+      { id: 'picket_replace', name: 'Picket replacement', priceType: 'each', rate: 25, qtyLabel: 'pickets' },
+      { id: 'nail_resecure', name: 'Loose nail / staple re-secure', priceType: 'flat', rate: 50 },
+      { id: 'gate_adjust', name: 'Sagging gate adjust / re-hang', priceType: 'each', rate: 75, qtyLabel: 'gates' },
+      { id: 'mailbox_match', name: 'Mailbox / trash enclosure match', priceType: 'flat', rate: 150 }
+    ],
+    deck: [
+      { id: 'deck_board_replace', name: 'Damaged deck board replacement', priceType: 'each', rate: 50, qtyLabel: 'boards' },
+      { id: 'loose_rescrew', name: 'Loose board re-screw', priceType: 'flat', rate: 50 },
+      { id: 'rail_caps', name: 'Railing post cap upgrade', priceType: 'each', rate: 25, qtyLabel: 'caps' },
+      { id: 'antislip', name: 'Stair anti-slip strips', priceType: 'flat', rate: 100 },
+      { id: 'bench_planter', name: 'Built-in bench / planter staining', priceType: 'each', rate: 200, qtyLabel: 'pieces' },
+      { id: 'wood_patch', name: 'Wood patching / filler repair', priceType: 'each', rate: 40, qtyLabel: 'boards' }
+    ],
+    pergola: [
+      { id: 'post_caps_pergola', name: 'Decorative post caps', priceType: 'each', rate: 30, qtyLabel: 'posts' },
+      { id: 'trim_accent', name: 'Trim / decorative accent staining', priceType: 'per_unit', rate: 2.00 },
+      { id: 'beam_two_tone', name: 'Beam two-tone (different stain)', priceType: 'each_lnft', rate: 8.00, qtyLabel: 'beam ln ft' },
+      { id: 'damaged_board', name: 'Damaged board replacement', priceType: 'each', rate: 25, qtyLabel: 'boards' },
+      { id: 'loose_hw', name: 'Loose hardware re-secure', priceType: 'flat', rate: 50 },
+      { id: 'wood_patch', name: 'Wood patching / filler repair', priceType: 'each', rate: 40, qtyLabel: 'boards' }
+    ],
+    barn: [
+      { id: 'trim_fascia', name: 'Trim / fascia staining', priceType: 'per_unit_trim', rate: 1.50 },
+      { id: 'door_stain', name: 'Door staining', priceType: 'each', rate: 200, qtyLabel: 'doors' },
+      { id: 'window_trim', name: 'Window trim staining', priceType: 'each', rate: 75, qtyLabel: 'windows' },
+      { id: 'cupola', name: 'Cupola staining', priceType: 'flat', rate: 200 },
+      { id: 'siding_patch', name: 'Damaged siding patch / replacement', priceType: 'each', rate: 25, qtyLabel: 'boards' },
+      { id: 'wood_patch', name: 'Wood patching / filler repair', priceType: 'each', rate: 40, qtyLabel: 'boards' },
+      { id: 'two_tone_trim', name: 'Two-tone trim accent', priceType: 'per_unit_trim', rate: 2.00 }
+    ],
+    ceiling: [
+      { id: 'beam_two_tone', name: 'Beam two-tone (different stain)', priceType: 'each_lnft', rate: 8.00, qtyLabel: 'beam ln ft' },
+      { id: 'trim_match', name: 'Color match to existing trim', priceType: 'flat', rate: 75 },
+      { id: 'sealer_top', name: 'Clear sealer top coat', priceType: 'per_unit', rate: 0.50 },
+      { id: 'fixture_remove', name: 'Light fixture removal / reinstall', priceType: 'each', rate: 50, qtyLabel: 'fixtures' },
+      { id: 'fan_remove', name: 'Ceiling fan removal / reinstall', priceType: 'each', rate: 100, qtyLabel: 'fans' },
+      { id: 'wood_patch', name: 'Wood patching / filler repair', priceType: 'each', rate: 40, qtyLabel: 'planks' },
+      { id: 'plank_replace', name: 'Damaged plank replacement', priceType: 'each', rate: 30, qtyLabel: 'planks' }
+    ]
+  },
+  bundleDiscount: 0.10,
+  minimumJob: 400
+};
+
+/* ============================================================
+   DISCOUNT CATALOG (separated step)
+   ============================================================ */
+// Discount catalog. `group` enforces mutual-exclusion within a group
+// (only one option per group can be selected). The whole stack is capped at
+// DISCOUNT_STACK_CAP below to prevent margin erosion.
+const DISCOUNTS = [
+  { id: 'bundle',         label: 'Bundle (2+ Projects)',          sub: 'Auto-applied when 2+ projects are in this quote. Stacks with everything else below.', rate: 0.10, autoCheck: () => state.bundledProjects.length >= 1 && !!state.activeProject.type, locked: true,
+    img: 'https://images.unsplash.com/photo-1649270767492-9deecf622a06?w=400&q=80&auto=format&fit=crop' },
+  { id: 'vet_senior',     label: 'Veteran / Senior / First Responder', sub: 'For active military, veterans, 65+, police, fire, and EMS. Pick this OR the teacher discount — not both.', rate: 0.05, group: 'service_appreciation',
+    img: 'https://images.unsplash.com/photo-1562884328-39da45501a9c?w=400&q=80&auto=format&fit=crop' },
+  { id: 'teacher_edu',    label: 'Teacher / Education Personnel',  sub: 'For active K–12 teachers, professors, school staff, and education employees. Pick this OR veteran/senior — not both.', rate: 0.05, group: 'service_appreciation',
+    img: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&q=80&auto=format&fit=crop' },
+  { id: 'referral',       label: 'Referral',                      sub: 'You were referred by a previous client. Pick this OR repeat customer — not both.', rate: 0.05, group: 'loyalty',
+    img: 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=400&q=80&auto=format&fit=crop' },
+  { id: 'repeat',         label: 'Repeat Customer',               sub: "You've had a staining job with us in the last 5 years. Pick this OR referral — not both.", rate: 0.05, group: 'loyalty',
+    img: 'https://images.unsplash.com/photo-1555245654-a6ed32522cb0?w=400&q=80&auto=format&fit=crop' },
+  { id: 'cash',           label: 'Cash or Check Payment',         sub: "Paying by cash or check skips the ~2.9% card-processing fee that's otherwise baked into the price. Not a stackable discount — just transparent pricing.", rate: 0, informational: true,
+    img: 'https://images.unsplash.com/photo-1663265965162-df59e4797458?w=400&q=80&auto=format&fit=crop' },
+  { id: 'same_day',       label: 'Book Today',                    sub: 'Book a confirmed date within 24 hours of receiving this quote. Helps us plan crews and rewards quick decisions.', rate: 0.05,
+    img: 'https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=400&q=80&auto=format&fit=crop' }
+];
+
+// Maximum total discount that can be applied per project from the stack.
+// (Bundle 10% applies separately at the multi-project level.)
+const DISCOUNT_STACK_CAP = 0.10;
+
+/* ============================================================
+   STAIN BRANDS (for HOA + Previous Stain)
+   ============================================================ */
+const STAIN_BRANDS = [
+  'Sherwin-Williams', 'Behr', 'Cabot', 'Olympic', 'Benjamin Moore (Arborcoat)',
+  'EXPERT Stain & Seal', 'TWP (Total Wood Preservative)', 'Ready Seal',
+  'Defy', 'Penofin', "Thompson's WaterSeal", 'Wood Defender', 'PPG',
+  'Valspar', 'Minwax', 'Other / Unknown'
+];
+const STAIN_TRANSPARENCIES = [
+  'Clear / Sealer (no color)', 'Toner (very light tint)',
+  'Semi-Transparent', 'Semi-Solid', 'Solid (opaque)', 'Unsure'
+];
+
+/* ============================================================
+   COLOR LIBRARIES — REAL IMAGES FROM EXPERT'S WEBSITE
+   ============================================================ */
+const COLORS = {
+  // EXPERT Stain & Seal — Performance oil tier
+  // 18 colors (Whiskey not in catalog, Clear excluded as it's Essential tier)
+  expert_stain_seal: {
+    line: 'EXPERT Stain & Seal',
+    note: 'Available in Transparent and Semi-Solid formulations.',
+    colors: [
+      { name: 'Cedar',      img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-SS-CEDAR-SWATCH.jpg?fit=600' },
+      { name: 'Honey',      img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-SS-HONEY-SWATCH.jpg?fit=600' },
+      { name: 'Natural',    img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-SS-NATURAL-SWATCH.jpg?fit=600' },
+      { name: 'Redwood',    img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-SS-REDWOOD-SWATCH.jpg?fit=600' },
+      { name: 'Pecan',      img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/pecan.jpg?fit=600' },
+      { name: 'Chestnut',   img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/chestnut.jpg?fit=600' },
+      { name: 'Mahogany',   img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/mahogany.jpg?fit=600' },
+      { name: 'Sequoia',    img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/sequoia.jpg?fit=600' },
+      { name: 'Walnut',     img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/walnut.jpg?fit=600' },
+      { name: 'Palomino',   img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-SS-PALOMINO-SWATCH.jpg?fit=600' },
+      { name: 'Auburn',     img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-SS-AUBURN-SWATCH.jpg?fit=600' },
+      { name: 'Sable',      img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-SS-SABLE-SWATCH.jpg?fit=600' },
+      { name: 'Chocolate',  img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-SS-CHOCOLATE-SWATCH.jpg?fit=600' },
+      { name: 'Cape Cod',   img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-SS-CAPE-COD-SWATCH.jpg?fit=600' },
+      { name: 'Slate Gray', img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-SS-SLATE-SWATCH.jpg?fit=600' },
+      { name: 'Eucalyptus', img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-SS-EUCALYPTUS-SWATCH.jpg?fit=600' },
+      { name: 'Barnwood',   img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-SS-BARNWOOD-SWATCH.jpg?fit=600' },
+      { name: 'Black',      img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-SS-BLACK-SWATCH.jpg?fit=600' }
+    ]
+  },
+  // EXPERT Log & Timber Oil — Showcase oil tier (8 semi-transparent colors)
+  expert_log_timber: {
+    line: 'EXPERT Log & Timber Oil',
+    note: 'Semi-transparent oil — best for log siding, beams, and timber.',
+    colors: [
+      { name: 'Alpine Seal',   img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-LT-ALPINE-SEAL-SWATCH.jpg?fit=600' },
+      { name: 'Whitewash',     img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-LT-WHITE-WASH-SWATCH.jpg?fit=600' },
+      { name: 'Rustic Cedar',  img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-LT-RUSTIC-CEDAR-SWATCH.jpg?fit=600' },
+      { name: 'Sedona',        img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-LT-SEDONA-SWATCH.jpg?fit=600' },
+      { name: 'Bison Brown',   img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-LT-BISON-BROWN-SWATCH.jpg?fit=600' },
+      { name: 'Dark Oak',      img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-LT-DARK-OAK-SWATCH.jpg?fit=600' },
+      { name: 'Mountain Pine', img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-LT-MOUNTAIN-PINE-SWATCH.jpg?fit=600' },
+      { name: 'Charcoal',      img: 'https://i0.wp.com/expertwoodcare.com/wp-content/uploads/2025/02/2024-EXP-LT-CHARCOAL-SWATCH.jpg?fit=600' }
+    ]
+  },
+  // SW Woodscapes — full catalog grouped by color family, sorted light → dark within each
+  sw_superdeck_water: {
+    line: 'SW Woodscapes (Water-Based)',
+    note: 'Full SW Woodscapes Solid color line, organized by color family. Hex values are approximations — show the customer a physical sample for final approval.',
+    grouped: true,
+    groups: [
+      { label: 'Tan & Beige', colors: [
+        { name: 'Navajo White',       code: 'SW 3005', hex: '#d8c3a0' },
+        { name: 'Summerhouse Beige',  code: 'SW 3004', hex: '#c8a984' },
+        { name: 'Sand Castle',        code: 'SW 3006', hex: '#c2a47a' },
+        { name: 'Belvedere Tan',      code: 'SW 3002', hex: '#b89572' },
+        { name: 'Shagbark',           code: 'SW 3001', hex: '#a98a6c' },
+        { name: 'Almond Tree',        code: 'SW 3047', hex: '#a68c64' },
+        { name: 'Palomino',           code: 'SW 3046', hex: '#a48458' },
+        { name: 'Monterey Tan',       code: 'SW 3049', hex: '#9d8460' },
+        { name: 'Pine Cone',          code: 'SW 3046', hex: '#977956' },
+        { name: 'Cottonwood',         code: 'SW 3040', hex: '#8d7a5a' },
+        { name: 'Leather',            code: 'SW 3068', hex: '#8a6e4e' }
+      ]},
+      { label: 'Brown & Mahogany', colors: [
+        { name: 'Buckthorn',          code: 'SW 3003', hex: '#a07a52' },
+        { name: 'Pepperidge',         code: 'SW 3017', hex: '#8a6c50' },
+        { name: 'Fawn',               code: 'SW 3065', hex: '#866d4f' },
+        { name: 'Sahara',             code: 'SW 3076', hex: '#806848' },
+        { name: 'Desert Wood',        code: 'SW 3030', hex: '#7e5d3c' },
+        { name: 'Cedar',              code: 'SW 3034', hex: '#7a5538' },
+        { name: 'Spicewood',          code: 'SW 3021', hex: '#7a4f37' },
+        { name: 'Canyon',             code: 'SW 3062', hex: '#6e4530' },
+        { name: 'Cabin Brown',        code: 'SW 3031', hex: '#6a4830' },
+        { name: 'Russet Brown',       code: 'SW 3045', hex: '#664229' },
+        { name: 'Woodbriar',          code: 'SW 3035', hex: '#6e5238' },
+        { name: 'Shagbark Brown',     code: 'SW 3077', hex: '#5e4530' },
+        { name: 'Mission Brown',      code: 'SW 3072', hex: '#5a3f2a' },
+        { name: 'Lodge Brown',        code: 'SW 3007', hex: '#523a26' },
+        { name: 'Yosemite Gold',      code: 'SW 3048', hex: '#b08840' },
+        { name: 'Ember',              code: 'SW 3029', hex: '#7c4827' },
+        { name: 'Espresso',           code: 'SW 3064', hex: '#3a2a1c' }
+      ]},
+      { label: 'Red & Burgundy', colors: [
+        { name: 'Rock Rose',          code: 'SW 3016', hex: '#a06864' },
+        { name: 'Sequoia',            code: 'SW 3015', hex: '#9c5040' },
+        { name: 'Brick',              code: 'SW 3061', hex: '#9a4030' },
+        { name: 'Cape Cod Red',       code: 'SW 3020', hex: '#8a3a30' },
+        { name: 'Ranchero Red',       code: 'SW 3044', hex: '#8a3520' },
+        { name: 'Cheyenne Red',       code: 'SW 3043', hex: '#8a3a26' },
+        { name: 'Traditional Mahogany',code: 'SW 3080', hex: '#5e2d22' },
+        { name: 'Salem Red',          code: 'SW 3018', hex: '#5a2018' }
+      ]},
+      { label: 'Green & Olive', colors: [
+        { name: 'Lichen',             code: 'SW 3069', hex: '#8a8a6a' },
+        { name: 'Cypress Moss',       code: 'SW 3041', hex: '#7a7a5a' },
+        { name: 'Palmetto',           code: 'SW 3038', hex: '#6e7058' },
+        { name: 'Shade Tree',         code: 'SW 3037', hex: '#5e6248' },
+        { name: 'Orchard',            code: 'SW 3036', hex: '#525e44' },
+        { name: 'Greenbrier',         code: 'SW 3050', hex: '#4a583e' },
+        { name: 'Pineneedle',         code: 'SW 3009', hex: '#3e4e36' },
+        { name: 'Mallard Green',      code: 'SW 3070', hex: '#384a36' },
+        { name: 'Wave Crest',         code: 'SW 3082', hex: '#6a8472' },
+        { name: 'Blue Spruce',        code: 'SW 3008', hex: '#465a52' }
+      ]},
+      { label: 'Blue & Slate', colors: [
+        { name: 'Wet Clay',           code: 'SW 3083', hex: '#7e8088' },
+        { name: 'Chesapeake',         code: 'SW 3051', hex: '#5a6c72' },
+        { name: 'Acadia Blue',        code: 'SW 3011', hex: '#4a5e6a' },
+        { name: 'Juniper Blue',       code: 'SW 3014', hex: '#3e5560' },
+        { name: 'Shale',              code: 'SW 3078', hex: '#36505c' }
+      ]},
+      { label: 'Gray & Charcoal', colors: [
+        { name: 'River Rock',         code: 'SW 3075', hex: '#a8a098' },
+        { name: 'Stone',              code: 'SW 3079', hex: '#9e958a' },
+        { name: 'Antique Gray',       code: 'SW 3060', hex: '#9c958c' },
+        { name: 'Gray Birch',         code: 'SW 3013', hex: '#928a82' },
+        { name: 'Mushroom',           code: 'SW 3074', hex: '#8a8074' },
+        { name: 'Driftwood',          code: 'SW 3027', hex: '#867d70' },
+        { name: 'Misty Mauve',        code: 'SW 3073', hex: '#8a7a72' },
+        { name: 'Mercury',            code: 'SW 3071', hex: '#7c7670' },
+        { name: 'Smoke Tree',         code: 'SW 3019', hex: '#7a7268' },
+        { name: 'Caribou',            code: 'SW 3025', hex: '#6e6860' },
+        { name: 'Woodsmoke Gray',     code: 'SW 3010', hex: '#646058' },
+        { name: 'Flagstone',          code: 'SW 3023', hex: '#605a52' },
+        { name: 'Hudson Gray',        code: 'SW 3067', hex: '#5a564e' },
+        { name: 'King\'s Canyon',     code: 'SW 3026', hex: '#52483e' },
+        { name: 'Meadowbrook',        code: 'SW 3012', hex: '#4e4a44' },
+        { name: 'Traditional Stone Hedge', code: 'SW 3081', hex: '#4a4640' },
+        { name: 'Forest Dew',         code: 'SW 3066', hex: '#42463e' },
+        { name: 'Woodland',           code: 'SW 3042', hex: '#3a3e36' },
+        { name: 'River Birch',        code: 'SW 3024', hex: '#36322c' },
+        { name: 'Charcoal',           code: 'SW 3063', hex: '#2a2a26' },
+        { name: 'Black Alder',        code: 'SW 3022', hex: '#1c1814' },
+        { name: 'Tobacco',            code: 'SW 3039', hex: '#5a4a3a' }
+      ]},
+      { label: 'Custom', colors: [
+        { name: 'Custom — enter SW code or paint chip', code: '', hex: '#e8e3da', isCustom: true }
+      ]}
+    ]
+  }
+};
+
+function getColorLibrary(productType, tier) {
+  if (productType === 'hoa') return null; // HOA picks own color in stage 5
+  if (productType === 'oil') {
+    if (tier === 'essential') return null;
+    if (tier === 'performance') return 'expert_stain_seal';
+    if (tier === 'showcase') return 'expert_log_timber';
+  }
+  return 'sw_superdeck_water';
+}
+
+// HOA "tier" — only one effective option, priced at Performance rate
+const HOA_TIER_META = {
+  explain: "HOA-Required Product — your HOA specifies the brand, transparency, and color, so the standard tier choice doesn't apply. Pricing is based on our Performance-tier rate.",
+  performance: {
+    product: 'HOA-Specified Product',
+    tagline: 'Whatever your HOA requires — captured for your records',
+    life: 'Depends on the product the HOA specifies',
+    details: 'Lifespan and warranty depend entirely on the brand your HOA mandates — we cannot warranty products we don\'t supply or apply. Use this for documentation only.',
+    pros: ['Exact HOA spec documented in your quote', 'Clear record for compliance', 'Next steps discussed in person at scheduling'],
+    cons: ['We do not apply HOA-specified products ourselves'],
+    bestFor: 'Homes governed by an HOA with specific color/product mandates'
+  }
+};
+
+function getTierMeta(productType, tier) {
+  if (productType === 'hoa') return HOA_TIER_META[tier] || HOA_TIER_META.performance;
+  return TIER_META[productType] && TIER_META[productType][tier];
+}
+
+/* ============================================================
+   PRODUCT FAMILY METADATA — Stage 5 product cards
+   ============================================================ */
+const PRODUCT_FAMILY_META = {
+  water: {
+    icon: '💧',
+    heading: 'Water-Based',
+    img: 'https://static.wixstatic.com/media/6616da_8c8ed8795f6f4bc2a30ccd57e77d9a22~mv2.jpg',
+    summary: 'Fast-drying, low odor, easy water cleanup. SW Woodscapes Solid family. Best when wood was previously stained with water-based.',
+    pros: [
+      'Unlimited color matching — full SW catalog + any custom paint chip',
+      'Fast dry — 1–4 hours between coats',
+      'Low odor — safer around pets, kids, and sensitive customers',
+      'Soap-and-water cleanup, no solvents',
+      'Compatible recoat over previously water-stained wood (no full strip needed)',
+      'Better long-term UV color stability (less fade)'
+    ],
+    cons: [
+      'We only recommend SOLID water-based — semi-trans water doesn\'t penetrate well enough to last',
+      'Sits on the wood, doesn\'t penetrate as deep as oil',
+      'Doesn\'t enhance natural grain — fully covers it',
+      'Switching from previously-oil-stained wood requires full strip',
+      'Shorter lifespan per coat than oil on horizontal wear surfaces'
+    ],
+    recommendNote: 'Best when the existing finish is water-based, or when low odor / fast turnaround matters more than maximum longevity.'
+  },
+  oil: {
+    icon: '🛢️',
+    heading: 'Oil-Based',
+    img: 'https://static.wixstatic.com/media/6616da_5cead61260e74114831ef77b95c9d217~mv2.jpg',
+    summary: 'Penetrates deep into wood pores. EXPERT Stain & Seal and Log & Timber Oil. Best for southern climates with intense UV.',
+    pros: [
+      'Penetrates deep — protects wood from the inside out',
+      'Available in transparent, semi-transparent, AND semi-solid (lets grain show through)',
+      '2-year manufacturer warranty on semi-trans, 3-year on semi-solid',
+      'Eligible for the EXPERT Limited Lifetime guarantee via the 3-Step System',
+      'Stronger UV resistance per coat — built for southern sun',
+      'Log & Timber Oil adds natural insect deterrence (carpenter bees, termites)',
+      'Better for high-exposure decks, pergolas, log siding'
+    ],
+    cons: [
+      '18 EXPERT colors available (vs unlimited for water)',
+      '24 hrs between coats — longer total project time',
+      'Stronger odor during application',
+      'Mineral spirits cleanup, not water',
+      'Switching from previously-water-stained wood requires full strip'
+    ],
+    recommendNote: 'Our default recommendation for most South Carolina jobs — the UV protection and longer lifespan are worth the slightly slower process.'
+  },
+  hoa: {
+    icon: '🏘️',
+    heading: 'HOA-Required Product',
+    img: 'https://images.unsplash.com/photo-1767286794705-90a999ee905f?w=600&q=80&auto=format&fit=crop',
+    summary: 'Your HOA dictates a specific brand, transparency, and color. Tell us what it is and we\'ll capture the exact spec for your records and quote.',
+    pros: [
+      'Exact HOA spec documented in your quote and records',
+      'No risk of mismatched paperwork or HOA fines later',
+      'Clear single source of truth for what was required',
+      'Next steps discussed in person at scheduling'
+    ],
+    cons: [
+      'We do not apply HOA-specified products ourselves',
+      'Tier choice is locked — HOA dictates the product',
+      'No color picker — your HOA already chose the color'
+    ],
+    recommendNote: 'Pick this only if your HOA mandates a specific brand or color that\'s outside our standard SW Woodscapes / EXPERT product lines.'
+  }
+};
+
+/* ============================================================
+   TIER METADATA — enhanced value comparison
+   ============================================================ */
+const TIER_META = {
+  water: {
+    explain: "Water-based stains dry fast, clean up with water, and have lower odor. Best for fences, decks, and most exterior wood.",
+    essential: {
+      product: 'SW Woodscapes (1 coat)',
+      tagline: 'Budget-friendly basic protection',
+      life: '~2 years',
+      details: 'A single coat of SW Woodscapes Solid water-based stain. Quick 1-day application, soap-and-water cleanup. Lighter film build than 2-coat Performance, so it weathers faster.',
+      pros: ['Lowest up-front cost', 'Quick 1-day application', 'Full solid color coverage', 'Easy water cleanup'],
+      cons: ['Will need refreshing within 2 years', 'Less water-bead protection', 'Lighter UV defense'],
+      bestFor: 'Rental properties, fences in shade, budget-tight customers'
+    },
+    performance: {
+      product: 'SW Woodscapes (2 coats)',
+      tagline: 'Our most-recommended water-based job',
+      life: '4–5 years',
+      details: 'Two full coats of SW Woodscapes Solid stain. Coverage rate ~150 sq ft per gallon. Includes a free 90-day touch-up visit. Re-coats easily down the road.',
+      pros: ['Best value water-based — most popular', 'Even color, no streaks', 'Strong UV fade resistance', '90-day touch-up visit included', 'Full coat depth for proper film thickness'],
+      cons: ['Less self-cleaning behavior than Showcase Rain Refresh'],
+      bestFor: 'Most homeowners — full-sun decks, privacy fences, family homes'
+    },
+    showcase: {
+      product: 'SW Woodscapes Rain Refresh',
+      tagline: 'Self-cleaning solid stain — stays cleaner, longer',
+      life: '5–7 years',
+      details: 'SW Woodscapes Rain Refresh is a separate SW solid-color exterior stain with Self-Cleaning Technology — rainfall lifts surface dirt off so the finish stays looking new. Carries a 10-year limited manufacturer warranty.',
+      pros: ['Self-cleaning surface (SW Self-Cleaning Technology)', '10-year limited manufacturer warranty', '90-day touch-up included', 'Premium feel and look'],
+      cons: ['Higher up-front cost', 'Solid color only (no transparency)'],
+      bestFor: 'High-humidity climates, premium decks, customers who hate maintenance'
+    }
+  },
+  oil: {
+    explain: "Oil-based stains penetrate deep into wood, bring out grain, and last longer in harsh sun. Slower dry, stronger smell.",
+    essential: {
+      product: 'EXPERT Clear Sealer',
+      tagline: "Structural protection without altering the wood's appearance",
+      life: '~2 years',
+      details: 'EXPERT Clear Sealer — a clear oil-based penetrating sealer. Goes invisible into the wood, no pigment. Lets the wood weather and grey naturally while preventing warping, cupping, and twisting from moisture cycling. Not warranty-eligible by the manufacturer (clear sealants are excluded from EXPERT warranty coverage).',
+      pros: ['Allows the wood to grey naturally over time — preserves the weathered look', 'Protects against warping, twisting, cupping, and moisture damage', 'Lowest oil-based cost', 'Highlights natural grain', 'Easy to refresh — no color matching required'],
+      cons: ['No pigment, so no UV color protection — the wood will continue to grey', 'No color customization possible', 'Not covered by EXPERT manufacturer warranty'],
+      bestFor: 'Cedar, redwood, teak — customers who want the natural look and feel of weathered wood, with the structural integrity intact'
+    },
+    performance: {
+      product: 'EXPERT Stain & Seal',
+      tagline: 'Our most-recommended oil job',
+      life: '3–4 years',
+      details: 'EXPERT Stain & Seal — a deep-penetrating semi-transparent or semi-solid oil-based stain with real pigment for UV protection. EXPERT\'s recoat schedule is every 24 months on horizontal surfaces, every 36 months on vertical. 2-year manufacturer warranty. Coverage ~125–150 sq ft per gallon. Available in 18 colors.',
+      pros: ['Best value oil-based — most popular', 'Deep penetration into wood pores', 'Strong UV protection from real pigment', '2-year manufacturer warranty', '90-day touch-up included', '18 color options (transparent + semi-solid)'],
+      cons: ['Stronger odor during application', 'Longer dry time (oil)'],
+      bestFor: 'Most homeowners with full-sun exposure — decks, fences, pergolas'
+    },
+    showcase: {
+      product: 'EXPERT Log & Timber Oil',
+      tagline: 'Premium oil for timber — longest manufacturer-backed warranty in our lineup',
+      life: '4–5 years',
+      details: 'EXPERT Log & Timber Oil — a semi-transparent premium oil designed for log homes and exposed timbers. Applies in temperatures from 10°F to 110°F. Natural carpenter-bee deterrence. 3-year manufacturer warranty (longest in the EXPERT line). Eligible for the EXPERT Limited Lifetime guarantee via the 3-Step System on qualifying new wood.',
+      pros: ['3-year manufacturer warranty', 'Eligible for the EXPERT Limited Lifetime guarantee via 3-Step System', 'Natural insect defense (carpenter bees, wasps)', 'Application range 10°F to 110°F', '90-day touch-up included', 'Best for log siding & exposed timbers'],
+      cons: ['Highest up-front cost', 'Semi-transparent only — limited color range (8 colors)'],
+      bestFor: 'Log cabins, exposed-beam homes, mountain properties, high-elevation customers'
+    }
+  }
+};
+
+/* ============================================================
+   PROJECT META — with image URLs
+   ============================================================ */
+const PROJECT_META = {
+  fence:   { name: 'Fence',          icon: '🪵', unit: 'ln ft', img: 'https://static.wixstatic.com/media/6616da_70b75370c79a48b39d20cdb5c99c5323~mv2.jpg', desc: 'Linear feet × height. Both sides standard. Privacy, shadowbox, board-on-board, farm fence.', badge: 'Most common' },
+  deck:    { name: 'Deck',           icon: '🌳', unit: 'sq ft', img: 'https://static.wixstatic.com/media/6616da_3dac2dabdd894c3abcf3491e2b954996~mv2.jpg', desc: 'Flat surface sq ft + railings + stairs. Optional underneath staining and lattice walls.', badge: 'Most common' },
+  pergola: { name: 'Pergola',        icon: '⛱️', unit: 'sq ft', img: 'https://static.wixstatic.com/media/6616da_ab2a8aeff2ec435b8f8385c1c0454c91~mv2.jpg', desc: 'Total surface sq ft — top + bottom of beams + posts. Plant tarping included.' },
+  barn:    { name: 'Barn',           icon: '🏚️', unit: 'sq ft', img: 'https://images.unsplash.com/photo-1625512078789-f89843023df6?w=600&q=80&auto=format&fit=crop', desc: 'Siding sq ft. Height premium above 12 ft. Optional lift rental for tall walls.' },
+  ceiling: { name: 'Wooden Ceiling', icon: '🏠', unit: 'sq ft', img: 'https://static.wixstatic.com/media/6616da_36be1e29989c4a349547c1bf70ed16ec~mv2.jpg', desc: 'Porch ceilings, exposed beams, T&G. Easier than exterior — protected from weather.' }
+};
+
+/* ============================================================
+   CONDITION META — with image URLs
+   ============================================================ */
+// Conditions are now SERVICES (what we do), not wood states.
+// Headline = service name. Description = when you need it.
+const CONDITION_META = {
+  no_wash: {
+    label: 'No Wash',
+    serviceDesc: 'Light cleaning only — no prep premium.',
+    whenNeeded: 'Recommended for brand-new wood (recently installed, no UV exposure, no greying or mildew). The surface just needs a light cleaning before stain — no chemical prep required.',
+    img: 'https://images.unsplash.com/photo-1593285247650-cd7bb44adcfd?w=600&q=80&auto=format&fit=crop'
+  },
+  soft_wash: {
+    label: 'Soft Wash + Brightener',
+    serviceDesc: 'Sodium metasilicate cleaner + oxalic acid brightener.',
+    whenNeeded: 'Recommended for wood that is greyed, faded, mildewed, or weathered — and also for re-staining over an existing finish of the same type, as long as that finish is still in good condition (not peeling or chipping). Soft wash removes dead surface fibers and opens the wood pores so new stain bonds properly.',
+    img: 'https://images.unsplash.com/photo-1727670340813-9de8913881b2?w=600&q=80&auto=format&fit=crop'
+  },
+  strip_sand: {
+    label: 'Strip & Sand',
+    serviceDesc: 'Chemical strip + 80–100 grit sanding to bare wood.',
+    whenNeeded: 'Required in two situations: (1) the existing stain is peeling, flaking, or chipping — leaving it underneath will cause the new stain to fail. (2) You\'re switching stain types (oil-based to water-based or vice-versa) — the old finish has to come off completely so the new product can bond to fresh wood. Otherwise, soft wash is enough.',
+    img: 'https://images.unsplash.com/photo-1776346515127-0a6eec4395c2?w=600&q=80&auto=format&fit=crop'
+  }
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  customer: { name: '', phone: '', email: '', address: '', jobberNum: '', employee: '' },
+  currentStage: 1,
+  maxStageReached: 1,           // For bidirectional nav — bumps as user advances
+  activeProject: makeBlankProject(),
+  bundledProjects: [],
+  editingBundleIdx: null,
+  paymentMethod: 'deposit',
+  notes: '',                    // Quote-level free-form notes — shown on Review, sent to Jobber
+  quoteId: ''
+};
+
+function makeBlankProject() {
+  return {
+    type: null, measurements: {},
+    condition: null, productType: 'oil', tier: 'performance',
+    tierConfirmed: false,         // true once user explicitly clicks a tier card (or HOA mode auto-confirms)
+    woodAge: null,                // 'new' | 'weathered' | 'aged' — captured on Step 3, gates Step 4 options
+    selectedColor: null,
+    addons: {}, serviceAddons: {},
+    selectedDiscounts: [],        // array of discount IDs — all stack on top of bundle
+    customAddons: [],             // employee-added custom line items
+    hoa: { brand: '', transparency: '', productName: '', color: '', notes: '' },
+    previousStain: { wasStained: false, previousProductType: '', brand: '', transparency: '', productName: '', colorNotes: '' }
+  };
+}
+
+function makeQuoteId() {
+  const d = new Date();
+  const stamp = d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+  return `SSS-${stamp}-${Math.floor(Math.random() * 900 + 100)}`;
+}
+state.quoteId = makeQuoteId();
+__doc.getElementById('quoteNum').textContent = state.quoteId;
+
+/* ============================================================
+   STAGE LOGIC
+   ============================================================ */
+function isHoa() { return state.activeProject.productType === 'hoa'; }
+function isClearSealer() {
+  return state.activeProject.productType === 'oil' && state.activeProject.tier === 'essential';
+}
+function shouldSkipColorStage() {
+  return isClearSealer() || isHoa();
+}
+function recommendedProduct() {
+  // Recommendation is driven by what was previously stained (if anything).
+  // Stay-with-same-type avoids needing a full strip.
+  const ps = state.activeProject.previousStain;
+  if (ps.wasStained && ps.previousProductType === 'water') return 'water';
+  // Default to oil for new wood, greyed wood, previously oil-stained, or unsure.
+  return 'oil';
+}
+
+function showStage(n) {
+  if (n === 7 && shouldSkipColorStage()) state.activeProject.selectedColor = null;
+
+  __doc.querySelectorAll('.stage').forEach(s => s.classList.remove('visible'));
+  const target = __doc.getElementById('stage-' + n);
+  if (target) target.classList.add('visible');
+  state.currentStage = n;
+  if (n > state.maxStageReached) state.maxStageReached = n;
+
+  refreshProgressBar();
+  // Scroll the iframe content back to the top so each new step starts from
+  // the top of the visible viewport. #scrollContainer is the scrolling
+  // ancestor in our fixed-viewport iframe model — body itself doesn't scroll.
+  scrollAppToTop();
+
+  if (n === 2) renderProjectTypeCards();
+  if (n === 3) renderMeasurements();
+  if (n === 4) renderConditionCards();
+  if (n === 5) renderProductStage();
+  if (n === 6) {
+    // Smart default — Performance is the recommended tier for nearly all customers.
+    // Auto-confirm it on first arrival so the total reflects a real number immediately;
+    // user can still click Essential / Showcase to change.
+    if (!state.activeProject.tierConfirmed && state.activeProject.productType !== 'hoa') {
+      state.activeProject.tier = 'performance';
+      state.activeProject.tierConfirmed = true;
+    }
+    renderTierCards();
+  }
+  if (n === 7) renderColorStage();
+  if (n === 8) renderAddons();
+  if (n === 9) renderDiscounts();
+  if (n === 10) { state._returnToReviewOnCancel = false; renderFinalBreakdown(); }
+}
+
+function refreshProgressBar() {
+  const n = state.currentStage;
+  __doc.querySelectorAll('.progress-step').forEach(el => {
+    const stage = parseInt(el.dataset.stage);
+    el.classList.remove('active', 'done', 'skipped', 'reachable');
+    if (stage === n) el.classList.add('active', 'reachable');
+    else if (stage === 7 && shouldSkipColorStage() && stage < state.maxStageReached) el.classList.add('skipped');
+    else if (stage <= state.maxStageReached) el.classList.add('done', 'reachable');
+  });
+}
+
+function nextStage() {
+  if (!validateStage(state.currentStage)) return;
+  let target = state.currentStage + 1;
+  if (target === 7 && shouldSkipColorStage()) target = 8;
+  if (target > 10) target = 10;
+  showStage(target);
+}
+
+function prevStage() {
+  let target = state.currentStage - 1;
+  if (target === 7 && shouldSkipColorStage()) target = 6;
+  if (target < 1) target = 1;
+  showStage(target);
+}
+
+function validateStage(n) {
+  if (n === 1) {
+    const c = state.customer;
+    let ok = true;
+    [['custName', 'name'], ['custPhone', 'phone'], ['custEmail', 'email'], ['custAddress', 'address'], ['employeeName', 'employee']].forEach(([id, key]) => {
+      const el = __doc.getElementById(id);
+      const val = el.value.trim();
+      const field = el.closest('.field');
+      if (!val) { field.classList.add('invalid'); ok = false; }
+      else if (key === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(val)) { field.classList.add('invalid'); ok = false; }
+      else { field.classList.remove('invalid'); c[key] = val; }
+    });
+    state.customer.jobberNum = __doc.getElementById('jobberNum').value.trim();
+    return ok;
+  }
+  if (n === 2) return !!state.activeProject.type;
+  if (n === 3) return validateMeasurements();
+  if (n === 5) {
+    if (!state.activeProject.productType) return false;
+    if (isHoa()) {
+      if (!state.activeProject.hoa.brand || !state.activeProject.hoa.color) {
+        alert('HOA-Required Product needs at least a brand and a color/code. Fill those in or pick a different product family.');
+        return false;
+      }
+    }
+    return true;
+  }
+  if (n === 7) return shouldSkipColorStage() ? true : !!state.activeProject.selectedColor;
+  return true;
+}
+
+// Scroll the user back to the top of the calculator embed. Since the iframe
+// is content-sized (auto-resize), there's no internal scroll — we postMessage
+// the parent Velo page, which calls $w('#htmlCalculator').scrollTo() so the
+// Wix page scrolls the iframe element into view from its top.
+function scrollAppToTop() {
+  try { __host.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (e) {}
+}
+
+['custName','custPhone','custEmail','custAddress','employeeName','jobberNum'].forEach(id => {
+  __doc.getElementById(id).addEventListener('blur', () => {
+    const el = __doc.getElementById(id);
+    const field = el.closest('.field');
+    if (el.value.trim()) field.classList.remove('invalid');
+  });
+});
+
+// Bidirectional nav via progress bar
+__doc.querySelectorAll('.progress-step').forEach(el => {
+  el.addEventListener('click', () => {
+    const stage = parseInt(el.dataset.stage);
+    if (el.classList.contains('skipped')) return;
+    // Reachable if it's an active/done step OR equal to current
+    if (stage <= state.maxStageReached) {
+      // Validate current stage before jumping forward
+      if (stage > state.currentStage && !validateStage(state.currentStage)) return;
+      showStage(stage);
+    }
+  });
+});
+
+/* ============================================================
+   STAGE 2: PROJECT TYPE — IMAGE CARDS
+   ============================================================ */
+function renderProjectTypeCards() {
+  __doc.getElementById('projectTypeCards').innerHTML = Object.entries(PROJECT_META).map(([id, p]) => `
+    <button class="selectable-card ${state.activeProject.type === id ? 'selected' : ''}" data-project="${id}">
+      <div class="card-image" style="background-image:url('${p.img}')"></div>
+      <div class="card-body">
+        <div class="title">${p.icon} ${p.name}</div>
+        <div class="desc">${p.desc}</div>
+        ${p.badge ? `<div class="badge">${p.badge}</div>` : ''}
+      </div>
+    </button>
+  `).join('');
+
+  __doc.querySelectorAll('#projectTypeCards .selectable-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const newType = card.dataset.project;
+      if (state.activeProject.type !== newType) {
+        state.activeProject.measurements = {};
+        state.activeProject.addons = {};
+        state.activeProject.tierConfirmed = false;
+        // Force re-walk through measurements/condition/etc. — bypass via progress bar
+        // would otherwise let the user jump to tier with empty measurements ($0 prices)
+        if (state.maxStageReached > 2) state.maxStageReached = 2;
+      }
+      state.activeProject.type = newType;
+      __doc.querySelectorAll('#projectTypeCards .selectable-card').forEach(c => c.classList.toggle('selected', c.dataset.project === newType));
+      __doc.getElementById('stage2Next').disabled = false;
+      updateRunningTotal();
+    });
+  });
+  refreshStage2Selection();
+}
+
+function refreshStage2Selection() {
+  __doc.getElementById('stage2Next').disabled = !state.activeProject.type;
+  const banner = __doc.getElementById('editingBanner');
+  if (state.editingBundleIdx !== null) {
+    banner.style.display = 'block';
+    banner.className = 'editing-banner';
+    banner.innerHTML = `<span><strong>Editing bundled project</strong> — changes will replace project #${state.editingBundleIdx + 1} in your bundle.</span><button onclick="cancelEditBundled()">Cancel edit</button>`;
+  } else {
+    banner.style.display = 'none';
+  }
+  // "Adding another" banner — only shown when adding a new project while
+  // bundled projects already exist (so cancelling has somewhere to return to).
+  const addBanner = __doc.getElementById('addingAnotherBanner');
+  if (addBanner) {
+    const showAdd = !!state._returnToReviewOnCancel && state.bundledProjects.length > 0 && !state.activeProject.type;
+    addBanner.style.display = showAdd ? 'flex' : 'none';
+  }
+}
+
+/* ============================================================
+   STAGE 3: MEASUREMENTS
+   ============================================================ */
+const MEASURE_TIPS = {
+  fence:   { ico: '📏', title: 'How we measure fences', body: 'Linear feet is measured base to base of posts (not panel to panel). Height is base of pickets to top, rounded to the nearest half-foot. Pricing assumes both sides stained — the standard for privacy fences — unless you toggle "one side only" below.' },
+  deck:    { ico: '📏', title: 'What we count on a deck', body: 'Flat surface (sq ft) covers the top boards only. Railings are itemized in linear feet — a 40-ft perimeter railing counts as 40 ln ft regardless of how many rails it has. Stairs are counted individually by tread (not risers).' },
+  pergola: { ico: '📏', title: 'Why pergola surface area is bigger than it looks', body: 'Total surface includes the top and bottom of every beam, all four sides of the posts, plus rafters and any decorative elements — not just the footprint. A 12×12 pergola is usually 180–220 sq ft of actual stainable surface, not 144.' },
+  barn:    { ico: '📏', title: 'How we measure barn siding', body: 'Siding sq ft is calculated wall by wall (length × height for each wall). We don\'t subtract for normal-sized windows and doors. For walls above 12 ft, a height premium applies and a lift rental may be needed — typically quoted together.' },
+  ceiling: { ico: '📏', title: 'What\'s included in a ceiling job', body: 'Beyond the sq ft of the ceiling itself, interior jobs include moving furniture, masking floors and walls, and removing/reinstalling light fixtures or fans. Tongue-and-groove and beam two-toning add complexity but a richer final look.' }
+};
+
+function renderMeasurements() {
+  const proj = state.activeProject.type;
+  const meta = PROJECT_META[proj];
+  __doc.getElementById('measureTitle').textContent = `${meta.icon} ${meta.name} Measurements`;
+  const tip = MEASURE_TIPS[proj];
+  __doc.getElementById('measureTip').innerHTML = `<div class="tip-box"><span class="tip-ico">${tip.ico}</span><div class="tip-body"><strong>${tip.title}</strong>${tip.body}</div></div>`;
+
+  const container = __doc.getElementById('measureContainer');
+
+  let html = '';
+  if (proj === 'fence') {
+    html = `
+      <div class="measure-section">
+        <h3>Fence dimensions</h3>
+        <p class="section-hint">We price by linear feet × height. Pricing assumes both sides stained (the standard).</p>
+        <div class="form-grid">
+          <div class="field"><label>Linear feet</label><input type="number" min="0" step="1" id="m_linearft" placeholder="e.g. 200"></div>
+          <div class="field"><label>Average height (ft)</label><input type="number" min="0" step="0.5" id="m_height" placeholder="e.g. 6"></div>
+          <div class="field"><label>Fence style</label>
+            <select id="m_style">
+              <option value="privacy">Standard Privacy</option>
+              <option value="charleston">Charleston</option>
+              <option value="shadowbox">Shadowbox (both sides visible)</option>
+              <option value="bob">Board-on-Board</option>
+              <option value="charleston_bob">Charleston Board-on-Board</option>
+              <option value="farm">Farm Fence (less surface area)</option>
+            </select>
+          </div>
+          <div class="field" style="display:flex;align-items:flex-end;">
+            <div class="toggle-row" data-toggle="m_oneSided" style="width:100%;margin-bottom:0;"><span class="box"></span><span class="name">Some (or all) of the fence is one-side only</span></div>
+          </div>
+        </div>
+        <div class="form-grid" id="oneSidedPartialRow" style="display:none; margin-top:8px;">
+          <div class="field">
+            <label>One-side-only linear feet</label>
+            <input type="number" min="0" step="1" id="m_oneSidedLnFt" placeholder="Leave empty if the entire fence is one side only">
+            <div class="hint">If only part of the fence is one-side (e.g. shared with a neighbor), enter just that portion's linear feet. Leave empty to apply one-side pricing to the full <span id="oneSidedTotalLnFtHint">—</span> ln ft.</div>
+          </div>
+        </div>
+      </div>`;
+  } else if (proj === 'deck') {
+    html = `
+      <div class="measure-section">
+        <h3>Deck dimensions</h3>
+        <p class="section-hint">Itemize each surface. Stairs are counted individually.</p>
+        <div class="form-grid">
+          <div class="field"><label>Flat surface (sq ft)</label><input type="number" min="0" step="1" id="m_flat" placeholder="e.g. 320"><div class="hint">Top boards only</div></div>
+          <div class="field"><label>Railing (linear ft)</label><input type="number" min="0" step="1" id="m_rail" placeholder="e.g. 48"></div>
+          <div class="field"><label>Number of stairs</label><input type="number" min="0" step="1" id="m_stairs" placeholder="e.g. 5"></div>
+          <div class="field"><label>Lattice / privacy walls (sq ft)</label><input type="number" min="0" step="1" id="m_lattice" placeholder="optional"></div>
+        </div>
+        <div class="toggle-row" data-toggle="m_underneath" style="margin-top:8px;"><span class="box"></span><span class="name">Stain underneath / joists (doubles flat sq ft)</span></div>
+      </div>`;
+  } else if (proj === 'pergola') {
+    html = `
+      <div class="measure-section">
+        <h3>Pergola dimensions</h3>
+        <p class="section-hint">Give us the footprint of the pergola (length × width). We calculate the stainable surface area for you — pergolas have ~1.5× more surface than the footprint because we stain top + bottom of every beam, all four sides of the posts, plus rafters.</p>
+        <div class="form-grid">
+          <div class="field"><label>Length (ft)</label><input type="number" min="0" step="0.5" id="m_pergLen" placeholder="e.g. 12"></div>
+          <div class="field"><label>Width (ft)</label><input type="number" min="0" step="0.5" id="m_pergWid" placeholder="e.g. 12"></div>
+          <div class="field"><label>Approximate height (ft)</label><input type="number" min="0" step="0.5" id="m_pergHeight" placeholder="e.g. 8"><div class="hint">Most residential pergolas are 8–10 ft</div></div>
+        </div>
+        <div id="pergComputedReadout" style="margin: 10px 0 16px; padding: 12px 14px; background: var(--green-pale); border-left: 3px solid var(--green); border-radius: 8px; font-size: 13px; color: var(--navy); display: none;">
+          <strong style="display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--green); margin-bottom:2px;">Calculated stainable surface</strong>
+          <span id="pergComputedValue">—</span>
+        </div>
+        <div class="toggle-row" data-toggle="m_overhead" style="margin-top:8px;"><span class="box"></span><span class="name">Overhead access challenge <span class="info-btn" role="button" tabindex="0" data-info="pergola_overhead" aria-label="What is overhead access challenge?">i</span></span></div>
+      </div>`;
+  } else if (proj === 'barn') {
+    html = `
+      <div class="measure-section">
+        <h3>Barn siding dimensions</h3>
+        <p class="section-hint">Process: pressure wash + brightener, scrape loose paint, sand, then 1–2 coats of solid stain.</p>
+        <div class="form-grid">
+          <div class="field"><label>Siding sq ft</label><input type="number" min="0" step="1" id="m_barnSqFt" placeholder="e.g. 1200"></div>
+          <div class="field"><label>Trim / fascia (linear ft)</label><input type="number" min="0" step="1" id="m_barnTrim" placeholder="optional"></div>
+          <div class="field"><label>Cupolas (#)</label><input type="number" min="0" step="1" id="m_cupolaCount" placeholder="0"></div>
+          <div class="field"><label>Lift rental days needed</label><input type="number" min="0" step="1" id="m_liftDays" placeholder="0"><div class="hint">If needed for tall walls</div></div>
+        </div>
+        <div class="toggle-row" data-toggle="m_height12" style="margin-top:8px;"><span class="box"></span><span class="name">Walls above 12 ft / 2nd story (height premium)</span></div>
+      </div>`;
+  } else if (proj === 'ceiling') {
+    html = `
+      <div class="measure-section">
+        <h3>Wooden ceiling dimensions</h3>
+        <p class="section-hint">Common locations: porch ceilings, screen porches, exposed-beam great rooms, T&amp;G kitchens.</p>
+        <div class="form-grid">
+          <div class="field"><label>Ceiling area (sq ft)</label><input type="number" min="0" step="1" id="m_ceilSqFt" placeholder="e.g. 280"></div>
+          <div class="field"><label>Beam length total (linear ft)</label><input type="number" min="0" step="1" id="m_beamLnFt" placeholder="optional"><div class="hint">Only if beams stained different color</div></div>
+          <div class="field"><label>Light fixtures to remove/reinstall</label><input type="number" min="0" step="1" id="m_fixtures" placeholder="0"></div>
+          <div class="field"><label>Ceiling fans to remove/reinstall</label><input type="number" min="0" step="1" id="m_fans" placeholder="0"></div>
+        </div>
+        <div class="toggle-row" data-toggle="m_tng" style="margin-top:8px;"><span class="box"></span><span class="name">Tongue-and-groove</span></div>
+        <div class="toggle-row" data-toggle="m_furnProtect" style="margin-top:8px;"><span class="box"></span><span class="name">Indoor furniture / floor protection needed</span></div>
+      </div>`;
+  }
+  container.innerHTML = html;
+  restoreMeasurementValues();
+  attachMeasureListeners();
+}
+
+function restoreMeasurementValues() {
+  const m = state.activeProject.measurements;
+  const proj = state.activeProject.type;
+  const set = (id, v) => { const el = __doc.getElementById(id); if (el && v !== undefined && v !== null && v !== '') el.value = v; };
+  const tog = (key, v) => { const row = __doc.querySelector(`[data-toggle="${key}"]`); if (row) row.classList.toggle('checked', !!v); };
+  if (proj === 'fence') { set('m_linearft', m.linearft); set('m_height', m.height); set('m_style', m.style || 'privacy'); tog('m_oneSided', m.oneSided); set('m_oneSidedLnFt', m.oneSidedLnFt); updateOneSidedRow(); }
+  else if (proj === 'deck') { set('m_flat', m.flat); set('m_rail', m.rail); set('m_stairs', m.stairs); set('m_lattice', m.lattice); tog('m_underneath', m.underneath); }
+  else if (proj === 'pergola') { set('m_pergLen', m.length); set('m_pergWid', m.width); set('m_pergHeight', m.height); tog('m_overhead', m.overhead); updatePergolaSqFtReadout(); }
+  else if (proj === 'barn') { set('m_barnSqFt', m.sqft); set('m_barnTrim', m.trim); set('m_cupolaCount', m.cupolaCount); set('m_liftDays', m.liftDays); tog('m_height12', m.heightPremium); }
+  else if (proj === 'ceiling') { set('m_ceilSqFt', m.sqft); set('m_beamLnFt', m.beamLnFt); set('m_fixtures', m.fixtures); set('m_fans', m.fans); tog('m_tng', m.tng); tog('m_furnProtect', m.furnProtect); }
+}
+
+function attachMeasureListeners() {
+  __doc.querySelectorAll('#measureContainer input, #measureContainer select').forEach(inp => {
+    inp.addEventListener('input', saveMeasurements);
+    inp.addEventListener('change', saveMeasurements);
+  });
+  __doc.querySelectorAll('#measureContainer .toggle-row').forEach(row => {
+    row.addEventListener('click', () => { row.classList.toggle('checked'); saveMeasurements(); updateOneSidedRow(); });
+  });
+  // Wire up the 3-button wood-age selector (Step 3)
+  __doc.querySelectorAll('#woodAgeButtons .wood-age-btn').forEach(btn => {
+    btn.classList.toggle('selected', state.activeProject.woodAge === btn.dataset.woodAge);
+    btn.onclick = (e) => {
+      if (e.target.classList && e.target.classList.contains('info-btn')) return;
+      state.activeProject.woodAge = btn.dataset.woodAge;
+      __doc.querySelectorAll('#woodAgeButtons .wood-age-btn').forEach(b => b.classList.toggle('selected', b === btn));
+      // If a now-locked condition was previously selected, clear it so the user re-picks on Step 4
+      const allowed = allowedConditions();
+      if (state.activeProject.condition && !allowed.includes(state.activeProject.condition)) {
+        state.activeProject.condition = null;
+      }
+      updateRunningTotal();
+    };
+  });
+
+  // Wire up the wasStained toggle (now lives on Step 3)
+  const wasStainedToggle = __doc.querySelector('[data-toggle="wasStained"]');
+  const prevPanel = __doc.getElementById('prevStainPanel');
+  if (wasStainedToggle && prevPanel) {
+    // Restore visual state
+    wasStainedToggle.classList.toggle('checked', !!state.activeProject.previousStain.wasStained);
+    prevPanel.style.display = state.activeProject.previousStain.wasStained ? 'block' : 'none';
+    wasStainedToggle.onclick = (e) => {
+      if (e.target.classList && e.target.classList.contains('info-btn')) return;
+      const newVal = !state.activeProject.previousStain.wasStained;
+      state.activeProject.previousStain.wasStained = newVal;
+      wasStainedToggle.classList.toggle('checked', newVal);
+      prevPanel.style.display = newVal ? 'block' : 'none';
+      if (newVal) populatePrevStainForm();
+    };
+    // If panel is currently visible, also populate form fields
+    if (state.activeProject.previousStain.wasStained) populatePrevStainForm();
+  }
+}
+
+function populatePrevStainForm() {
+  const ps = state.activeProject.previousStain;
+  populateBrandDropdown('prevBrand', ps.brand);
+  populateTransparencyDropdown('prevTransparency', ps.transparency);
+  const setVal = (id, v) => { const el = __doc.getElementById(id); if (el) el.value = v || ''; };
+  setVal('prevProductType', ps.previousProductType);
+  setVal('prevCondition', ps.prevCondition);
+  setVal('prevProductName', ps.productName);
+  setVal('prevColorNotes', ps.colorNotes);
+  // Wire onchange/input handlers (idempotent — overwrite each time)
+  const wire = (id, key, transform = v => v) => {
+    const el = __doc.getElementById(id); if (!el) return;
+    el.onchange = el.oninput = (e) => { ps[key] = transform(e.target.value); };
+  };
+  wire('prevProductType', 'previousProductType');
+  wire('prevCondition', 'prevCondition');
+  wire('prevBrand', 'brand');
+  wire('prevTransparency', 'transparency');
+  wire('prevProductName', 'productName');
+  wire('prevColorNotes', 'colorNotes');
+}
+
+/* ============================================================
+   MEASUREMENT TUTORIAL MODAL
+   ============================================================ */
+function openMeasureTutorial() {
+  const proj = state.activeProject.type;
+  const tips = MEASURE_TUTORIAL[proj] || MEASURE_TUTORIAL.fence;
+  __doc.getElementById('measureTutorialTitle').textContent = tips.title;
+  __doc.getElementById('measureTutorialBody').innerHTML = tips.body;
+  __doc.getElementById('measureTutorialBackdrop').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeMeasureTutorial() {
+  __doc.getElementById('measureTutorialBackdrop').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+const MEASURE_TUTORIAL = {
+  fence: {
+    title: 'How to estimate fence measurements',
+    body: `
+      <p style="margin-bottom:14px;"><strong>Linear feet (the long way along the fence):</strong></p>
+      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
+        <li>Walk along the base of the fence — count panels and multiply by panel width (most panels are 6 ft or 8 ft; check the gap between posts).</li>
+        <li>Or: pace it out — average adult stride is about 2.5 ft, so 20 steps ≈ 50 ft.</li>
+        <li>Or: measure house width and double it for a back yard (typical lot back fence runs 60–100 ft).</li>
+        <li><strong>Round to the nearest 5 ft.</strong> A small over-estimate is fine — we verify on-site.</li>
+      </ul>
+      <p style="margin-bottom:14px;"><strong>Height:</strong></p>
+      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
+        <li>Most residential fences are <strong>6 ft</strong>. Front-yard / decorative fences are often 4 ft.</li>
+        <li>Privacy fences are nearly always 6 ft. Pool fences are often 4 ft. Farm fences vary.</li>
+        <li>Measure from the ground to the top of the pickets (not the post caps).</li>
+      </ul>
+      <p style="margin-bottom:8px;"><strong>Style — what to look for:</strong></p>
+      <ul style="padding-left:20px;line-height:1.7;">
+        <li><strong>Privacy</strong> — solid panels, no gaps between boards. Most common.</li>
+        <li><strong>Shadowbox</strong> — boards alternate front/back (visible from both sides).</li>
+        <li><strong>Board-on-board</strong> — overlapping pickets, no gaps from either side.</li>
+        <li><strong>Charleston</strong> — decorative top edge cut into the pickets.</li>
+        <li><strong>Farm fence</strong> — horizontal rails, big gaps (typical 3-rail or split-rail).</li>
+      </ul>`
+  },
+  deck: {
+    title: 'How to estimate deck measurements',
+    body: `
+      <p style="margin-bottom:14px;"><strong>Flat surface (sq ft):</strong></p>
+      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
+        <li>Length × width of the deck floor. Don't subtract for stairs or built-ins.</li>
+        <li>Typical sizes: 12×12 = 144 sq ft, 10×16 = 160 sq ft, 14×20 = 280 sq ft, 16×24 = 384 sq ft.</li>
+        <li>L-shaped or multi-level: break into rectangles, calculate each, add together.</li>
+      </ul>
+      <p style="margin-bottom:14px;"><strong>Railing (linear feet):</strong></p>
+      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
+        <li>Total perimeter of the deck handrail. Skip any side flush against the house.</li>
+        <li>A 12×12 deck with railing on 3 sides ≈ 36 ln ft of railing.</li>
+        <li>One ln ft of railing = one length of top + bottom rail counted together (we know how to price it).</li>
+      </ul>
+      <p style="margin-bottom:14px;"><strong>Stairs:</strong></p>
+      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
+        <li>Count individual <strong>treads</strong> (the part you step on) — not risers, not the landing.</li>
+        <li>A standard 3 ft drop ≈ 4 stairs. A 6 ft drop ≈ 8 stairs.</li>
+      </ul>
+      <p style="margin-bottom:14px;"><strong>Underneath / joists:</strong></p>
+      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
+        <li>Only check this if you want the visible underside of the deck stained (e.g., second-story decks where the underside is exposed to the patio below).</li>
+        <li>It doubles the flat sq ft for pricing — but is sometimes worth it for a finished look.</li>
+      </ul>
+      <p style="margin-bottom:8px;"><strong>Lattice / privacy walls:</strong></p>
+      <ul style="padding-left:20px;line-height:1.7;">
+        <li>The decorative lattice often built between deck posts. Measure each panel's sq ft.</li>
+      </ul>`
+  },
+  pergola: {
+    title: 'How to estimate pergola measurements',
+    body: `
+      <p style="margin-bottom:14px;">Pergolas almost always have more surface area than the footprint suggests, because you're staining the top + bottom of every beam plus all four sides of the posts.</p>
+      <p style="margin-bottom:14px;"><strong>Quick estimate by footprint:</strong></p>
+      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
+        <li><strong>10×10 footprint</strong> ≈ 150–180 sq ft of stainable surface</li>
+        <li><strong>12×12 footprint</strong> ≈ 180–220 sq ft</li>
+        <li><strong>14×16 footprint</strong> ≈ 280–350 sq ft</li>
+        <li><strong>16×24 footprint</strong> ≈ 400–500 sq ft</li>
+      </ul>
+      <p style="margin-bottom:8px;">Adjust up if the pergola has decorative trim, dense rafter spacing, or a lattice top. Adjust down if it's open-frame with minimal cross-beams.</p>`
+  },
+  barn: {
+    title: 'How to estimate barn siding',
+    body: `
+      <p style="margin-bottom:14px;"><strong>Siding sq ft (each wall):</strong></p>
+      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
+        <li>For each wall: wall length × wall height. Add together for total sq ft.</li>
+        <li>Don't subtract for normal-sized windows or doors (the trim around them needs staining anyway).</li>
+        <li>A typical 24×36 barn with 12 ft walls ≈ 1,440 sq ft of siding.</li>
+      </ul>
+      <p style="margin-bottom:8px;"><strong>If walls are above 12 ft (or 2-story):</strong></p>
+      <ul style="padding-left:20px;line-height:1.7;">
+        <li>Toggle the "Walls above 12 ft" option — a 30% height premium applies for the extra labor.</li>
+        <li>A lift rental is usually required for anything above ~16 ft, billed at $400/day.</li>
+      </ul>`
+  },
+  ceiling: {
+    title: 'How to estimate wooden ceiling',
+    body: `
+      <p style="margin-bottom:14px;"><strong>Ceiling area (sq ft):</strong></p>
+      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
+        <li>Length × width of the ceiling area you want stained.</li>
+        <li>Typical porch ceiling: 12×8 = 96 sq ft. Typical kitchen with T&G: 200–300 sq ft.</li>
+      </ul>
+      <p style="margin-bottom:14px;"><strong>Beam two-tone (linear feet):</strong></p>
+      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
+        <li>Only count beams if you want them stained a different color than the ceiling planks.</li>
+        <li>Measure total beam length — a 12×12 ceiling with three crossing beams ≈ 36 ln ft of beam.</li>
+      </ul>
+      <p style="margin-bottom:8px;"><strong>Fixtures &amp; fans:</strong></p>
+      <ul style="padding-left:20px;line-height:1.7;">
+        <li>Count each fixture or fan we'll need to remove + reinstall. Common: 1 fan + 2 lights per porch.</li>
+      </ul>`
+  }
+};
+
+function saveMeasurements() {
+  const m = state.activeProject.measurements;
+  const proj = state.activeProject.type;
+  const get = (id) => +__doc.getElementById(id)?.value || 0;
+  const getStr = (id) => __doc.getElementById(id)?.value || '';
+  const isOn = (key) => __doc.querySelector(`[data-toggle="${key}"]`)?.classList.contains('checked') || false;
+  if (proj === 'fence') {
+    m.linearft = get('m_linearft'); m.height = get('m_height'); m.style = getStr('m_style') || 'privacy';
+    m.oneSided = isOn('m_oneSided');
+    m.oneSidedLnFt = get('m_oneSidedLnFt');
+    // Clamp the partial value so it can never exceed the total — UI safety net
+    if (m.oneSidedLnFt > m.linearft) m.oneSidedLnFt = m.linearft;
+    updateOneSidedRow();
+  }
+  else if (proj === 'deck') { m.flat = get('m_flat'); m.rail = get('m_rail'); m.stairs = get('m_stairs'); m.lattice = get('m_lattice'); m.underneath = isOn('m_underneath'); }
+  else if (proj === 'pergola') {
+    m.length = get('m_pergLen'); m.width = get('m_pergWid'); m.height = get('m_pergHeight');
+    m.overhead = isOn('m_overhead');
+    // Stainable surface ≈ 1.55 × footprint when height isn't entered, otherwise
+    // footprint + perimeter × height × 0.45 (posts + beams + rafters factor).
+    // Always at least the footprint itself.
+    const footprint = (m.length || 0) * (m.width || 0);
+    if (footprint > 0) {
+      const perim = 2 * ((m.length || 0) + (m.width || 0));
+      const heightFactor = (m.height && m.height > 0) ? (perim * m.height * 0.45) : (footprint * 0.55);
+      m.sqft = Math.round(footprint + heightFactor);
+    } else {
+      m.sqft = 0;
+    }
+    updatePergolaSqFtReadout();
+  }
+  else if (proj === 'barn') { m.sqft = get('m_barnSqFt'); m.trim = get('m_barnTrim'); m.cupolaCount = get('m_cupolaCount'); m.liftDays = get('m_liftDays'); m.heightPremium = isOn('m_height12'); }
+  else if (proj === 'ceiling') { m.sqft = get('m_ceilSqFt'); m.beamLnFt = get('m_beamLnFt'); m.fixtures = get('m_fixtures'); m.fans = get('m_fans'); m.tng = isOn('m_tng'); m.furnProtect = isOn('m_furnProtect'); }
+  updateRunningTotal();
+}
+
+function validateMeasurements() {
+  const m = state.activeProject.measurements;
+  const proj = state.activeProject.type;
+  if (proj === 'fence') return m.linearft > 0 && m.height > 0;
+  if (proj === 'deck') return m.flat > 0 || m.rail > 0 || m.stairs > 0;
+  if (proj === 'pergola') return (m.length > 0 && m.width > 0) || m.sqft > 0;
+  if (proj === 'barn') return m.sqft > 0;
+  if (proj === 'ceiling') return m.sqft > 0;
+  return false;
+}
+
+function updateOneSidedRow() {
+  // Show the partial-linear-feet input only when "one side only" is toggled on.
+  // Empty input = entire fence is one-sided. Sync the hint with current linear-foot total.
+  const row = __doc.getElementById('oneSidedPartialRow');
+  if (!row) return;
+  const toggle = __doc.querySelector('[data-toggle="m_oneSided"]');
+  const isOn = toggle && toggle.classList.contains('checked');
+  row.style.display = isOn ? '' : 'none';
+  const totalEl = __doc.getElementById('oneSidedTotalLnFtHint');
+  if (totalEl) {
+    const total = state.activeProject.measurements.linearft || 0;
+    totalEl.textContent = total > 0 ? total : '—';
+  }
+}
+
+function updatePergolaSqFtReadout() {
+  const readout = __doc.getElementById('pergComputedReadout');
+  const value = __doc.getElementById('pergComputedValue');
+  if (!readout || !value) return;
+  const sq = state.activeProject.measurements.sqft || 0;
+  if (sq > 0) {
+    const len = state.activeProject.measurements.length || 0;
+    const wid = state.activeProject.measurements.width || 0;
+    const h = state.activeProject.measurements.height || 0;
+    value.innerHTML = `<strong style="font-size:18px;">${sq.toLocaleString()} sq ft</strong> stainable surface — calculated from ${len}×${wid}${h ? ` × ${h} ft tall` : ''} footprint.`;
+    readout.style.display = 'block';
+  } else {
+    readout.style.display = 'none';
+  }
+}
+
+/* ============================================================
+   STAGE 4: CONDITION — IMAGE CARDS
+   ============================================================ */
+function recommendCondition() {
+  const ps = state.activeProject.previousStain;
+  const age = state.activeProject.woodAge;
+
+  // Previously stained — prev-condition drives the recommendation
+  if (ps.wasStained) {
+    if (ps.prevCondition === 'peeling') return 'strip_sand';
+    if (ps.prevCondition === 'intact') return 'soft_wash';
+    return 'soft_wash'; // unsure / not specified
+  }
+
+  // Never stained: age drives the recommendation.
+  // 'new'  (under 6 mo)   → no wash
+  // 'weathered' (6 mo–2 yr) → soft wash (most common case)
+  // 'aged'  (2+ years)    → soft wash baseline; strip & sand if signs of damage
+  if (age === 'new') return 'no_wash';
+  if (age === 'aged') return 'soft_wash';
+  if (age === 'weathered') return 'soft_wash';
+  return 'soft_wash'; // default if age not picked yet
+}
+
+// Which condition options the customer is allowed to pick given wood age.
+// Aged (2+ yr) wood cannot be no-wash — staining over weathered/UV-damaged surface fibers fails.
+function allowedConditions() {
+  const age = state.activeProject.woodAge;
+  if (age === 'aged') return ['soft_wash', 'strip_sand'];
+  return ['no_wash', 'soft_wash', 'strip_sand'];
+}
+
+const CONDITION_BULLETS = {
+  no_wash: {
+    when: [
+      'Brand-new fence, deck, or other wood (just installed)',
+      'No greying, no UV damage, no previous stain',
+      'Wood is free of mill scale, dirt, or surface debris'
+    ],
+    process: [
+      'Light surface cleaning (included)',
+      'No stripping, no sanding, no extra labor'
+    ],
+    timing: 'Adds zero days to the project'
+  },
+  soft_wash: {
+    when: [
+      'Wood is greyed, faded, or weathered from sun and rain',
+      'Previously stained with the same product family and finish is still intact (no peeling)',
+      'Mildew, mold, or surface algae visible',
+      'Wood has been bare for 6+ months'
+    ],
+    process: [
+      'Soft wash with sodium metasilicate (alkaline cleaner)',
+      'Oxalic acid brightener to balance pH and lift greying',
+      'Light rinse and full dry cycle (24–48 hrs)',
+      'No sanding required'
+    ],
+    timing: 'Adds 1 day to the project for dry time'
+  },
+  strip_sand: {
+    when: [
+      'Existing stain is peeling, flaking, or chipping',
+      'Switching stain types (oil ↔ water) — old finish must come off',
+      'Multiple uneven coats from past applications',
+      'Severe weathering with deeply set-in damage'
+    ],
+    process: [
+      'Chemical stripper appropriate to existing finish',
+      '80–100 grit sanding back to bare wood',
+      'Brightener wash + full dry cycle',
+      'Most labor-intensive prep — but bonds the new stain like brand-new wood'
+    ],
+    timing: 'Adds 1–2 days to the project'
+  }
+};
+
+function renderConditionCards() {
+  const proj = state.activeProject.type;
+  const prep = PRICING[proj].prep;
+  const unit = PRICING[proj].unit;
+  const prepBase = computePrepBase();
+  const order = ['no_wash', 'soft_wash', 'strip_sand'];
+  const reco = recommendCondition();
+  const allowed = allowedConditions();
+
+  __doc.getElementById('conditionCards').innerHTML = order.map(key => {
+    const cond = CONDITION_META[key];
+    const rate = prep[key];
+    // Decks have multiple component rates; show TOTAL prep cost for decks, $/unit for everything else
+    const isDeck = (proj === 'deck');
+    const totalPrep = rate * prepBase;
+    let costLabel;
+    if (rate === 0) costLabel = 'No prep premium';
+    else if (isDeck && prepBase > 0) costLabel = `+$${totalPrep.toFixed(2)} prep`;
+    else if (isDeck) costLabel = `Prep priced at $${rate.toFixed(2)}/sq ft`;
+    else costLabel = `+$${rate.toFixed(2)}/${unit} prep`;
+
+    const bullets = CONDITION_BULLETS[key] || { when: [], process: [], timing: '' };
+    const isLocked = !allowed.includes(key);
+    const isReco = (key === reco) && !isLocked;
+    const isSelected = (state.activeProject.condition === key);
+
+    return `
+      <button class="condition-card ${isReco ? 'recommended' : ''} ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''}" data-cond="${key}" ${isLocked ? 'aria-disabled="true" tabindex="-1"' : ''}>
+        ${isLocked ? '<div class="locked-badge">Unavailable for this age</div>' : (isReco ? '<div class="reco-flag">Recommended</div>' : '')}
+        <div class="card-image" style="background-image:url('${cond.img}')"></div>
+        <div class="cond-body">
+          <div class="cond-name">${cond.label} <span class="info-btn" role="button" tabindex="0" data-info="cond_${key}" aria-label="More info">i</span></div>
+          <div class="cond-prep" style="font-weight:600;color:var(--navy);margin: 6px 0 10px;">${cond.serviceDesc}</div>
+
+          <div class="cond-bullets-group">
+            <div class="cond-bullets-label">When you'd pick this</div>
+            <ul class="cond-bullets">${bullets.when.map(b => `<li>${b}</li>`).join('')}</ul>
+          </div>
+          <div class="cond-bullets-group">
+            <div class="cond-bullets-label">What we do</div>
+            <ul class="cond-bullets process">${bullets.process.map(b => `<li>${b}</li>`).join('')}</ul>
+          </div>
+          ${bullets.timing ? `<div class="cond-timing">⏱ ${bullets.timing}</div>` : ''}
+
+          <div class="cond-add">${costLabel}</div>
+        </div>
+      </button>`;
+  }).join('');
+
+  __doc.querySelectorAll('#conditionCards .condition-card').forEach(card => {
+    if (card.classList.contains('locked')) return; // gated by wood age
+    card.addEventListener('click', (e) => {
+      if (e.target.classList.contains('info-btn')) return;
+      const newCond = card.dataset.cond;
+      state.activeProject.condition = newCond;
+      __doc.querySelectorAll('#conditionCards .condition-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      __doc.getElementById('stage4Next').disabled = false;
+      updateRunningTotal();
+    });
+  });
+  // Auto-select the recommended option if nothing is selected (or current pick is locked)
+  if (!state.activeProject.condition || !allowed.includes(state.activeProject.condition)) {
+    state.activeProject.condition = reco;
+    const recoCard = __doc.querySelector(`#conditionCards .condition-card[data-cond="${reco}"]`);
+    if (recoCard) recoCard.classList.add('selected');
+  }
+  __doc.getElementById('stage4Next').disabled = false;
+}
+
+function computePrepBase() {
+  const proj = state.activeProject.type;
+  const m = state.activeProject.measurements;
+  if (proj === 'fence') return (m.linearft || 0);
+  if (proj === 'deck') {
+    let baseSqFt = (m.flat || 0);
+    if (m.underneath) baseSqFt *= 2;
+    baseSqFt += (m.lattice || 0);
+    return baseSqFt;
+  }
+  if (proj === 'pergola' || proj === 'barn' || proj === 'ceiling') return (m.sqft || 0);
+  return 0;
+}
+
+/* ============================================================
+   STAGE 5: PRODUCT + HOA + PREVIOUS STAIN
+   ============================================================ */
+function renderProductStage() {
+  const condition = state.activeProject.condition;
+  const ps = state.activeProject.previousStain;
+  const recommended = recommendedProduct();
+  const banner = __doc.getElementById('recoBanner');
+  const bannerText = __doc.getElementById('recoBannerText');
+  banner.style.display = 'flex';
+  if (recommended === 'water') {
+    bannerText.innerHTML = `<strong>We recommend Water-Based.</strong>The wood was previously stained with a water-based product. Re-coating with water-based avoids needing to strip the existing finish completely. Switching to oil-based would require a full strip — possible, but more labor and cost.`;
+  } else if (ps.wasStained && ps.previousProductType === 'oil') {
+    bannerText.innerHTML = `<strong>We recommend Oil-Based.</strong>The wood already has oil-based stain on it. Recoating with oil avoids the full strip that would be required to switch to water-based.`;
+  } else if (ps.wasStained && ps.previousProductType === 'unsure') {
+    bannerText.innerHTML = `<strong>We recommend Oil-Based as a safe default.</strong>Since the previous product isn\'t known, oil is more forgiving — it bonds well to most existing finishes. A test patch is included.`;
+  } else if (condition === 'soft_wash') {
+    bannerText.innerHTML = `<strong>We recommend Oil-Based for greyed wood.</strong>Weathered wood has opened pores — oil penetrates and seals more effectively than water-based.`;
+  } else {
+    bannerText.innerHTML = `<strong>We recommend Oil-Based for new wood.</strong>Oil penetrates deeper and protects against UV and moisture longer than water-based — particularly valuable in the Southeast where summer sun is harsh.`;
+  }
+
+  // Build the 3 product cards from PRODUCT_FAMILY_META so we can include pros/cons bullets
+  const order = ['water', 'oil', 'hoa'];
+  __doc.getElementById('productChoiceCards').innerHTML = order.map(prod => {
+    const meta = PRODUCT_FAMILY_META[prod];
+    const isSelected = state.activeProject.productType === prod;
+    const isReco = (prod === recommended) && (prod !== 'hoa');
+    return `
+      <button class="product-choice-card ${isReco ? 'recommended' : ''} ${isSelected ? 'selected' : ''}" data-product="${prod}">
+        ${isReco ? '<div class="reco-flag">Recommended</div>' : ''}
+        <div class="prod-image" style="background-image:url('${meta.img}')"></div>
+        <div class="prod-body">
+          <div class="icon">${meta.icon}</div>
+          <div class="h">${meta.heading}</div>
+          <div class="d">${meta.summary}</div>
+          <ul class="prod-pros">${meta.pros.map(p => `<li>${p}</li>`).join('')}</ul>
+          <ul class="prod-cons">${meta.cons.map(c => `<li>${c}</li>`).join('')}</ul>
+          <div class="prod-recommend-note"><strong>When to pick this:</strong> ${meta.recommendNote}</div>
+        </div>
+      </button>`;
+  }).join('');
+
+  __doc.querySelectorAll('#productChoiceCards .product-choice-card').forEach(card => {
+    const prod = card.dataset.product;
+    card.onclick = () => {
+      const prev = state.activeProject.productType;
+      state.activeProject.productType = prod;
+      if (prev !== prod) state.activeProject.selectedColor = null;
+      // When switching product family, drop incompatible addons
+      delete state.activeProject.addons.citronella;
+      // When switching to HOA, force tier to performance and auto-confirm
+      // (HOA has no real tier choice, so we treat it as confirmed immediately)
+      if (prod === 'hoa') { state.activeProject.tier = 'performance'; state.activeProject.tierConfirmed = true; }
+      // Switching FROM HOA back to water/oil: require explicit tier re-confirmation
+      else if (state.activeProject.tierConfirmed && prev === 'hoa') state.activeProject.tierConfirmed = false;
+      __doc.querySelectorAll('#productChoiceCards .product-choice-card').forEach(c => c.classList.toggle('selected', c.dataset.product === prod));
+      // Show/hide HOA panel based on selection
+      __doc.getElementById('hoaPanel').style.display = (prod === 'hoa') ? 'block' : 'none';
+      updateStage5NextButton();
+      updateRunningTotal();
+    };
+  });
+
+  // wasStained moved to Step 3 — no need to handle here anymore
+
+  // HOA panel — show when HOA product is selected
+  __doc.getElementById('hoaPanel').style.display = isHoa() ? 'block' : 'none';
+  populateBrandDropdown('hoaBrand', state.activeProject.hoa.brand);
+  populateTransparencyDropdown('hoaTransparency', state.activeProject.hoa.transparency);
+  __doc.getElementById('hoaProductName').value = state.activeProject.hoa.productName || '';
+  __doc.getElementById('hoaColor').value = state.activeProject.hoa.color || '';
+  __doc.getElementById('hoaNotes').value = state.activeProject.hoa.notes || '';
+
+  attachStage5Listeners();
+  updateStage5NextButton();
+}
+
+function populateBrandDropdown(id, selected) {
+  __doc.getElementById(id).innerHTML = '<option value="">— Select brand —</option>' + STAIN_BRANDS.map(b => `<option value="${b}"${b === selected ? ' selected' : ''}>${b}</option>`).join('');
+}
+function populateTransparencyDropdown(id, selected) {
+  __doc.getElementById(id).innerHTML = '<option value="">— Select transparency —</option>' + STAIN_TRANSPARENCIES.map(t => `<option value="${t}"${t === selected ? ' selected' : ''}>${t}</option>`).join('');
+}
+
+function attachStage5Listeners() {
+  __doc.getElementById('hoaBrand').onchange = (e) => { state.activeProject.hoa.brand = e.target.value; updateStage5NextButton(); };
+  __doc.getElementById('hoaTransparency').onchange = (e) => { state.activeProject.hoa.transparency = e.target.value; };
+  __doc.getElementById('hoaProductName').oninput = (e) => { state.activeProject.hoa.productName = e.target.value; };
+  __doc.getElementById('hoaColor').oninput = (e) => { state.activeProject.hoa.color = e.target.value; updateStage5NextButton(); };
+  __doc.getElementById('hoaNotes').oninput = (e) => { state.activeProject.hoa.notes = e.target.value; };
+  // wasStained handlers were moved to attachMeasureListeners (Step 3)
+}
+
+function updateStage5NextButton() {
+  const btn = __doc.getElementById('stage5Next');
+  let canProceed = !!state.activeProject.productType;
+  if (isHoa()) canProceed = canProceed && !!state.activeProject.hoa.brand && !!state.activeProject.hoa.color;
+  btn.disabled = !canProceed;
+}
+
+/* ============================================================
+   STAGE 6: TIER — enhanced comparison
+   ============================================================ */
+function renderTierCards() {
+  const product = state.activeProject.productType;
+  const locked = product === 'water' ? '💧 Water-Based' : (product === 'oil' ? '🛢️ Oil-Based' : '🏘️ HOA-Required');
+  __doc.getElementById('productLockText').innerHTML = `<strong>${locked}</strong> selected — change on <a href="javascript:void(0)" onclick="showStage(5)" style="color:var(--green);font-weight:700;text-decoration:underline;">Step 5</a>.`;
+
+  renderPrevStainContext();
+
+  if (product === 'hoa') {
+    renderHoaTierCards();
+    return;
+  }
+
+  // Safety net: if measurements are empty AND we haven't already completed this
+  // project (maxStageReached < 10), warn and send the user back to Step 3.
+  // Once a project has been through review, we trust its state on subsequent
+  // visits — re-validating would flag a bug where bundled-project re-edits
+  // briefly look "empty" while the form rehydrates.
+  const previouslyCompleted = state.maxStageReached >= 10 && state.activeProject.tierConfirmed;
+  if (!validateMeasurements() && !previouslyCompleted) {
+    __doc.getElementById('tierCards').innerHTML = `
+      <div style="grid-column: 1 / -1; padding: 32px 28px; background: var(--gold-pale); border: 2px dashed var(--gold); border-radius: var(--radius-lg); text-align: center;">
+        <h3 style="color: var(--navy); margin-bottom: 8px;">📏 Measurements needed before tier prices can be calculated</h3>
+        <p style="color: #5a4a1f; font-size: 14px; margin-bottom: 16px;">Tier prices are calculated from the measurements you provide. We need those entered before we can show real numbers here.</p>
+        <button class="btn btn-primary" onclick="showStage(3)" style="padding: 12px 24px;">← Go back to Step 3: Measurements</button>
+      </div>`;
+    __doc.getElementById('stage6Next').disabled = true;
+    return;
+  }
+
+  const meta = TIER_META[product];
+  const proj = state.activeProject.type;
+  const sample = computeSampleTierPrices(product);
+  // Midpoint years for cost-per-year math — matches the life ranges shown on each card.
+  // Water:  Essential ~2y, Performance ~4.5y, Showcase ~6y
+  // Oil:    Essential ~2y, Performance ~3.5y, Showcase ~4.5y
+  const lifespanYears = product === 'water'
+    ? { essential: 2, performance: 4.5, showcase: 6 }
+    : { essential: 2, performance: 3.5, showcase: 4.5 };
+
+  __doc.getElementById('tierCards').innerHTML = ['essential', 'performance', 'showcase'].map(t => {
+    const tm = meta[t];
+    const isReco = (t === 'performance');
+    const isSelected = (state.activeProject.tier === t);
+    const totalPrice = sample[t];
+    const unit = tierUnitPrice(proj, t);
+    const costPerYear = totalPrice > 0 ? Math.round(totalPrice / lifespanYears[t]) : 0;
+    // Showcase tier: first two bullets render with ★ as the headline benefits,
+    // remaining bullets render with ✓ as standard checkmarks. Other tiers keep
+    // a single ★ on the lead bullet.
+    const prosHtml = tm.pros.map((p, i) => {
+      const isStandout = (t === 'showcase') ? (i < 2) : (i === 0);
+      return `<li${isStandout ? ' class="standout"' : ''}>${p}</li>`;
+    }).join('');
+    const detailsHtml = tm.details ? `<div class="tier-life-tooltip">${tm.details}</div>` : '';
+    // Decks have multiple components (flat + railing + stairs + lattice) so a single $/sq ft headline is misleading.
+    // For decks, show total project cost. For everything else, show per-unit rate.
+    const showTotalAsHeadline = (proj === 'deck');
+    const headlinePrice = showTotalAsHeadline
+      ? `$${Math.round(totalPrice).toLocaleString()}<span style="font-size:14px;color:var(--slate);font-weight:600;"> total</span>`
+      : `$${unit.rate.toFixed(2)}<span style="font-size:14px;color:var(--slate);font-weight:600;">/${unit.unit}</span>`;
+    const secondaryLine = showTotalAsHeadline
+      ? `≈ $${costPerYear.toLocaleString()}/yr amortized`
+      : `≈ $${Math.round(totalPrice).toLocaleString()} total · ≈ $${costPerYear.toLocaleString()}/yr amortized`;
+    // What's Included — real value-adds per tier, tied to product-specific warranties.
+    // EXPERT Stain & Seal: 2-yr semi-trans / 3-yr semi-solid manufacturer warranty.
+    // Limited Lifetime guarantee available with the EXPERT 3-Step System (clean / brighten / stain & seal).
+    let included;
+    if (product === 'oil' && t === 'essential') {
+      // Clear sealer — no color, no warranty against color failure
+      included = [
+        '✓ Plant &amp; landscape protection during application',
+        '✓ Full job-site cleanup after we leave',
+        '✓ EXPERT 3-Step System prep included',
+        '✓ Fully insured &amp; licensed in South Carolina'
+      ];
+    } else if (product === 'oil' && t === 'performance') {
+      included = [
+        '✓ <strong>EXPERT manufacturer warranty</strong> — 2 yrs on semi-trans, 3 yrs on semi-solid',
+        '✓ Plant &amp; landscape protection during application',
+        '✓ Free 90-day touch-up visit if you spot any miss',
+        '✓ EXPERT 3-Step System (qualifies for Limited Lifetime guarantee)',
+        '✓ Fully insured &amp; licensed work'
+      ];
+    } else if (product === 'oil' && t === 'showcase') {
+      included = [
+        '✓ <strong>EXPERT Log &amp; Timber Oil</strong> — 3-year manufacturer warranty',
+        '✓ Eligible for the <strong>EXPERT Limited Lifetime guarantee</strong> via the 3-Step System (qualifying new wood, conditions apply)',
+        '✓ Plant &amp; landscape protection during application',
+        '✓ Free 90-day touch-up visit',
+        '✓ Natural carpenter-bee &amp; wood-boring-insect deterrence',
+        '✓ Fully insured &amp; licensed work'
+      ];
+    } else if (product === 'water' && t === 'essential') {
+      included = [
+        '✓ Plant &amp; landscape protection during application',
+        '✓ Full job-site cleanup',
+        '✓ Single-coat SW Woodscapes Solid application',
+        '✓ Fully insured &amp; licensed work'
+      ];
+    } else if (product === 'water' && t === 'performance') {
+      included = [
+        '✓ Two full coats of SW Woodscapes Solid for proper film build',
+        '✓ Plant &amp; landscape protection during application',
+        '✓ Free 90-day touch-up visit',
+        '✓ Fully insured &amp; licensed work'
+      ];
+    } else if (product === 'water' && t === 'showcase') {
+      included = [
+        '✓ Two coats of <strong>SW Woodscapes Rain Refresh</strong> with Self-Cleaning Technology',
+        '✓ <strong>10-year limited manufacturer warranty</strong> (per Sherwin-Williams)',
+        '✓ Plant &amp; landscape protection during application',
+        '✓ Free 90-day touch-up visit',
+        '✓ Fully insured &amp; licensed work'
+      ];
+    } else {
+      included = [
+        '✓ Plant &amp; landscape protection during application',
+        '✓ Full job-site cleanup',
+        '✓ Fully insured &amp; licensed work'
+      ];
+    }
+    return `
+      <button class="tier-card ${isReco ? 'recommended' : ''} ${isSelected ? 'selected' : ''}" data-tier="${t}">
+        ${isReco ? '<div class="reco-flag">Recommended</div>' : ''}
+        <div class="tier-name">${t}</div>
+        <div class="tier-product">${tm.product}</div>
+        <div class="tier-tagline">${tm.tagline}</div>
+        <div class="tier-price">${headlinePrice}</div>
+        <div class="tier-cost-per-year">${secondaryLine}</div>
+        <div class="tier-life">⏱ ${tm.life}${detailsHtml}</div>
+        <ul class="tier-pros">${prosHtml}</ul>
+        ${tm.cons.length ? `<ul class="tier-cons">${tm.cons.map(c => `<li>${c}</li>`).join('')}</ul>` : ''}
+        <div class="whats-included">
+          <div class="whats-included-label">What's included</div>
+          <ul>${included.map(i => `<li>${i}</li>`).join('')}</ul>
+        </div>
+        <div class="best-for"><strong>Best for</strong>${tm.bestFor}</div>
+      </button>`;
+  }).join('');
+
+  __doc.querySelectorAll('#tierCards .tier-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const newTier = card.dataset.tier;
+      if (state.activeProject.tier !== newTier) state.activeProject.selectedColor = null;
+      state.activeProject.tier = newTier;
+      state.activeProject.tierConfirmed = true;
+      __doc.querySelectorAll('#tierCards .tier-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      __doc.getElementById('stage6Next').disabled = false;
+      __doc.getElementById('stage6Next').innerHTML = shouldSkipColorStage() ? 'Next: Add-ons <span class="arr-r">→</span>' : 'Next: Color <span class="arr-r">→</span>';
+      updateRunningTotal();
+    });
+  });
+  __doc.getElementById('stage6Next').disabled = !state.activeProject.tier;
+  __doc.getElementById('stage6Next').innerHTML = shouldSkipColorStage() ? 'Next: Add-ons <span class="arr-r">→</span>' : 'Next: Color <span class="arr-r">→</span>';
+}
+
+function renderHoaTierCards() {
+  // Show 3 cards but only the middle (HOA-Specified) is enabled
+  const price = computeTierBase(); // tier already locked to 'performance' when HOA picked
+  const hoa = HOA_TIER_META.performance;
+  __doc.getElementById('tierCards').innerHTML = `
+    <div class="tier-card disabled" aria-disabled="true">
+      <div class="tier-name">Essential</div>
+      <div class="tier-product">Not applicable</div>
+      <div class="tier-tagline">Your HOA dictates the product — tier choice doesn't apply.</div>
+    </div>
+    <button class="tier-card recommended selected" data-tier="performance">
+      <div class="reco-flag">HOA Locked</div>
+      <div class="tier-name">HOA-Specified</div>
+      <div class="tier-product">${hoa.product}</div>
+      <div class="tier-tagline">${hoa.tagline}</div>
+      <div class="tier-price">$${price.toLocaleString(undefined,{maximumFractionDigits:0})}</div>
+      <div class="tier-cost-per-year">Priced at our Performance-tier rate</div>
+      <div class="tier-life">⏱ ${hoa.life}${hoa.details ? `<div class="tier-life-tooltip">${hoa.details}</div>` : ''}</div>
+      <ul class="tier-pros">${hoa.pros.map(p => `<li>${p}</li>`).join('')}</ul>
+      <ul class="tier-cons">${hoa.cons.map(c => `<li>${c}</li>`).join('')}</ul>
+      <div class="best-for"><strong>Best for</strong>${hoa.bestFor}</div>
+    </button>
+    <div class="tier-card disabled" aria-disabled="true">
+      <div class="tier-name">Showcase</div>
+      <div class="tier-product">Not applicable</div>
+      <div class="tier-tagline">Your HOA dictates the product — tier choice doesn't apply.</div>
+    </div>`;
+  // HOA flow is locked to performance, button always enabled
+  state.activeProject.tier = 'performance';
+  __doc.getElementById('stage6Next').disabled = false;
+  __doc.getElementById('stage6Next').innerHTML = 'Next: Add-ons <span class="arr-r">→</span>';
+}
+
+function renderPrevStainContext() {
+  const container = __doc.getElementById('prevStainContext');
+  if (!container) return;
+  const ps = state.activeProject.previousStain;
+  const product = state.activeProject.productType;
+  if (!ps.wasStained || product === 'hoa') { container.innerHTML = ''; return; }
+
+  const prevType = ps.previousProductType;
+  const isSameType = (prevType === 'water' && product === 'water') || (prevType === 'oil' && product === 'oil');
+  const isSwitching = (prevType === 'water' && product === 'oil') || (prevType === 'oil' && product === 'water');
+  const typeLabel = prevType === 'water' ? 'water-based' : (prevType === 'oil' ? 'oil-based' : 'an unknown product');
+  const brandLabel = ps.brand ? ` (${ps.brand}${ps.transparency ? ' ' + ps.transparency : ''})` : '';
+
+  // Tailored notes based on what they told us
+  const notes = [];
+  if (isSameType) {
+    notes.push(`<strong>Good news — you're staying with the same stain type.</strong> If the existing finish is in good condition, Step 4's <strong>Soft Wash</strong> will be enough. No full strip needed.`);
+  } else if (isSwitching) {
+    notes.push(`<strong>Heads up — you're switching from ${prevType}-based to ${product}-based.</strong> The two chemistries don't bond well, so the existing finish has to come off completely. Make sure <strong>Strip &amp; Sand</strong> is selected on Step 4.`);
+  } else if (prevType === 'unsure') {
+    notes.push(`<strong>We'll do a small test patch</strong> on-site to confirm what's there before finalizing prep. If it's the same type as your new choice and still bonding well, Soft Wash works. If we find peeling or get a bad test result, we'll move to Strip &amp; Sand.`);
+  }
+
+  notes.push(`Re-coats over previously stained wood typically last <strong>~80% as long</strong> as the same product applied to bare wood. The lifespan numbers on the tier cards already factor this in for your situation.`);
+
+  if (ps.brand || ps.colorNotes) {
+    notes.push(`Want to <strong>match the existing color</strong> exactly? Pick the free <em>"Custom color match (you provide a sample)"</em> add-on on Step 8 and bring a chip or photo to scheduling.`);
+  }
+
+  container.innerHTML = `
+    <div class="alert" style="background: linear-gradient(135deg, #e6f0f7 0%, #f0f6fb 100%); border-left: 4px solid #3a7095; color: #234862; margin-bottom: 20px;">
+      <span class="ico">🪵</span>
+      <div>
+        <strong style="color: var(--navy); display:block; margin-bottom: 6px;">Previously stained with ${typeLabel}${brandLabel} — here's what it means for your tier choice</strong>
+        <ul style="margin: 6px 0 0 18px; padding: 0; font-size: 13px; line-height: 1.55;">
+          ${notes.map(n => `<li style="margin-bottom: 4px;">${n}</li>`).join('')}
+        </ul>
+      </div>
+    </div>`;
+}
+
+function tierUnitPrice(proj, tier) {
+  // Returns the headline per-unit rate for a tier (most representative number)
+  if (proj === 'fence')   return { rate: PRICING.fence.tiers[tier], unit: 'ln ft' };
+  if (proj === 'deck')    return { rate: PRICING.deck.rates.flat * PRICING.deck.tiers[tier], unit: 'sq ft' };
+  if (proj === 'pergola') return { rate: PRICING.pergola.tiers[tier], unit: 'sq ft' };
+  if (proj === 'barn')    return { rate: PRICING.barn.tiers[tier], unit: 'sq ft' };
+  if (proj === 'ceiling') return { rate: PRICING.ceiling.tiers[tier], unit: 'sq ft' };
+  return { rate: 0, unit: '' };
+}
+
+function computeSampleTierPrices(product) {
+  const out = {};
+  ['essential', 'performance', 'showcase'].forEach(t => {
+    const saved = state.activeProject.tier;
+    const savedP = state.activeProject.productType;
+    state.activeProject.tier = t;
+    state.activeProject.productType = product;
+    out[t] = computeTierBase();
+    state.activeProject.tier = saved;
+    state.activeProject.productType = savedP;
+  });
+  return out;
+}
+
+/* ============================================================
+   STAGE 7: COLOR — IMAGE SWATCHES (EXPERT real images)
+   ============================================================ */
+function renderColorStage() {
+  if (shouldSkipColorStage()) { showStage(8); return; }
+  const libKey = getColorLibrary(state.activeProject.productType, state.activeProject.tier);
+  const lib = COLORS[libKey];
+  __doc.getElementById('colorTitle').textContent = `Pick a color — ${lib.line}`;
+
+  // Flatten to count + handle grouped vs flat color libraries
+  const allColors = lib.grouped
+    ? lib.groups.flatMap(g => g.colors)
+    : lib.colors;
+  __doc.getElementById('colorLead').innerHTML = `${allColors.length} colors available. ${lib.note || ''}`;
+
+  const renderSwatch = (c) => {
+    const isSelected = state.activeProject.selectedColor && state.activeProject.selectedColor.name === c.name;
+    const chipStyle = c.img ? `background-image:url('${c.img}')` : `background-color:${c.hex}`;
+    const chipClass = c.img ? '' : 'hex-only';
+    const codeLine = c.code ? `<div class="code">${c.code}</div>` : '';
+    return `
+      <div class="color-swatch ${isSelected ? 'selected' : ''} ${c.isCustom ? 'custom-swatch' : ''}" data-color="${c.name}">
+        <div class="chip ${chipClass}" style="${chipStyle}"></div>
+        <div class="name">${c.name}</div>${codeLine}
+      </div>`;
+  };
+
+  let html = '';
+  if (lib.grouped) {
+    html = lib.groups.map(g => `
+      <div class="color-group">
+        <h4 class="color-group-label">${g.label} <small>· ${g.colors.length}</small></h4>
+        <div class="color-grid">${g.colors.map(renderSwatch).join('')}</div>
+      </div>
+    `).join('');
+  } else {
+    html = `<div class="color-grid">${lib.colors.map(renderSwatch).join('')}</div>`;
+  }
+
+  // Custom color code entry — shown when a Custom swatch is selected
+  const customPicked = state.activeProject.selectedColor && state.activeProject.selectedColor.isCustom;
+  html += `
+    <div class="custom-color-entry ${customPicked ? 'visible' : ''}" id="customColorEntry">
+      <h4 style="font-size:14px;color:var(--navy);margin-bottom:6px;">Custom color code or sample</h4>
+      <p style="font-size:13px;color:var(--slate);margin-bottom:12px;">Enter the SW code (e.g. <code style="background:var(--line-soft);padding:2px 6px;border-radius:4px;">SW 3080</code>), a paint chip name, or a description. For water-based, we'll match it using the SW color-match tool.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <input type="text" id="customColorInput" placeholder="e.g. SW 3080 Traditional Mahogany" value="${state.activeProject.customColorCode || ''}" style="flex:1;min-width:200px;padding:12px 14px;border:2px solid var(--line);border-radius:10px;font-size:15px;">
+        <button class="btn btn-primary" onclick="applyCustomColor()" style="padding:12px 24px;">Apply</button>
+      </div>
+    </div>`;
+
+  __doc.getElementById('colorGrid').outerHTML = `<div id="colorGrid">${html}</div>`;
+
+  __doc.querySelectorAll('#colorGrid .color-swatch').forEach(sw => {
+    sw.addEventListener('click', () => {
+      const name = sw.dataset.color;
+      const c = allColors.find(x => x.name === name);
+      state.activeProject.selectedColor = { ...c, line: lib.line };
+      __doc.querySelectorAll('#colorGrid .color-swatch').forEach(s => s.classList.remove('selected'));
+      sw.classList.add('selected');
+      // Show custom entry if Custom swatch was picked
+      const entry = __doc.getElementById('customColorEntry');
+      if (entry) entry.classList.toggle('visible', !!c.isCustom);
+      // Enable Next unless they picked Custom without a code yet
+      const needsCode = c.isCustom && !state.activeProject.customColorCode;
+      __doc.getElementById('stage7Next').disabled = needsCode;
+    });
+  });
+  const sc = state.activeProject.selectedColor;
+  const needsCode = sc && sc.isCustom && !state.activeProject.customColorCode;
+  __doc.getElementById('stage7Next').disabled = !sc || needsCode;
+}
+
+function applyCustomColor() {
+  const code = __doc.getElementById('customColorInput').value.trim();
+  if (!code) { alert('Enter a color code or description.'); return; }
+  state.activeProject.customColorCode = code;
+  // Update the stored selectedColor to include the user's entered code
+  if (state.activeProject.selectedColor) {
+    state.activeProject.selectedColor = { ...state.activeProject.selectedColor, code: code, name: 'Custom: ' + code };
+  }
+  __doc.getElementById('stage7Next').disabled = false;
+  fireConfetti();
+}
+
+/* ============================================================
+   STAGE 8: ADD-ONS (no discounts here anymore)
+   ============================================================ */
+function renderAddons() {
+  const proj = state.activeProject.type;
+  const product = state.activeProject.productType;
+  // Only show stain upgrades compatible with the selected product (HOA hides stain upgrades)
+  const stainUpgrades = isHoa() ? [] : PRICING.stainUpgrades.filter(a => !a.product || a.product === product);
+  const projAddons = PRICING.projectAddons[proj] || [];
+  const serviceAddons = PRICING.serviceAddons;
+  const customAddons = state.activeProject.customAddons || [];
+
+  const stainSection = stainUpgrades.length ? `
+    <div class="addon-section">
+      <h4>🧪 Stain Product Upgrades</h4>
+      <div class="addon-grid">${stainUpgrades.map(a => addonRow(a, 'stain')).join('')}</div>
+    </div>` : (isHoa() ? `
+    <div class="addon-section">
+      <h4>🧪 Stain Product Upgrades</h4>
+      <p style="font-size:13px;color:var(--slate);">Stain product upgrades aren't applicable here — the HOA specifies the exact product, so add-ons that modify the stain don't apply.</p>
+    </div>` : '');
+
+  __doc.getElementById('addonsContainer').innerHTML = `
+    <div class="addon-section service-includes-section">
+      <h4>✨ Included free with every quote</h4>
+      <p style="font-size:13px;color:var(--slate);margin-bottom:12px;">These services are always included — they're not extras you pay for, they're what good staining looks like done right.</p>
+      <div class="addon-grid service-includes-grid">${serviceAddons.map(a => `
+        <div class="service-include-row">
+          <span class="check">✓</span>
+          <div class="addon-desc">
+            <div class="ad-name">${a.name}</div>
+            ${a.desc ? `<div class="ad-sub">${a.desc}</div>` : ''}
+          </div>
+          <span class="price">FREE</span>
+        </div>
+      `).join('')}</div>
+    </div>
+    ${stainSection}
+    <div class="addon-section">
+      <h4>${PROJECT_META[proj].icon} ${PROJECT_META[proj].name} Add-ons</h4>
+      <div class="addon-grid">${projAddons.map(a => addonRow(a, 'project')).join('')}</div>
+    </div>
+    <div class="addon-section">
+      <h4>🛠️ Custom Items <span style="display:flex;align-items:center;gap:8px;"><span class="employee-badge">Employee Only</span><button class="custom-add-btn" id="customAddBtn">+ Add Custom Item</button></span></h4>
+      <div id="customItemsList">${renderCustomItemsList()}</div>
+      <div class="custom-add-form" id="customAddForm" style="display:none;">
+        <div class="form-row">
+          <div><label>Description</label><input type="text" id="customAddName" placeholder="e.g. Off-list color match for cedar trim"></div>
+          <div><label>Price Type</label>
+            <select id="customAddPriceType">
+              <option value="flat">Flat (one-time $)</option>
+              <option value="per_unit">Per unit ($ × project unit)</option>
+              <option value="percent">Percent of base (%)</option>
+            </select>
+          </div>
+          <div><label>Amount</label><input type="number" min="0" step="0.01" id="customAddAmount" placeholder="0.00"></div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button class="btn-save" id="customAddSave">Save</button>
+            <button class="btn-cancel" id="customAddCancel">Cancel</button>
+          </div>
+        </div>
+        <p style="margin-top:8px;font-size:11px;color:var(--slate);">Custom items are visible only to the quoting employee internally; on the customer-facing PDF they appear as line items with the name and price you set here.</p>
+      </div>
+    </div>`;
+  attachAddonListeners();
+  attachCustomAddonListeners();
+}
+
+function renderCustomItemsList() {
+  const customAddons = state.activeProject.customAddons || [];
+  if (!customAddons.length) {
+    return `<p style="font-size:13px;color:var(--slate);font-style:italic;">No custom items added. Use "+ Add Custom Item" for anything not on the standard add-on list.</p>`;
+  }
+  return customAddons.map((c, i) => `
+    <div class="custom-item-row">
+      <span class="name">${c.name}</span>
+      <span class="price">${formatCustomPrice(c)}</span>
+      <button class="remove-btn" onclick="removeCustomAddon(${i})" title="Remove">×</button>
+    </div>
+  `).join('');
+}
+
+function formatCustomPrice(c) {
+  if (c.priceType === 'flat') return `+$${(+c.rate).toFixed(2)}`;
+  if (c.priceType === 'per_unit') return `+$${(+c.rate).toFixed(2)}/${PRICING[state.activeProject.type].unit}`;
+  if (c.priceType === 'percent') return `+${(+c.rate).toFixed(1)}%`;
+  return '';
+}
+
+function attachCustomAddonListeners() {
+  const btn = __doc.getElementById('customAddBtn');
+  const form = __doc.getElementById('customAddForm');
+  const saveBtn = __doc.getElementById('customAddSave');
+  const cancelBtn = __doc.getElementById('customAddCancel');
+  if (btn) btn.onclick = () => { form.style.display = 'block'; __doc.getElementById('customAddName').focus(); };
+  if (cancelBtn) cancelBtn.onclick = () => {
+    form.style.display = 'none';
+    __doc.getElementById('customAddName').value = '';
+    __doc.getElementById('customAddAmount').value = '';
+  };
+  if (saveBtn) saveBtn.onclick = () => {
+    const name = __doc.getElementById('customAddName').value.trim();
+    const priceType = __doc.getElementById('customAddPriceType').value;
+    const rate = parseFloat(__doc.getElementById('customAddAmount').value);
+    if (!name) { alert('Please give the item a description.'); return; }
+    if (isNaN(rate) || rate < 0) { alert('Please enter a valid amount.'); return; }
+    if (!state.activeProject.customAddons) state.activeProject.customAddons = [];
+    state.activeProject.customAddons.push({ id: 'custom_' + Date.now(), name, priceType, rate });
+    form.style.display = 'none';
+    __doc.getElementById('customAddName').value = '';
+    __doc.getElementById('customAddAmount').value = '';
+    __doc.getElementById('customItemsList').innerHTML = renderCustomItemsList();
+    updateRunningTotal();
+  };
+}
+
+function removeCustomAddon(idx) {
+  if (!state.activeProject.customAddons) return;
+  state.activeProject.customAddons.splice(idx, 1);
+  __doc.getElementById('customItemsList').innerHTML = renderCustomItemsList();
+  updateRunningTotal();
+}
+
+function addonRow(a, group) {
+  const stored = group === 'service' ? state.activeProject.serviceAddons[a.id] : state.activeProject.addons[a.id];
+  const checked = !!stored;
+  const qty = (typeof stored === 'object' && stored.qty) ? stored.qty : 1;
+  const priceLabel = formatAddonPrice(a);
+  const restr = a.restr ? `<span class="restr">${a.restr}</span>` : '';
+  const qtyInput = needsQty(a) ? `<input type="number" min="1" step="1" value="${qty}" class="qty-input" data-qty="${a.id}" placeholder="${a.qtyLabel || 'qty'}">` : '';
+  const imageHtml = a.img ? `<div class="addon-img" style="background-image:url('${a.img}')"></div>` : '';
+  const descHtml = a.desc
+    ? `<div class="addon-desc"><div class="ad-name">${a.name}${restr}</div><div class="ad-sub">${a.desc}</div></div>`
+    : `<div class="addon-desc"><div class="ad-name">${a.name}${restr}</div></div>`;
+  return `<div class="toggle-row ${checked ? 'checked' : ''}" data-addon="${a.id}" data-group="${group}"><span class="box"></span>${imageHtml}${descHtml}${qtyInput}<span class="price">${priceLabel}</span></div>`;
+}
+
+function needsQty(a) { return a.priceType === 'each' || a.priceType === 'each_lnft'; }
+
+function formatAddonPrice(a) {
+  // Anywhere a calculated rate would render as "$0" or "+$0", show "FREE" instead
+  if (!a.rate || a.rate === 0) return 'FREE';
+  if (a.priceType === 'flat') return `+$${a.rate}`;
+  if (a.priceType === 'each') return `$${a.rate} ea`;
+  if (a.priceType === 'each_lnft') return `$${a.rate}/ln ft`;
+  if (a.priceType === 'per_unit') return `+$${a.rate.toFixed(2)}/${PRICING[state.activeProject.type].unit}`;
+  if (a.priceType === 'per_unit_trim') return `$${a.rate.toFixed(2)}/ln ft trim`;
+  if (a.priceType === 'percent') return `+${(a.rate * 100).toFixed(0)}%`;
+  return '';
+}
+
+function attachAddonListeners() {
+  __doc.querySelectorAll('[data-addon]').forEach(row => {
+    const id = row.dataset.addon;
+    const group = row.dataset.group;
+    const qtyInp = row.querySelector('input[data-qty]');
+    row.addEventListener('click', (e) => {
+      if (e.target === qtyInp) return;
+      const willCheck = !row.classList.contains('checked');
+      row.classList.toggle('checked', willCheck);
+      saveAddon(id, group, willCheck, qtyInp ? +qtyInp.value : 1);
+    });
+    if (qtyInp) {
+      qtyInp.addEventListener('click', e => e.stopPropagation());
+      qtyInp.addEventListener('input', () => { if (row.classList.contains('checked')) saveAddon(id, group, true, +qtyInp.value); });
+    }
+  });
+}
+
+function saveAddon(id, group, checked, qty) {
+  const target = group === 'service' ? state.activeProject.serviceAddons : state.activeProject.addons;
+  if (checked) target[id] = needsQty(findAddonDef(id)) ? { qty: Math.max(1, qty || 1) } : true;
+  else delete target[id];
+  updateRunningTotal();
+}
+
+function findAddonDef(id) {
+  const proj = state.activeProject.type;
+  return [...PRICING.stainUpgrades, ...(PRICING.projectAddons[proj] || []), ...PRICING.serviceAddons].find(a => a.id === id);
+}
+
+/* ============================================================
+   STAGE 9: DISCOUNTS — separated, single-select (radio)
+   ============================================================ */
+function renderDiscounts() {
+  const sels = state.activeProject.selectedDiscounts || [];
+  const sum = totalDiscountRate();
+  const bundleAuto = state.bundledProjects.length >= 1 && !!state.activeProject.type;
+  const html = `
+    <div class="alert info" style="margin-bottom:20px;">
+      <span class="ico">✨</span>
+      <div><strong>Discounts stack — up to ${(DISCOUNT_STACK_CAP*100).toFixed(0)}% total.</strong>${bundleAuto ? ' Your bundle discount (10%) is auto-applied on top. ' : ' '}Pick any that apply. Some discounts are mutually exclusive — picking one in a group auto-clears the other (you can\'t double up on service-appreciation or loyalty).</div>
+    </div>
+    <div id="discountList">
+      ${DISCOUNTS.filter(d => !d.locked).map(d => {
+        const isChecked = sels.includes(d.id);
+        const ratePct = (d.rate * 100);
+        const rateLabel = (Math.round(ratePct) === ratePct) ? `${ratePct.toFixed(0)}%` : `${ratePct.toFixed(1)}%`;
+        // Informational items (e.g. cash/check payment) don't apply a discount —
+        // they describe transparent pricing instead. Show a neutral label.
+        const valueDisplay = d.informational ? 'No processing fee' : `−${rateLabel}`;
+        return `
+          <div class="radio-row ${isChecked ? 'checked' : ''} ${d.informational ? 'informational' : ''}" data-discount="${d.id}" ${d.group ? `data-discount-group="${d.group}"` : ''}>
+            <div class="disc-img" style="background-image:url('${d.img}')"></div>
+            <div class="dot-outer square"></div>
+            <div class="label">
+              <div class="head">${d.label}</div>
+              <div class="sub">${d.sub}</div>
+            </div>
+            <div class="value">${valueDisplay}</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+    <div class="discount-sum-line" id="discountSumLine">
+      <div>
+        <strong>Total discount applied:</strong>
+        <span id="discountSumText">${sum.rate > 0 ? `${sum.count} selected · ${sum.label}` : 'None selected yet'}</span>
+      </div>
+      <div class="discount-sum-rate" id="discountSumRate">−${(sum.rate * 100).toFixed(1).replace(/\.0$/, '')}%</div>
+    </div>
+    ${sum.uncappedRate > DISCOUNT_STACK_CAP ? `<div class="alert warn" style="margin-top:12px;"><span class="ico">⚠️</span><div><strong>Stack capped at ${(DISCOUNT_STACK_CAP*100).toFixed(0)}%.</strong>You've selected ${(sum.uncappedRate*100).toFixed(1)}% worth, but the project-level discount stack is capped at ${(DISCOUNT_STACK_CAP*100).toFixed(0)}% to keep our margins sustainable. The bundle discount (10%) applies separately on top.</div></div>` : ''}
+  `;
+  __doc.getElementById('discountsContainer').innerHTML = html;
+  __doc.querySelectorAll('#discountList .radio-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const id = row.dataset.discount;
+      const group = row.dataset.discountGroup;
+      const sels = state.activeProject.selectedDiscounts = state.activeProject.selectedDiscounts || [];
+      const idx = sels.indexOf(id);
+      const wasUnchecked = idx === -1;
+      if (wasUnchecked) {
+        // If this discount is in a mutex group, deselect any other selected option from the same group
+        if (group) {
+          const sameGroupIds = DISCOUNTS.filter(d => d.group === group && d.id !== id).map(d => d.id);
+          sameGroupIds.forEach(otherId => {
+            const otherIdx = sels.indexOf(otherId);
+            if (otherIdx >= 0) sels.splice(otherIdx, 1);
+            const otherRow = __doc.querySelector(`#discountList .radio-row[data-discount="${otherId}"]`);
+            if (otherRow) otherRow.classList.remove('checked');
+          });
+        }
+        sels.push(id);
+      } else {
+        sels.splice(idx, 1);
+      }
+      row.classList.toggle('checked', wasUnchecked);
+      // Update the sum line + maybe fire confetti
+      const sum = totalDiscountRate();
+      const sumText = __doc.getElementById('discountSumText');
+      const sumRate = __doc.getElementById('discountSumRate');
+      if (sumText) sumText.textContent = sum.rate > 0 ? `${sum.count} selected · ${sum.label}` : 'None selected yet';
+      if (sumRate) sumRate.textContent = '−' + (sum.rate * 100).toFixed(1).replace(/\.0$/, '') + '%';
+      if (wasUnchecked) fireConfetti();
+      updateRunningTotal();
+      // Re-render to update the cap warning banner state
+      const container = __doc.getElementById('discountsContainer');
+      if (container && sum.uncappedRate !== sum.rate) {
+        // Only re-render if the cap state changed (avoid full re-render churn otherwise)
+        renderDiscounts();
+      }
+    });
+  });
+}
+
+/* ============================================================
+   PRICING ENGINE
+   ============================================================ */
+function computeTierBase() {
+  const proj = state.activeProject.type;
+  const tier = state.activeProject.tier;
+  const m = state.activeProject.measurements;
+  if (proj === 'fence') {
+    const totalLnFt = m.linearft || 0;
+    const perFootRate = PRICING.fence.tiers[tier] * PRICING.fence.styleMultipliers[m.style || 'privacy'];
+    if (!m.oneSided) return totalLnFt * perFootRate;
+    // One-side-only is enabled. If `oneSidedLnFt` is specified, only that
+    // portion is priced as one-sided; the remainder is priced normally.
+    // If left empty (0/null), assume the ENTIRE fence is one-sided.
+    const partial = +m.oneSidedLnFt || 0;
+    const oneSidedLn = (partial > 0 && partial < totalLnFt) ? partial : totalLnFt;
+    const bothSidedLn = totalLnFt - oneSidedLn;
+    return (oneSidedLn * perFootRate * PRICING.fence.oneSidedFactor) + (bothSidedLn * perFootRate);
+  }
+  if (proj === 'deck') {
+    const mult = PRICING.deck.tiers[tier];
+    let flatSqFt = (m.flat || 0);
+    if (m.underneath) flatSqFt *= PRICING.deck.underneathMultiplier;
+    return flatSqFt * PRICING.deck.rates.flat * mult
+      + (m.rail || 0) * PRICING.deck.rates.railing * mult
+      + (m.stairs || 0) * PRICING.deck.rates.stair * mult
+      + (m.lattice || 0) * PRICING.deck.rates.lattice;
+  }
+  if (proj === 'pergola') {
+    let base = (m.sqft || 0) * PRICING.pergola.tiers[tier];
+    if (m.overhead) base += PRICING.pergola.overheadAccessFlat;
+    return base;
+  }
+  if (proj === 'barn') {
+    let base = (m.sqft || 0) * PRICING.barn.tiers[tier];
+    if (m.heightPremium) base *= PRICING.barn.heightPremium;
+    if (m.cupolaCount) base += m.cupolaCount * PRICING.barn.cupolaFlat;
+    if (m.trim) base += m.trim * PRICING.barn.trimRate;
+    if (m.liftDays) base += m.liftDays * PRICING.barn.liftRentalPerDay;
+    return base;
+  }
+  if (proj === 'ceiling') {
+    let base = (m.sqft || 0) * PRICING.ceiling.tiers[tier];
+    if (m.tng) base += (m.sqft || 0) * PRICING.ceiling.tngPremium;
+    if (m.beamLnFt) base += m.beamLnFt * PRICING.ceiling.beamRate;
+    if (m.fixtures) base += m.fixtures * PRICING.ceiling.fixtureRemoval;
+    if (m.fans) base += m.fans * PRICING.ceiling.fanRemoval;
+    if (m.furnProtect) base += PRICING.ceiling.furnitureProtFlat;
+    return base;
+  }
+  return 0;
+}
+
+function computePrepCost() {
+  const proj = state.activeProject.type;
+  // Guard: no project selected (e.g. right after collapseActiveProject resets active to blank)
+  if (!proj || !PRICING[proj] || !PRICING[proj].prep) return 0;
+  return (PRICING[proj].prep[state.activeProject.condition] || 0) * computePrepBase();
+}
+
+function computeAddonsTotal() {
+  const proj = state.activeProject.type;
+  const m = state.activeProject.measurements;
+  let flat = 0; let percentRate = 0;
+  const allAddons = { ...state.activeProject.addons, ...state.activeProject.serviceAddons };
+  Object.keys(allAddons).forEach(id => {
+    const def = findAddonDef(id); if (!def) return;
+    const stored = allAddons[id];
+    const qty = (typeof stored === 'object' && stored.qty) ? stored.qty : 1;
+    if (def.priceType === 'flat') flat += def.rate;
+    else if (def.priceType === 'each') flat += def.rate * qty;
+    else if (def.priceType === 'each_lnft') flat += def.rate * qty;
+    else if (def.priceType === 'per_unit') {
+      const units = proj === 'fence' ? (m.linearft || 0) : (m.sqft || m.flat || 0);
+      let amount = def.rate * units;
+      if (def.minCharge && amount < def.minCharge && units > 0) amount = def.minCharge;
+      flat += amount;
+    }
+    else if (def.priceType === 'per_unit_trim') flat += def.rate * (m.trim || 0);
+    else if (def.priceType === 'percent') percentRate += def.rate;
+  });
+  // Custom employee-added addons
+  (state.activeProject.customAddons || []).forEach(c => {
+    if (c.priceType === 'flat') flat += +c.rate;
+    else if (c.priceType === 'per_unit') flat += +c.rate * (proj === 'fence' ? (m.linearft || 0) : (m.sqft || m.flat || 0));
+    else if (c.priceType === 'percent') percentRate += +c.rate / 100;
+  });
+  return { flat, percentRate };
+}
+
+function totalDiscountRate() {
+  // All manually-selected discounts stack, subject to:
+  //  (1) mutex groups — only one option per `group` can be active (enforced at click-time too)
+  //  (2) DISCOUNT_STACK_CAP — total stack capped to avoid eroding margin
+  // Bundle is handled separately at the multi-project level in computeAllTotals().
+  let sum = 0;
+  const labels = [];
+  const sels = state.activeProject.selectedDiscounts || [];
+  sels.forEach(id => {
+    const def = DISCOUNTS.find(d => d.id === id && !d.locked);
+    if (def) { sum += def.rate; labels.push(def.label); }
+  });
+  const capped = Math.min(sum, DISCOUNT_STACK_CAP);
+  return { rate: capped, uncappedRate: sum, label: labels.join(' + ') || '', count: sels.length, cap: DISCOUNT_STACK_CAP };
+}
+// Back-compat alias for any old call sites
+function bestDiscountRate() { return totalDiscountRate(); }
+
+function computeProjectTotal() {
+  // Tier base only counts toward the running total once the user has explicitly
+  // picked a tier (or selected HOA which auto-confirms). Before that, the only
+  // money in the total is restoration/prep cost — shown as soon as the user
+  // picks Soft Wash or Strip & Sand on Stage 4.
+  const tierBase = state.activeProject.tierConfirmed ? computeTierBase() : 0;
+  const prep = computePrepCost();
+  const addons = computeAddonsTotal();
+  const percentMod = tierBase * addons.percentRate;
+  let subtotal = tierBase + prep + addons.flat + percentMod;
+
+  const disc = bestDiscountRate();
+  const discountableBase = tierBase + addons.flat + percentMod;
+  const discountAmount = discountableBase * disc.rate;
+  subtotal -= discountAmount;
+
+  let minimumApplied = false;
+  if (subtotal < PRICING.minimumJob && tierBase > 0) { subtotal = PRICING.minimumJob; minimumApplied = true; }
+  return { tierBase, prep, addonsFlat: addons.flat, percentMod, percentRate: addons.percentRate, discountRate: disc.rate, discountAmount, discountLabel: disc.label, subtotal, minimumApplied };
+}
+
+function computeAllTotals() {
+  const active = computeProjectTotal();
+  const bundled = state.bundledProjects.map(p => p._cached || { tierBase:0, prep:0, addonsFlat:0, percentMod:0, subtotal: 0, discountAmount: 0 });
+  const projectsCount = (active.subtotal > 0 ? 1 : 0) + bundled.length;
+  const sumBeforeBundle = active.subtotal + bundled.reduce((s, b) => s + b.subtotal, 0);
+
+  // Total per-project discount savings across active + all bundled (stackable discounts)
+  const totalDiscountSavings = (active.discountAmount || 0) + bundled.reduce((s, b) => s + (b.discountAmount || 0), 0);
+
+  let bundleEligible = projectsCount >= 2;
+  let bundleDiscount = 0;
+  let finalTotal = sumBeforeBundle;
+  if (bundleEligible) {
+    const activeRaw = active.tierBase + active.prep + active.addonsFlat + active.percentMod;
+    const bundledRaw = bundled.reduce((s, b) => s + (b.tierBase + b.prep + b.addonsFlat + b.percentMod), 0);
+    const totalRaw = activeRaw + bundledRaw - totalDiscountSavings;  // apply per-project discounts first
+    const totalDiscountable = (active.tierBase + active.addonsFlat + active.percentMod) + bundled.reduce((s, b) => s + (b.tierBase + b.addonsFlat + b.percentMod), 0);
+    bundleDiscount = totalDiscountable * PRICING.bundleDiscount;
+    finalTotal = totalRaw - bundleDiscount;
+    if (finalTotal < PRICING.minimumJob) finalTotal = PRICING.minimumJob;
+  }
+  return { active, bundled, projectsCount, sumBeforeBundle, bundleEligible, bundleDiscount, finalTotal, totalDiscountSavings };
+}
+
+let _lastDisplayedTotal = 0;
+let _lastDisplayedActive = 0;
+
+function animateCounter(el, from, to, duration) {
+  if (from === to) { el.textContent = '$' + Math.round(to).toLocaleString(); return; }
+  const start = performance.now();
+  function step(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+    const val = Math.round(from + (to - from) * eased);
+    el.textContent = '$' + val.toLocaleString();
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function updateRunningTotal() {
+  const totals = computeAllTotals();
+  const totalAmount = __doc.getElementById('totalAmount');
+  const activeAmount = __doc.getElementById('activeProjectAmount');
+  const activePill = __doc.getElementById('activeProjectPill');
+  const totalPill = __doc.getElementById('totalPill');
+
+  // Hide the total pill entirely until there's an actual price to show
+  // (i.e., a tier has been selected AND measurements entered → tierBase > 0,
+  // OR there are bundled projects already with prices).
+  const hasPrice = totals.finalTotal > 0;
+  totalPill.style.display = hasPrice ? 'flex' : 'none';
+  activePill.style.display = (state.bundledProjects.length > 0 && totals.active.subtotal > 0) ? 'flex' : 'none';
+
+  if (hasPrice) {
+    animateCounter(totalAmount, _lastDisplayedTotal, totals.finalTotal, 700);
+    _lastDisplayedTotal = totals.finalTotal;
+    if (state.bundledProjects.length > 0) {
+      animateCounter(activeAmount, _lastDisplayedActive, totals.active.subtotal, 700);
+      _lastDisplayedActive = totals.active.subtotal;
+    }
+  } else {
+    _lastDisplayedTotal = 0;
+    _lastDisplayedActive = 0;
+  }
+
+  // Side panel — render on every total update so it stays in sync
+  renderSidePanel();
+  // Project bubbles indicator — re-render so numbering stays correct
+  renderProjectBubbles();
+}
+
+function renderProjectBubbles() {
+  const bar = __doc.getElementById('projectBubbles');
+  if (!bar) return;
+  // Hide entirely on dashboard / success screens
+  const dashVisible = __doc.getElementById('stage-dashboard').classList.contains('visible');
+  const successVisible = __doc.getElementById('stage-success') && __doc.getElementById('stage-success').classList.contains('visible');
+  // Build the full list: bundled projects, then active (if any)
+  const bundled = state.bundledProjects;
+  const active = state.activeProject;
+  const haveActive = !!active.type;
+  const totalProjects = bundled.length + (haveActive ? 1 : 0);
+  if (dashVisible || successVisible || totalProjects === 0) { bar.style.display = 'none'; return; }
+  if (totalProjects === 1 && !haveActive) { /* only bundled, no active — still show */ }
+  // If we have only one project total, don't show the bubble bar (not useful for single-project quotes)
+  if (totalProjects < 2) { bar.style.display = 'none'; return; }
+
+  // Build numbered labels — "Fence #1", "Fence #2" when types repeat
+  const all = [
+    ...bundled.map((p, idx) => ({ kind: 'bundled', idx, project: p })),
+    ...(haveActive ? [{ kind: 'active', idx: bundled.length, project: active }] : [])
+  ];
+  const typeCounts = {};
+  all.forEach(item => {
+    const t = item.project.type;
+    typeCounts[t] = (typeCounts[t] || 0) + 1;
+  });
+  const seen = {};
+  const labels = all.map(item => {
+    const t = item.project.type;
+    seen[t] = (seen[t] || 0) + 1;
+    const meta = PROJECT_META[t];
+    if (typeCounts[t] > 1) return `${meta.icon} ${meta.name} #${seen[t]}`;
+    return `${meta.icon} ${meta.name}`;
+  });
+  const html = `
+    <span class="project-bubbles-label">Projects in this quote:</span>
+    ${all.map((item, i) => {
+      const isActive = (item.kind === 'active');
+      const price = item.kind === 'bundled'
+        ? (item.project._cached && item.project._cached.subtotal) || 0
+        : (computeProjectTotal().subtotal || 0);
+      return `
+        <button type="button" class="project-bubble ${isActive ? 'active' : ''}" data-bubble-kind="${item.kind}" data-bubble-idx="${item.idx}">
+          <span class="pb-ico">${PROJECT_META[item.project.type].icon}</span>
+          <span>${labels[i].replace(PROJECT_META[item.project.type].icon + ' ', '')}</span>
+          ${price > 0 ? `<span class="pb-price">$${Math.round(price).toLocaleString()}</span>` : ''}
+        </button>`;
+    }).join('')}
+  `;
+  bar.innerHTML = html;
+  bar.style.display = 'flex';
+  // Wire up clicks
+  bar.querySelectorAll('.project-bubble').forEach(b => {
+    b.addEventListener('click', () => {
+      const kind = b.dataset.bubbleKind;
+      const idx = parseInt(b.dataset.bubbleIdx, 10);
+      if (kind === 'bundled') {
+        // Switch active project to this bundled one (mirror editBundledProject without confirm)
+        if (state.activeProject.type) {
+          const totals = computeProjectTotal();
+          const cached = JSON.parse(JSON.stringify(state.activeProject));
+          cached._cached = totals;
+          state.bundledProjects.push(cached);
+        }
+        const editing = state.bundledProjects[idx];
+        delete editing._cached;
+        state.activeProject = editing;
+        state.activeProject.tierConfirmed = true;
+        state.bundledProjects.splice(idx, 1);
+        state.maxStageReached = 10;
+        showStage(10);
+        updateRunningTotal();
+      }
+    });
+  });
+}
+
+/* ============================================================
+   STAGE 10: REVIEW
+   ============================================================ */
+function renderFinalBreakdown() {
+  const totals = computeAllTotals();
+  const proj = state.activeProject.type;
+
+  const stack = __doc.getElementById('bundleStackBlock');
+  // Fire confetti the first time bundle qualifies in this render
+  if (totals.bundleEligible && !state._bundleCelebrated) { state._bundleCelebrated = true; fireConfetti(); }
+  if (!totals.bundleEligible) state._bundleCelebrated = false;
+
+  // Compute total savings across bundle + all selected discounts
+  const bundleSavings = totals.bundleDiscount || 0;
+  const discountSavings = totals.totalDiscountSavings || 0;
+  const totalSavings = Math.round(bundleSavings + discountSavings);
+  const breakdown = [];
+  if (bundleSavings > 0) breakdown.push(`bundle ($${Math.round(bundleSavings).toLocaleString()})`);
+  if (discountSavings > 0) breakdown.push(`discounts ($${Math.round(discountSavings).toLocaleString()})`);
+  const savingsPillHtml = totalSavings > 0
+    ? `<div class="bundle-savings-pill">🎉 You're saving <strong style="font-size:18px;">$${totalSavings.toLocaleString()}</strong>${breakdown.length ? ' — ' + breakdown.join(' + ') : ''}.</div>`
+    : '';
+
+  if (state.bundledProjects.length > 0) {
+    stack.style.display = 'block';
+    stack.innerHTML = `
+      ${savingsPillHtml}
+      <div class="saved-projects">
+        <div class="bundle-stack-title">Bundled projects (10% off applied)</div>
+        ${state.bundledProjects.map((p, i) => `
+          <div class="saved-project-row">
+            <span class="ico">${PROJECT_META[p.type].icon}</span>
+            <div class="meta">
+              <div class="nm">${PROJECT_META[p.type].name} — ${p.tier} (${p.productType})${p.selectedColor ? ` · ${p.selectedColor.name}` : ''}${p.productType === 'hoa' ? ' · HOA product' : ''}</div>
+              <div class="det">${describeBundledRow(p)}</div>
+            </div>
+            <div class="amt">$${Math.round(p._cached.subtotal).toLocaleString()}</div>
+            <div class="row-actions">
+              <button type="button" class="edit-btn" data-edit-bundle="${i}">Edit</button>
+              <button type="button" class="remove-btn" data-remove-bundle="${i}">Remove</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>`;
+  } else if (totalSavings > 0) {
+    // No bundled projects, but discounts exist — still show the savings pill
+    stack.style.display = 'block';
+    stack.innerHTML = savingsPillHtml;
+  } else {
+    stack.style.display = 'none';
+  }
+
+  if (!proj) { renderBundleOnlyBreakdown(totals); renderEditPanel(); return; }
+
+  const a = totals.active;
+  const meta = PROJECT_META[proj];
+  const tierName = state.activeProject.tier;
+  const tierMeta = getTierMeta(state.activeProject.productType, tierName);
+  const color = state.activeProject.selectedColor;
+  const hoa = state.activeProject.hoa;
+
+  const measureLines = describeMeasurementLines();
+  const stainAddons = Object.keys(state.activeProject.addons).map(id => {
+    const def = findAddonDef(id); if (!def) return null;
+    const stored = state.activeProject.addons[id];
+    const qty = (typeof stored === 'object' && stored.qty) ? stored.qty : 1;
+    return { def, qty, cost: computeSingleAddonCost(id, qty) };
+  }).filter(Boolean);
+  const serviceAddons = Object.keys(state.activeProject.serviceAddons).map(id => {
+    const def = findAddonDef(id); if (!def) return null;
+    return { def, qty: 1, cost: computeSingleAddonCost(id, 1) };
+  }).filter(Boolean);
+  const customItems = (state.activeProject.customAddons || []).map(c => {
+    let cost = 0;
+    const m = state.activeProject.measurements;
+    if (c.priceType === 'flat') cost = +c.rate;
+    else if (c.priceType === 'per_unit') cost = +c.rate * (proj === 'fence' ? (m.linearft || 0) : (m.sqft || m.flat || 0));
+    else if (c.priceType === 'percent') cost = computeTierBase() * (+c.rate / 100);
+    return { def: { name: c.name + ' (custom)' }, qty: 1, cost };
+  });
+
+  let colorPillHtml = '';
+  if (isHoa()) {
+    colorPillHtml = `<div class="color-pill hoa"><span class="dot"></span>HOA: ${hoa.brand} · ${hoa.color}${hoa.productName ? ` (${hoa.productName})` : ''}</div>`;
+  } else if (color) {
+    const dotStyle = color.img ? `background-image:url('${color.img}')` : `background:${color.hex}`;
+    colorPillHtml = `<div class="color-pill"><span class="dot" style="${dotStyle}"></span>${color.name}${color.code ? ' · ' + color.code : ''} <small style="color:var(--slate);">(${color.line})</small></div>`;
+  } else if (isClearSealer()) {
+    colorPillHtml = '<div class="color-pill"><span class="dot" style="background:transparent;border-color:var(--slate);"></span>Clear (no color)</div>';
+  }
+
+  let prevStainHtml = '';
+  const ps = state.activeProject.previousStain;
+  if (ps.wasStained && (ps.previousProductType || ps.brand || ps.productName)) {
+    const typeLabel = ps.previousProductType === 'water' ? 'Water-based' : (ps.previousProductType === 'oil' ? 'Oil-based' : 'Unknown type');
+    const summary = (ps.previousProductType === 'unsure' || !ps.brand) ? typeLabel : `${ps.brand}${ps.transparency ? ' · ' + ps.transparency : ''}${ps.productName ? ' · ' + ps.productName : ''}${ps.colorNotes ? ' · ' + ps.colorNotes : ''}`;
+    prevStainHtml = `
+      <div class="breakdown-section">
+        <h4>Previous Stain (informational)</h4>
+        <div class="breakdown-line"><span class="desc">Previously used<small>${typeLabel}</small></span><span class="val" style="font-weight:500;font-size:13px;color:var(--slate)">${summary}</span></div>
+      </div>`;
+  }
+
+  const productLabel = isHoa() ? 'HOA-Specified' : `${tierName.charAt(0).toUpperCase() + tierName.slice(1)} (${state.activeProject.productType})`;
+  __doc.getElementById('breakdownMain').innerHTML = `
+    <div class="breakdown-header-row">
+      <h3 style="margin:0;">${meta.icon} ${meta.name} — ${productLabel}</h3>
+      <button type="button" class="btn-collapse-project" id="btnCollapseActiveProject" title="Collapse this project — move it into the bundle stack and hide details">▾ Collapse</button>
+    </div>
+    ${colorPillHtml}
+    <div class="breakdown-section" style="margin-top:14px;">
+      <h4>Measurements</h4>
+      ${measureLines.map(l => `<div class="breakdown-line"><span class="desc">${l.label}</span><span class="val">${l.value}</span></div>`).join('')}
+    </div>
+
+    <div class="breakdown-section">
+      <h4>Tier Base</h4>
+      <div class="breakdown-line"><span class="desc">${tierMeta.product}<small>Expected life: ${tierMeta.life}</small></span><span class="val">$${a.tierBase.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
+    </div>
+
+    <div class="breakdown-section">
+      <h4>Prep Work</h4>
+      <div class="breakdown-line"><span class="desc">${prepLabel(state.activeProject.condition)}</span><span class="val">${a.prep > 0 ? '$' + a.prep.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2}) : 'Included'}</span></div>
+    </div>
+
+    ${prevStainHtml}
+
+    ${stainAddons.length || serviceAddons.length || customItems.length ? `
+    <div class="breakdown-section">
+      <h4>Add-ons</h4>
+      ${[...stainAddons, ...serviceAddons, ...customItems].map(item => `<div class="breakdown-line"><span class="desc">${item.def.name}${item.qty > 1 ? '<small>Qty: ' + item.qty + '</small>' : ''}</span><span class="val">$${item.cost.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>`).join('')}
+    </div>` : ''}
+
+    ${a.discountAmount > 0 && !totals.bundleEligible ? `
+    <div class="breakdown-section">
+      <div class="breakdown-line discount"><span class="desc">${a.discountLabel}<small>${(a.discountRate*100).toFixed(0)}% off — best discount applied</small></span><span class="val">−$${a.discountAmount.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
+    </div>` : ''}
+
+    ${totals.bundleEligible ? `
+    <div class="breakdown-section">
+      <h4>Bundle Discount</h4>
+      <div class="breakdown-line discount"><span class="desc">Multi-project bundle<small>10% off — replaces per-project discounts</small></span><span class="val">−$${totals.bundleDiscount.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
+    </div>` : ''}
+
+    ${a.minimumApplied ? `<div class="breakdown-line minimum"><span class="desc">⚠️ Trip minimum applied<small>Calculated total was below $400 — minimum job charge applies</small></span><span class="val">$${PRICING.minimumJob}</span></div>` : ''}
+
+    <!-- Project Total — just this active project's price -->
+    <div class="project-total"><span class="label">${state.bundledProjects.length > 0 ? 'This Project Subtotal' : 'Project Total'}</span><span class="amount">$${Math.round(a.subtotal).toLocaleString()}</span></div>
+
+    <!-- Quote-level notes — captured from the side-tracker, shown to the customer here, sent to Jobber -->
+    ${state.notes && state.notes.trim() ? `
+      <div class="review-notes-box">
+        <h4>📝 Notes for this quote</h4>
+        <p>${state.notes.trim().replace(/</g, '&lt;')}</p>
+      </div>
+    ` : ''}
+
+    <!-- MATH WALK-THROUGH — explicit so the customer can see how the Grand Total was reached -->
+    ${(() => {
+      const activeSub = a.subtotal || 0;
+      const bundledSubs = state.bundledProjects.map(p => (p._cached && p._cached.subtotal) || 0);
+      const sumOfSubs = activeSub + bundledSubs.reduce((s, x) => s + x, 0);
+      const totalSavings = (totals.bundleDiscount || 0) + (totals.totalDiscountSavings || 0);
+      // Only show the walk-through if there's bundling or any savings to explain
+      if (state.bundledProjects.length === 0 && totalSavings === 0) return '';
+      return `
+        <div class="math-walk">
+          <h4>How we got to the Grand Total</h4>
+          ${a.subtotal > 0 ? `<div class="math-walk-row"><span>${PROJECT_META[proj].icon} ${PROJECT_META[proj].name} (this project)</span><span>$${Math.round(activeSub).toLocaleString()}</span></div>` : ''}
+          ${state.bundledProjects.map((p, i) => `
+            <div class="math-walk-row"><span>${PROJECT_META[p.type].icon} ${PROJECT_META[p.type].name} (bundled)</span><span>$${Math.round(bundledSubs[i]).toLocaleString()}</span></div>
+          `).join('')}
+          <div class="math-walk-row math-walk-subtotal"><span>Quote subtotal</span><span>$${Math.round(sumOfSubs).toLocaleString()}</span></div>
+          ${totals.totalDiscountSavings > 0 ? `<div class="math-walk-row math-walk-discount"><span>Stacked discounts</span><span>−$${Math.round(totals.totalDiscountSavings).toLocaleString()}</span></div>` : ''}
+          ${totals.bundleDiscount > 0 ? `<div class="math-walk-row math-walk-discount"><span>Bundle discount (10%)</span><span>−$${Math.round(totals.bundleDiscount).toLocaleString()}</span></div>` : ''}
+          ${totalSavings > 0 ? `<div class="math-walk-row math-walk-total-savings"><span>Total savings</span><span>−$${Math.round(totalSavings).toLocaleString()}</span></div>` : ''}
+        </div>
+      `;
+    })()}
+
+    <!-- DIY cost comparison — sits between the math walk-through and the Grand Total -->
+    ${computeDIYComparison(totals.finalTotal)}
+
+    <!-- GRAND TOTAL — sum of all projects with bundle + all discounts applied -->
+    <div class="grand-total" style="margin-top:18px;">
+      <span class="label">${state.bundledProjects.length > 0 ? 'Quote Grand Total (all ' + (state.bundledProjects.length + 1) + ' projects)' : 'Grand Total'}</span>
+      <div class="grand-total-amount-block">
+        <span class="amount">$${Math.round(totals.finalTotal).toLocaleString()}</span>
+        ${((totals.bundleDiscount || 0) + (totals.totalDiscountSavings || 0)) > 0
+          ? `<span class="grand-total-savings">Includes $${Math.round((totals.bundleDiscount || 0) + (totals.totalDiscountSavings || 0)).toLocaleString()} in total savings</span>`
+          : ''}
+      </div>
+    </div>
+
+    <!-- Quote expiry & risk reversal — visible right under the price to reduce decision friction -->
+    <div class="quote-expiry-banner" style="margin-top:16px;">
+      <span class="icon">📅</span>
+      <div>This quote is locked through <strong>${getQuoteExpiryDate()}</strong> (30 days). Book within 24 hours to lock in an extra 5% off with the "Book Today" discount on Step 9.</div>
+    </div>
+
+    <div class="risk-reversal-box">
+      <h4>You're covered</h4>
+      <ul>
+        <li><strong>Fully licensed &amp; insured</strong> in South Carolina — no risk to you</li>
+        ${(state.activeProject.tier === 'performance' || state.activeProject.tier === 'showcase') ? '<li><strong>Free 90-day touch-up visit</strong> — if you spot any miss, we come back free</li>' : ''}
+        ${state.activeProject.tier === 'showcase' ? '<li><strong>Extended warranty available</strong> — add it on Step 8</li>' : ''}
+        <li><strong>We don't get paid until you're happy</strong> — only 25% deposit at scheduling; balance after completion (or financing through Wisetack)</li>
+        <li><strong>Quote is final &amp; transparent</strong> — no hidden fees, no surprise upsells on-site</li>
+      </ul>
+    </div>
+
+    <div style="margin-top: 16px; padding: 14px; background: var(--cream); border-radius: 8px; font-size: 13px; color: var(--slate);">
+      <strong style="color: var(--navy)">Payment options:</strong><br>
+      <label style="display:inline-flex; align-items:center; gap:8px; margin-right:16px; margin-top:8px;"><input type="radio" name="pay" value="deposit" ${state.paymentMethod === 'deposit' ? 'checked' : ''} onchange="state.paymentMethod=this.value">25% deposit + balance on completion</label>
+      <label style="display:inline-flex; align-items:center; gap:8px;"><input type="radio" name="pay" value="wisetack" ${state.paymentMethod === 'wisetack' ? 'checked' : ''} onchange="state.paymentMethod=this.value">Wisetack financing <span class="payment-pill">≈ $${Math.round(totals.finalTotal/24).toLocaleString()}/mo over 24 mo*</span></label>
+      <p style="margin-top:8px;font-size:11px;">*Estimate only — actual rate determined by Wisetack credit check.</p>
+    </div>`;
+  renderEditPanel();
+}
+
+// Global event delegation — fires regardless of re-renders, scoping, or inline-handler stripping
+document.addEventListener('click', function(e) {
+  const target = e.target;
+  if (!target || !target.closest) return;
+
+  // Collapse active project — match by class (same pattern as Remove which works)
+  const collapseBtn = target.closest('.btn-collapse-project');
+  if (collapseBtn) {
+    e.preventDefault(); e.stopPropagation();
+    console.log('[Calculator] Collapse clicked');
+    collapseActiveProject();
+    return;
+  }
+  // Edit a bundled project
+  const editBtn = target.closest('[data-edit-bundle]');
+  if (editBtn) {
+    e.preventDefault(); e.stopPropagation();
+    const idx = parseInt(editBtn.dataset.editBundle, 10);
+    if (!isNaN(idx)) editBundledProject(idx);
+    return;
+  }
+  // Remove a bundled project
+  const removeBtn = target.closest('[data-remove-bundle]');
+  if (removeBtn) {
+    e.preventDefault(); e.stopPropagation();
+    const idx = parseInt(removeBtn.dataset.removeBundle, 10);
+    if (!isNaN(idx)) removeBundledProject(idx);
+    return;
+  }
+}, false);
+// Also expose to window in case anything tries to invoke it from an inline handler
+window.collapseActiveProject = function() {
+  if (!state.activeProject.type) return;
+  const totals = computeProjectTotal();
+  const cached = JSON.parse(JSON.stringify(state.activeProject));
+  cached._cached = totals;
+  state.bundledProjects.push(cached);
+  state.activeProject = makeBlankProject();
+  state.editingBundleIdx = null;
+  renderFinalBreakdown();
+  updateRunningTotal();
+  scrollAppToTop();
+};
+
+function computeDIYComparison(proTotal) {
+  if (!proTotal || proTotal < 500) return '';
+
+  // Build the list of all projects in this quote (active + bundled)
+  const projects = [];
+  if (state.activeProject.type) projects.push(state.activeProject);
+  state.bundledProjects.forEach(p => projects.push(p));
+  if (projects.length === 0) return '';
+
+  // Per-project: pails + hours + tools-cost-per-project (deck tools are more expensive than fence tools)
+  // Per-project tools allocation:
+  //   Fence: lighter tarping — $80 (mostly plastic + drop cloths for plants below)
+  //   Deck: heavier applicator gear — $215 (lambswool rollers, deck brushes, applicator pads, painter's tape)
+  //   Pergola: $150
+  //   Barn: $175 (larger area, more tarping)
+  //   Ceiling: $165 (interior masking is more involved)
+  const PROJECT_TOOLS = { fence: 80, deck: 215, pergola: 180, barn: 175, ceiling: 165 };
+  // sq-ft (or ln-ft for fence) per hour — pergolas and ceilings are overhead detail work, much slower than open vertical surfaces.
+  // Fence and deck baselines bumped down 20% from the contractor pace to reflect homeowner inexperience.
+  const PROJECT_TIME_DIVISOR = { fence: 16, deck: 24, pergola: 12, barn: 35, ceiling: 15 };
+
+  let totalPails = 0;
+  let totalHours = 0;
+  let totalToolsCost = 0;
+  let needsSprayer = false; // decks should not be sprayed — use brushes/rollers
+  let sprayerNote = '';
+  let projectLines = [];
+
+  projects.forEach(p => {
+    const m = p.measurements;
+    const isOneCoat = (p.productType === 'water' && p.tier === 'essential');
+    let pails = 0;
+    let scope = 0;
+    if (p.type === 'fence') {
+      const linearft = m.linearft || 0;
+      pails = isOneCoat ? Math.ceil(linearft / 100) : Math.ceil(linearft / 50);
+      scope = linearft;
+    } else if (p.type === 'deck') {
+      const flatSq = (m.flat || 0) * (m.underneath ? 2 : 1) + (m.lattice || 0);
+      pails = isOneCoat ? Math.ceil(flatSq / 750) : Math.ceil(flatSq / 375);
+      scope = flatSq;
+    } else {
+      const sq = m.sqft || 0;
+      pails = isOneCoat ? Math.ceil(sq / 750) : Math.ceil(sq / 375);
+      scope = sq;
+    }
+    pails = Math.max(pails, 1);
+    const hours = Math.max(4, Math.ceil(scope / (PROJECT_TIME_DIVISOR[p.type] || 30)));
+    const toolsCost = PROJECT_TOOLS[p.type] || 150;
+
+    totalPails += pails;
+    totalHours += hours;
+    totalToolsCost += toolsCost;
+    // Sprayer is useful for fences, barns, and decks WITH UNDERSIDE staining selected
+    // (joists/underside have too many narrow gaps for brush/roller). Pergolas and
+    // ceilings remain hand-applied (detail/overhead work).
+    if (p.type === 'fence' || p.type === 'barn') needsSprayer = true;
+    if (p.type === 'deck' && m.underneath) { needsSprayer = true; sprayerNote = ' (needed for underside/joist access)'; }
+
+    const coatNote = isOneCoat ? '1 coat water-based' : (p.productType === 'oil' ? 'oil-based' : '2 coats water-based');
+    const pailsLabel = pails === 1 ? '1 pail' : `${pails} pails`;
+    projectLines.push({
+      label: `${PROJECT_META[p.type].icon} ${PROJECT_META[p.type].name} — ${pailsLabel} (5 gal · ${coatNote}) + ${PROJECT_TOOLS[p.type]} in tools + ${hours} hrs`,
+      pailsCost: pails * 250,
+      toolsCost: toolsCost,
+      hoursCost: hours * 25
+    });
+  });
+
+  // Non-contractor retail pricing — what a homeowner would actually pay at the store.
+  // Our contractor purchase price is $220/pail. Retail = $220 × 1.20 = $264/pail.
+  const pailCost = 264;
+  const stainCost = totalPails * pailCost;
+  // Sprayer — Graco Project Plus (entry-level airless, ~$249 retail).
+  // Skipped when none of the projects need it (e.g., pergolas + ceilings or topside-only decks).
+  const sprayerCost = needsSprayer ? 249 : 0;
+  const timeCost = totalHours * 25;
+  const diyTotal = stainCost + sprayerCost + totalToolsCost + timeCost;
+  const savings = Math.max(0, diyTotal - proTotal);
+
+  // Per-project line items render
+  const perProjectHtml = projects.length > 1
+    ? `<div class="diy-project-list">${projects.map((p, i) => {
+        const pl = projectLines[i];
+        return `<div class="diy-project-item"><span>${pl.label.split(' + ')[0]}</span><span>$${(pl.pailsCost).toLocaleString()}</span></div>`;
+      }).join('')}</div>` : '';
+
+  return `
+    <div class="diy-comparison">
+      <h4>How does DIY actually compare?${projects.length > 1 ? ` <small>(all ${projects.length} projects in this quote)</small>` : ''}</h4>
+      <p class="diy-blurb">If you tackled this yourself, here's an honest estimate using contractor-grade materials at the prices a homeowner would actually pay at the store:</p>
+      ${perProjectHtml}
+      <div class="diy-row"><span>Stain (${totalPails} × 5 gal pails @ non-contractor pricing)</span><span>$${stainCost.toLocaleString()}</span></div>
+      ${sprayerCost > 0 ? `<div class="diy-row"><span>Graco Project Plus airless sprayer${sprayerNote}</span><span>$${sprayerCost}</span></div>` : `<div class="diy-row" style="color:var(--slate);font-style:italic;"><span>No sprayer needed — your project(s) are hand-applied (brushes and rollers) for proper coverage and detail</span><span>$0</span></div>`}
+      <div class="diy-row"><span>Brushes, rollers, applicator pads, drop cloths, sheeting${projects.length>1 ? ' (all projects)' : ''}</span><span>$${totalToolsCost.toLocaleString()}</span></div>
+      <div class="diy-row"><span>Your time (~${totalHours} hrs × $25/hr)</span><span>$${timeCost.toLocaleString()}</span></div>
+      <div class="diy-row diy-total"><span>Estimated DIY cost</span><span>$${diyTotal.toLocaleString()}</span></div>
+      ${savings > 0
+        ? `<p class="diy-conclusion">Hiring us costs <strong>$${Math.round(proTotal).toLocaleString()}</strong> — about <strong>$${savings.toLocaleString()} less</strong> than DIY when you factor in your time. Plus you get our warranty, professional-grade prep, and your weekend back to actually enjoy the yard.</p>`
+        : `<p class="diy-conclusion" style="background:var(--green-pale);color:#1f4d36;">For projects this size, the DIY math is close. The difference becomes our warranty, professional-grade prep, the fact that we're fully licensed and insured (no liability falling on you), and your weekend free to actually enjoy the yard instead of working on it.</p>`}
+    </div>`;
+}
+
+function getQuoteExpiryDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 30);
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function renderBundleOnlyBreakdown(totals) {
+  // Compute math-walk-through pieces (no active project means we just sum bundled subtotals)
+  const bundledSubs = state.bundledProjects.map(p => (p._cached && p._cached.subtotal) || 0);
+  const sumOfSubs = bundledSubs.reduce((s, x) => s + x, 0);
+  const totalSavings = (totals.bundleDiscount || 0) + (totals.totalDiscountSavings || 0);
+
+  __doc.getElementById('breakdownMain').innerHTML = `
+    <h3>Bundled Quote Summary</h3>
+    <p style="color:var(--slate);font-size:13px;margin-bottom:14px;">No active project — quote consists of the bundled projects above. Click <strong>Edit</strong> on any card to bring it back into the editor.</p>
+
+    <!-- Quote-level notes — captured from the side-tracker, sent to Jobber later -->
+    ${state.notes && state.notes.trim() ? `
+      <div class="review-notes-box">
+        <h4>📝 Notes for this quote</h4>
+        <p>${state.notes.trim().replace(/</g, '&lt;')}</p>
+      </div>
+    ` : ''}
+
+    <!-- MATH WALK-THROUGH — explicit so the customer can see how the Grand Total was reached -->
+    ${state.bundledProjects.length > 0 ? `
+      <div class="math-walk">
+        <h4>How we got to the Grand Total</h4>
+        ${state.bundledProjects.map((p, i) => `
+          <div class="math-walk-row"><span>${PROJECT_META[p.type].icon} ${PROJECT_META[p.type].name} (bundled)</span><span>$${Math.round(bundledSubs[i]).toLocaleString()}</span></div>
+        `).join('')}
+        <div class="math-walk-row math-walk-subtotal"><span>Quote subtotal</span><span>$${Math.round(sumOfSubs).toLocaleString()}</span></div>
+        ${totals.totalDiscountSavings > 0 ? `<div class="math-walk-row math-walk-discount"><span>Stacked discounts</span><span>−$${Math.round(totals.totalDiscountSavings).toLocaleString()}</span></div>` : ''}
+        ${totals.bundleDiscount > 0 ? `<div class="math-walk-row math-walk-discount"><span>Bundle discount (10%)</span><span>−$${Math.round(totals.bundleDiscount).toLocaleString()}</span></div>` : ''}
+        ${totalSavings > 0 ? `<div class="math-walk-row math-walk-total-savings"><span>Total savings</span><span>−$${Math.round(totalSavings).toLocaleString()}</span></div>` : ''}
+      </div>
+    ` : ''}
+
+    <!-- DIY cost comparison — works across bundled projects -->
+    ${computeDIYComparison(totals.finalTotal)}
+
+    <!-- GRAND TOTAL -->
+    <div class="grand-total" style="margin-top:18px;">
+      <span class="label">${state.bundledProjects.length > 0 ? 'Quote Grand Total (all ' + state.bundledProjects.length + ' projects)' : 'Grand Total'}</span>
+      <div class="grand-total-amount-block">
+        <span class="amount">$${Math.round(totals.finalTotal).toLocaleString()}</span>
+        ${totalSavings > 0
+          ? `<span class="grand-total-savings">Includes $${Math.round(totalSavings).toLocaleString()} in total savings</span>`
+          : ''}
+      </div>
+    </div>
+
+    <!-- Quote expiry banner -->
+    <div class="quote-expiry-banner" style="margin-top:16px;">
+      <span class="icon">📅</span>
+      <div>This quote is locked through <strong>${getQuoteExpiryDate()}</strong> (30 days). Book within 24 hours to lock in an extra 5% off with the "Book Today" discount on Step 9.</div>
+    </div>
+
+    <!-- Risk reversal -->
+    <div class="risk-reversal-box">
+      <h4>You're covered</h4>
+      <ul>
+        <li><strong>Fully licensed &amp; insured</strong> in South Carolina — no risk to you</li>
+        <li><strong>Free 90-day touch-up visit</strong> on Performance and Showcase tiers — if you spot any miss, we come back free</li>
+        <li><strong>We don't get paid until you're happy</strong> — only 25% deposit at scheduling; balance after completion (or financing through Wisetack)</li>
+        <li><strong>Quote is final &amp; transparent</strong> — no hidden fees, no surprise upsells on-site</li>
+      </ul>
+    </div>
+
+    <!-- Payment options -->
+    <div style="margin-top: 16px; padding: 14px; background: var(--cream); border-radius: 8px; font-size: 13px; color: var(--slate);">
+      <strong style="color: var(--navy)">Payment options:</strong><br>
+      <label style="display:inline-flex; align-items:center; gap:8px; margin-right:16px; margin-top:8px;"><input type="radio" name="pay" value="deposit" ${state.paymentMethod === 'deposit' ? 'checked' : ''} onchange="state.paymentMethod=this.value">25% deposit + balance on completion</label>
+      <label style="display:inline-flex; align-items:center; gap:8px;"><input type="radio" name="pay" value="wisetack" ${state.paymentMethod === 'wisetack' ? 'checked' : ''} onchange="state.paymentMethod=this.value">Wisetack financing <span class="payment-pill">≈ $${Math.round(totals.finalTotal/24).toLocaleString()}/mo over 24 mo*</span></label>
+      <p style="margin-top:8px;font-size:11px;">*Estimate only — actual rate determined by Wisetack credit check.</p>
+    </div>`;
+}
+
+function describeMeasurementLines() {
+  const proj = state.activeProject.type;
+  const m = state.activeProject.measurements;
+  if (proj === 'fence') {
+    const total = m.linearft || 0;
+    const partial = +m.oneSidedLnFt || 0;
+    let sidesLabel;
+    if (!m.oneSided) sidesLabel = 'Both sides (standard)';
+    else if (partial > 0 && partial < total) sidesLabel = `${partial} ln ft one-side only · ${total - partial} ln ft both sides`;
+    else sidesLabel = 'One side only (entire fence)';
+    return [
+      { label: 'Linear feet', value: `${total} ft` },
+      { label: 'Average height', value: `${m.height || 0} ft` },
+      { label: 'Style', value: styleName(m.style) },
+      { label: 'Sides', value: sidesLabel }
+    ];
+  }
+  if (proj === 'deck') return [
+    { label: 'Flat surface', value: `${m.flat || 0} sq ft${m.underneath ? ' (×2 underneath)' : ''}` },
+    { label: 'Railing', value: `${m.rail || 0} ln ft` },
+    { label: 'Stairs', value: `${m.stairs || 0}` },
+    ...(m.lattice ? [{ label: 'Lattice/walls', value: `${m.lattice} sq ft` }] : [])
+  ];
+  if (proj === 'pergola') return [
+    ...((m.length || m.width) ? [{ label: 'Footprint', value: `${m.length || 0} × ${m.width || 0} ft${m.height ? ` × ${m.height} ft tall` : ''}` }] : []),
+    { label: 'Stainable surface', value: `${m.sqft || 0} sq ft (calculated)` },
+    ...(m.overhead ? [{ label: 'Overhead access', value: 'Yes' }] : [])
+  ];
+  if (proj === 'barn') return [
+    { label: 'Siding', value: `${m.sqft || 0} sq ft` },
+    ...(m.heightPremium ? [{ label: 'Height premium', value: 'Above 12 ft' }] : []),
+    ...(m.trim ? [{ label: 'Trim/fascia', value: `${m.trim} ln ft` }] : []),
+    ...(m.cupolaCount ? [{ label: 'Cupolas', value: `${m.cupolaCount}` }] : []),
+    ...(m.liftDays ? [{ label: 'Lift rental', value: `${m.liftDays} day(s)` }] : [])
+  ];
+  if (proj === 'ceiling') return [
+    { label: 'Ceiling area', value: `${m.sqft || 0} sq ft` },
+    ...(m.tng ? [{ label: 'Tongue-and-groove', value: 'Yes' }] : []),
+    ...(m.beamLnFt ? [{ label: 'Beam two-tone', value: `${m.beamLnFt} ln ft` }] : []),
+    ...(m.fixtures ? [{ label: 'Fixtures removed', value: `${m.fixtures}` }] : []),
+    ...(m.fans ? [{ label: 'Fans removed', value: `${m.fans}` }] : []),
+    ...(m.furnProtect ? [{ label: 'Furniture protection', value: 'Yes' }] : [])
+  ];
+  return [];
+}
+
+function describeBundledRow(p) {
+  const m = p.measurements;
+  if (p.type === 'fence') {
+    const total = m.linearft || 0;
+    const partial = +m.oneSidedLnFt || 0;
+    let sidesNote = '';
+    if (m.oneSided && partial > 0 && partial < total) sidesNote = ` · ${partial} ln ft one-side`;
+    else if (m.oneSided) sidesNote = ' · one-side only';
+    return `${total} ln ft · ${m.height || 0} ft tall${sidesNote} · ${prepLabel(p.condition)}`;
+  }
+  if (p.type === 'deck') return `${m.flat || 0} sq ft flat${m.rail ? ' + ' + m.rail + ' ln ft rail' : ''} · ${prepLabel(p.condition)}`;
+  if (p.type === 'pergola') return `${m.sqft || 0} sq ft · ${prepLabel(p.condition)}`;
+  if (p.type === 'barn') return `${m.sqft || 0} sq ft siding · ${prepLabel(p.condition)}`;
+  if (p.type === 'ceiling') return `${m.sqft || 0} sq ft ceiling · ${prepLabel(p.condition)}`;
+  return prepLabel(p.condition);
+}
+
+function styleName(s) { return { privacy: 'Privacy', charleston: 'Charleston', shadowbox: 'Shadowbox', bob: 'Board-on-Board', charleston_bob: 'Charleston BOB', farm: 'Farm Fence' }[s] || 'Privacy'; }
+
+function prepLabel(c) { return { no_wash: 'No wash — light cleaning only', soft_wash: 'Soft wash + brightener (sodium metasilicate + oxalic acid)', strip_sand: 'Strip & sand to bare wood' }[c]; }
+
+function computeSingleAddonCost(id, qty) {
+  const def = findAddonDef(id); if (!def) return 0;
+  const m = state.activeProject.measurements;
+  const proj = state.activeProject.type;
+  const tierBase = computeTierBase();
+  if (def.priceType === 'flat') return def.rate;
+  if (def.priceType === 'each' || def.priceType === 'each_lnft') return def.rate * qty;
+  if (def.priceType === 'per_unit') {
+    const units = proj === 'fence' ? (m.linearft || 0) : (m.sqft || m.flat || 0);
+    let amount = def.rate * units;
+    if (def.minCharge && amount < def.minCharge && units > 0) amount = def.minCharge;
+    return amount;
+  }
+  if (def.priceType === 'per_unit_trim') return def.rate * (m.trim || 0);
+  if (def.priceType === 'percent') return tierBase * def.rate;
+  return 0;
+}
+
+function renderEditPanel() {
+  const proj = state.activeProject.type;
+  if (!proj) { __doc.getElementById('editPanel').innerHTML = '<h3>Adjust & Recalculate</h3><p style="font-size:13px;color:var(--slate);">No active project to edit.</p>'; return; }
+  const product = state.activeProject.productType;
+  const isHoaMode = isHoa();
+  const sample = isHoaMode ? null : computeSampleTierPrices(product);
+
+  const tiersHtml = isHoaMode
+    ? `<div class="mini-tier-row active"><span class="label">HOA-Specified<br><small style="font-size:11px;color:var(--slate);font-weight:400;">Locked to Performance rate</small></span><span class="price">$${Math.round(computeTierBase()).toLocaleString()}</span></div>`
+    : ['essential', 'performance', 'showcase'].map(t => {
+        const tm = getTierMeta(product, t);
+        return `
+          <div class="mini-tier-row ${state.activeProject.tier === t ? 'active' : ''}" onclick="setTier('${t}')">
+            <span class="label">${t.charAt(0).toUpperCase() + t.slice(1)}<br><small style="font-size:11px;color:var(--slate);font-weight:400;">${tm.product}</small></span>
+            <span class="price">$${Math.round(sample[t]).toLocaleString()}</span>
+          </div>`;
+      }).join('');
+
+  const stainUpgrades = PRICING.stainUpgrades.filter(a => !a.product || a.product === product);
+  const projAddons = PRICING.projectAddons[proj] || [];
+
+  const renderMini = (a, group) => {
+    const stored = group === 'service' ? state.activeProject.serviceAddons[a.id] : state.activeProject.addons[a.id];
+    const checked = !!stored;
+    const qty = (typeof stored === 'object' && stored.qty) ? stored.qty : 1;
+    const showQty = checked && needsQty(a);
+    const qtyControl = showQty
+      ? `<input type="number" min="1" step="1" value="${qty}" class="mini-qty-input"
+             onclick="event.stopPropagation()"
+             onchange="setAddonInlineQty('${a.id}', '${group}', this.value)"
+             aria-label="Quantity">`
+      : '';
+    return `<div class="mini-toggle ${checked ? 'checked' : ''}" onclick="toggleAddonInline('${a.id}', '${group}')"><div class="check"></div><div class="name">${a.name}</div>${qtyControl}<div class="price">${formatAddonPrice(a)}</div></div>`;
+  };
+
+  let colorSection = '';
+  if (isHoa()) {
+    colorSection = `<div class="side-section"><h4>HOA Color</h4><div class="color-pill hoa"><span class="dot"></span>${state.activeProject.hoa.brand}<br>${state.activeProject.hoa.color}</div><button onclick="showStage(5)" style="margin-top:8px;background:var(--line-soft);padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;width:100%;">Edit HOA info →</button></div>`;
+  } else if (!isClearSealer()) {
+    const c = state.activeProject.selectedColor;
+    const libKey = getColorLibrary(product, state.activeProject.tier);
+    const lib = COLORS[libKey];
+    const dotStyle = c && c.img ? `background-image:url('${c.img}')` : (c ? `background:${c.hex}` : '');
+    colorSection = `
+      <div class="side-section">
+        <h4>Color (${lib.line})</h4>
+        ${c ? `<div class="color-pill"><span class="dot" style="${dotStyle}"></span>${c.name}${c.code ? ' · ' + c.code : ''}</div>` : '<p style="font-size:12px;color:var(--coral);">No color selected</p>'}
+        <button onclick="showStage(7)" style="margin-top:8px;background:var(--line-soft);padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;width:100%;">Change color →</button>
+      </div>`;
+  } else {
+    colorSection = `<div class="side-section"><h4>Color</h4><div class="color-pill"><span class="dot" style="background:transparent;border-color:var(--slate);"></span>Clear sealer (no color)</div></div>`;
+  }
+
+  // Active discount summary
+  const disc = bestDiscountRate();
+  const discountSection = `
+    <div class="side-section">
+      <h4>Discount</h4>
+      ${disc.rate > 0 ? `<div style="font-size:13px;color:var(--green);font-weight:700;">${disc.label}: −${(disc.rate * 100).toFixed(0)}%</div>` : '<div style="font-size:13px;color:var(--slate);">No discount applied</div>'}
+      <button onclick="showStage(9)" style="margin-top:8px;background:var(--line-soft);padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;width:100%;">Change discount →</button>
+    </div>`;
+
+  __doc.getElementById('editPanel').innerHTML = `
+    <h3>Adjust &amp; Recalculate</h3>
+    <div class="side-section">
+      <h4>Product</h4>
+      <div style="display:flex;gap:6px;">
+        <button style="flex:1;padding:8px;border-radius:8px;background:${product === 'water' ? 'var(--navy)' : 'var(--line-soft)'};color:${product === 'water' ? 'white' : 'var(--navy)'};font-weight:600;font-size:13px;" onclick="setProduct('water')">💧 Water</button>
+        <button style="flex:1;padding:8px;border-radius:8px;background:${product === 'oil' ? 'var(--navy)' : 'var(--line-soft)'};color:${product === 'oil' ? 'white' : 'var(--navy)'};font-weight:600;font-size:13px;" onclick="setProduct('oil')">🛢️ Oil</button>
+      </div>
+    </div>
+    <div class="side-section"><h4>Tier</h4>${tiersHtml}</div>
+    ${colorSection}
+    <div class="side-section"><h4>Stain Upgrades</h4>${stainUpgrades.map(a => renderMini(a, 'stain')).join('')}</div>
+    <div class="side-section"><h4>${PROJECT_META[proj].name} Add-ons</h4>${projAddons.map(a => renderMini(a, 'project')).join('')}</div>
+    ${discountSection}`;
+}
+
+function setTier(t) {
+  const old = state.activeProject.tier;
+  state.activeProject.tier = t;
+  state.activeProject.tierConfirmed = true;
+  if (old !== t) state.activeProject.selectedColor = null;
+  renderFinalBreakdown(); updateRunningTotal();
+}
+function setProduct(p) {
+  const old = state.activeProject.productType;
+  state.activeProject.productType = p;
+  if (old !== p) state.activeProject.selectedColor = null;
+  delete state.activeProject.addons.citronella;
+  renderFinalBreakdown(); updateRunningTotal();
+}
+function setAddonInlineQty(id, group, val) {
+  const qty = Math.max(1, parseInt(val) || 1);
+  const target = group === 'service' ? state.activeProject.serviceAddons : state.activeProject.addons;
+  if (target[id]) target[id] = { qty };
+  renderFinalBreakdown(); updateRunningTotal();
+}
+
+function toggleAddonInline(id, group) {
+  const def = findAddonDef(id);
+  const target = group === 'service' ? state.activeProject.serviceAddons : state.activeProject.addons;
+  if (target[id]) delete target[id];
+  else target[id] = needsQty(def) ? { qty: 1 } : true;
+  renderFinalBreakdown(); updateRunningTotal();
+}
+
+/* ============================================================
+   BUNDLE
+   ============================================================ */
+function addAnotherProject() {
+  // If we have a partially-built active project, push it into the bundle first
+  // so it isn't lost. If active is empty (e.g. just collapsed or just removed
+  // the last one and clicked "Add"), skip the push and just start a fresh
+  // project — don't alert "add a project first" when we have bundled projects.
+  if (state.activeProject.type) {
+    const totals = computeProjectTotal();
+    const cached = JSON.parse(JSON.stringify(state.activeProject));
+    cached._cached = totals;
+    state.bundledProjects.push(cached);
+  } else if (state.bundledProjects.length === 0) {
+    // Truly empty quote — nothing to push, nothing to bundle yet. Send the user
+    // back to Step 2 to pick a project type (this is the only path that should
+    // ever say "you don't have a project yet").
+    showStage(2);
+    return;
+  }
+  // Remember we're in the middle of adding so the user can cancel back to Review
+  state._returnToReviewOnCancel = true;
+  state.activeProject = makeBlankProject();
+  state.editingBundleIdx = null;
+  state.maxStageReached = 2;
+  const next = __doc.getElementById('stage2Next'); if (next) next.disabled = true;
+  refreshStage2Selection();
+  showStage(2);
+  updateRunningTotal();
+}
+
+// Cancel adding a new project — restore the last-bundled project as active and
+// return to Step 10 (Review). Wired up from the "Cancel & return to review" button.
+function cancelAddProject() {
+  if (state.bundledProjects.length === 0) { showStage(10); return; }
+  // If the user typed anything into the new project, discard it
+  state.activeProject = makeBlankProject();
+  // Pop the last-bundled back into active so they have a focused project
+  const last = state.bundledProjects.pop();
+  if (last) { delete last._cached; state.activeProject = last; state.activeProject.tierConfirmed = true; }
+  state.maxStageReached = 10;
+  state._returnToReviewOnCancel = false;
+  showStage(10);
+  updateRunningTotal();
+}
+
+// Collapse the active project on the Review screen — pushes it into the bundled stack
+// (so it shows as a compact card up top) and re-renders the breakdown to show only
+// the grand-total summary. To bring it back, the user clicks "Edit" on its card.
+function collapseActiveProject() {
+  if (!state.activeProject.type) return;
+  const totals = computeProjectTotal();
+  const cached = JSON.parse(JSON.stringify(state.activeProject));
+  cached._cached = totals;
+  state.bundledProjects.push(cached);
+  state.activeProject = makeBlankProject();
+  state.editingBundleIdx = null;
+  renderFinalBreakdown();  // re-render in bundle-only mode
+  updateRunningTotal();
+  // Scroll up so the user can see the project now sitting in the bundle stack at top
+  scrollAppToTop();
+}
+
+function editBundledProject(idx) {
+  if (!confirm('Load this project into the active editor? Your current in-progress project will be saved to the bundle first if it has data.')) return;
+  if (state.activeProject.type) {
+    const totals = computeProjectTotal();
+    const cached = JSON.parse(JSON.stringify(state.activeProject));
+    cached._cached = totals;
+    state.bundledProjects.push(cached);
+  }
+  const editing = state.bundledProjects[idx];
+  delete editing._cached;
+  state.activeProject = editing;
+  // A bundled project was already complete — treat its tier as confirmed
+  state.activeProject.tierConfirmed = true;
+  state.bundledProjects.splice(idx, 1);
+  state.editingBundleIdx = idx;
+  // Allow full navigation across all stages since this project is "complete"
+  state.maxStageReached = 10;
+  refreshStage2Selection();
+  showStage(2);
+  updateRunningTotal();
+}
+
+function cancelEditBundled() { state.editingBundleIdx = null; refreshStage2Selection(); }
+
+function removeBundledProject(idx) {
+  if (!confirm('Remove this project from the bundle?')) return;
+  state.bundledProjects.splice(idx, 1);
+  renderFinalBreakdown();
+  updateRunningTotal();
+}
+
+/* ============================================================
+   PDF
+   ============================================================ */
+function generatePDF() {
+  const totals = computeAllTotals();
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+  const W = 612, M = 48;
+  let y = M;
+
+  doc.setFillColor(26, 37, 64);
+  doc.rect(0, 0, W, 80, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+  doc.text('Superior Stain Solutions', M, 38);
+  doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+  doc.text('Professional fence, deck & exterior wood staining', M, 56);
+  doc.setFontSize(9);
+  doc.text(`Quote ${state.quoteId}`, W - M - 100, 38);
+  doc.text(new Date().toLocaleDateString(), W - M - 100, 56);
+
+  y = 110;
+  doc.setTextColor(26, 37, 64);
+  doc.setFontSize(14); doc.setFont('helvetica', 'bold');
+  doc.text('Quote for ' + (state.customer.name || '—'), M, y); y += 18;
+  doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+  doc.setTextColor(90, 99, 120);
+  doc.text(`${state.customer.address || ''}`, M, y); y += 13;
+  doc.text(`${state.customer.phone || ''} · ${state.customer.email || ''}`, M, y); y += 13;
+  if (state.customer.jobberNum) { doc.text(`Jobber Job: ${state.customer.jobberNum}`, M, y); y += 13; }
+  doc.text(`Prepared by: ${state.customer.employee || ''}`, M, y); y += 22;
+
+  doc.setDrawColor(236, 233, 227);
+  doc.line(M, y, W - M, y); y += 14;
+
+  const allProjects = [...(state.activeProject.type ? [{ ...state.activeProject, _cached: totals.active }] : []), ...state.bundledProjects];
+  allProjects.forEach((p) => {
+    const meta = PROJECT_META[p.type];
+    const tier = getTierMeta(p.productType, p.tier);
+    doc.setTextColor(26, 37, 64);
+    doc.setFontSize(12); doc.setFont('helvetica', 'bold');
+    doc.text(`${meta.name} — ${p.tier.charAt(0).toUpperCase() + p.tier.slice(1)} (${p.productType})`, M, y);
+    doc.text('$' + Math.round(p._cached.subtotal).toLocaleString(), W - M, y, { align: 'right' });
+    y += 14;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+    doc.setTextColor(90, 99, 120);
+    doc.text(tier.product + ' · Expected life: ' + tier.life, M, y); y += 13;
+
+    if (p.productType === 'hoa') {
+      doc.text(`HOA Color: ${p.hoa.brand} — ${p.hoa.color}${p.hoa.productName ? ' (' + p.hoa.productName + ')' : ''}`, M, y); y += 11;
+      if (p.hoa.transparency) { doc.text(`  Transparency: ${p.hoa.transparency}`, M, y); y += 11; }
+    } else if (p.selectedColor) {
+      doc.text(`Color: ${p.selectedColor.name}${p.selectedColor.code ? ' (' + p.selectedColor.code + ')' : ''}`, M, y); y += 11;
+    } else if (p.productType === 'oil' && p.tier === 'essential') {
+      doc.text(`Color: Clear sealer (no pigment)`, M, y); y += 11;
+    }
+
+    const old = state.activeProject;
+    state.activeProject = p;
+    describeMeasurementLines().forEach(l => { doc.text(`• ${l.label}: ${l.value}`, M + 12, y); y += 11; });
+    state.activeProject = old;
+
+    if (p._cached.prep > 0) { doc.text(`• Prep: ${prepLabel(p.condition)} — $${p._cached.prep.toFixed(2)}`, M + 12, y); y += 11; }
+
+    if (p.previousStain && p.previousStain.wasStained) {
+      const typeLabel = p.previousStain.previousProductType === 'water' ? 'Water-based' : (p.previousStain.previousProductType === 'oil' ? 'Oil-based' : 'Unknown type');
+      const prev = (p.previousStain.previousProductType === 'unsure' || !p.previousStain.brand) ? typeLabel : `${p.previousStain.brand}${p.previousStain.transparency ? ' / ' + p.previousStain.transparency : ''}`;
+      doc.text(`• Previously stained: ${prev}`, M + 12, y); y += 11;
+    }
+
+    if (p.customAddons && p.customAddons.length) {
+      doc.text(`• Custom items:`, M + 12, y); y += 11;
+      p.customAddons.forEach(c => {
+        const priceStr = c.priceType === 'flat' ? `$${(+c.rate).toFixed(2)}`
+          : c.priceType === 'per_unit' ? `$${(+c.rate).toFixed(2)}/unit`
+          : `${(+c.rate).toFixed(1)}%`;
+        doc.text(`    – ${c.name} (${priceStr})`, M + 12, y); y += 11;
+      });
+    }
+
+    y += 6;
+    doc.line(M, y, W - M, y); y += 14;
+    if (y > 700) { doc.addPage(); y = M; }
+  });
+
+  doc.setFontSize(11); doc.setFont('helvetica', 'normal'); doc.setTextColor(26, 37, 64);
+  doc.text('Subtotal', M, y);
+  doc.text('$' + (totals.sumBeforeBundle).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}), W - M, y, { align: 'right' });
+  y += 16;
+  if (totals.bundleDiscount > 0) {
+    doc.setTextColor(45, 110, 78);
+    doc.text(`Bundle discount (${totals.projectsCount} projects, 10% off)`, M, y);
+    doc.text('−$' + totals.bundleDiscount.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}), W - M, y, { align: 'right' });
+    y += 16;
+  }
+
+  y += 8;
+  doc.setFillColor(26, 37, 64);
+  doc.rect(M, y, W - 2*M, 40, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(13); doc.setFont('helvetica', 'bold');
+  doc.text('GRAND TOTAL', M + 16, y + 26);
+  doc.setFontSize(20);
+  doc.text('$' + Math.round(totals.finalTotal).toLocaleString(), W - M - 16, y + 26, { align: 'right' });
+  y += 60;
+
+  doc.setTextColor(26, 37, 64); doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+  doc.text('Payment Terms', M, y); y += 14;
+  doc.setFont('helvetica', 'normal');
+  if (state.paymentMethod === 'wisetack') {
+    doc.text(`Wisetack financing available — approx $${Math.round(totals.finalTotal/24).toLocaleString()}/mo over 24 months`, M, y); y += 12;
+    doc.text('(Final rate determined by Wisetack credit check)', M, y); y += 16;
+  } else {
+    doc.text(`25% deposit ($${Math.round(totals.finalTotal*0.25).toLocaleString()}) due at scheduling.`, M, y); y += 12;
+    doc.text(`Remaining 75% ($${Math.round(totals.finalTotal*0.75).toLocaleString()}) due upon project completion.`, M, y); y += 16;
+  }
+
+  // Quote notes (if any) — wrap to keep on-page
+  if (state.notes && state.notes.trim()) {
+    if (y > 680) { doc.addPage(); y = M; }
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(26, 37, 64);
+    doc.text('Notes', M, y); y += 14;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+    doc.setTextColor(60, 60, 60);
+    const wrapped = doc.splitTextToSize(state.notes.trim(), W - 2 * M);
+    wrapped.forEach(line => {
+      if (y > 750) { doc.addPage(); y = M; }
+      doc.text(line, M, y); y += 11;
+    });
+    y += 8;
+  }
+
+  doc.setTextColor(90, 99, 120); doc.setFontSize(8);
+  doc.text('Quote valid for 30 days. Final price may vary if measurements differ from on-site verification.', M, 760);
+  doc.text('Superior Stain Solutions LLC · superiorstainsolutions.com', M, 772);
+
+  doc.save(`Quote-${state.quoteId}-${(state.customer.name || 'customer').replace(/\s+/g,'_')}.pdf`);
+}
+
+/* ============================================================
+   FINALIZE
+   ============================================================ */
+function finalizeQuote() {
+  const totals = computeAllTotals();
+  const allProjects = [...(state.activeProject.type ? [{ ...state.activeProject, _cached: totals.active }] : []), ...state.bundledProjects];
+  const payload = {
+    quoteId: state.quoteId, createdAt: new Date().toISOString(),
+    customer: state.customer, employee: state.customer.employee,
+    paymentMethod: state.paymentMethod,
+    notes: state.notes || '',
+    projects: allProjects.map(p => ({
+      type: p.type, productType: p.productType, tier: p.tier,
+      condition: p.condition, selectedColor: p.selectedColor,
+      hoa: p.hoa, previousStain: p.previousStain,
+      measurements: p.measurements,
+      addons: p.addons, serviceAddons: p.serviceAddons,
+      customAddons: p.customAddons || [],
+      selectedDiscounts: p.selectedDiscounts || [],
+      subtotal: p._cached.subtotal
+    })),
+    totals: { sumBeforeBundle: totals.sumBeforeBundle, bundleDiscount: totals.bundleDiscount, bundleEligible: totals.bundleEligible, finalTotal: totals.finalTotal }
+  };
+  generatePDF();
+  try { __host.dispatchEvent(new CustomEvent('sssQuoteFinalize', { detail: payload, bubbles: true, composed: true })); } catch (e) { console.warn('CustomEvent dispatch failed:', e); }
+  __doc.querySelectorAll('.stage').forEach(s => s.classList.remove('visible'));
+  __doc.getElementById('stage-success').classList.add('visible');
+}
+
+function resetQuote() {
+  if (!confirm('Start a new quote? Current quote will be cleared.')) return;
+  const employee = state.customer.employee;
+  state.customer = { name: '', phone: '', email: '', address: '', jobberNum: '', employee };
+  state.activeProject = makeBlankProject();
+  state.bundledProjects = [];
+  state.editingBundleIdx = null;
+  state.paymentMethod = 'deposit';
+  state.notes = '';
+  state.quoteId = makeQuoteId();
+  state.maxStageReached = 1;
+  const ta = __doc.getElementById('quoteNotesField'); if (ta) ta.value = '';
+  __doc.getElementById('quoteNum').textContent = state.quoteId;
+  __doc.querySelectorAll('input').forEach(i => { if (i.type !== 'checkbox' && i.type !== 'radio') i.value = ''; });
+  __doc.getElementById('employeeName').value = employee;
+  __doc.getElementById('stage2Next').disabled = true;
+  showStage(1);
+  updateRunningTotal();
+}
+
+/* ============================================================
+   SIDE TRACKER PANEL
+   ============================================================ */
+function openSideTracker() {
+  // Scroll the parent Wix page to the top of the calculator embed BEFORE
+  // opening the sidebar, so the sidebar's header + Quote Notes are visible
+  // immediately (the sidebar is anchored to the iframe element box, so
+  // its "top" is at iframe content Y=0).
+  scrollAppToTop();
+  __doc.getElementById('sideTracker').classList.add('open');
+  __doc.getElementById('sideTrackerOverlay').classList.add('visible');
+  renderSidePanel();
+  // Hydrate the notes field from state every time the panel opens
+  const ta = __doc.getElementById('quoteNotesField');
+  if (ta) {
+    ta.value = state.notes || '';
+    // Wire up auto-save on input (idempotent assignment so it's safe to re-run)
+    ta.oninput = (e) => {
+      state.notes = e.target.value;
+      scheduleAutoSave();
+    };
+  }
+}
+function closeSideTracker() {
+  __doc.getElementById('sideTracker').classList.remove('open');
+  __doc.getElementById('sideTrackerOverlay').classList.remove('visible');
+}
+
+function saveAndReturnToDashboard() {
+  // Force-save the current draft, then navigate back to dashboard.
+  // (autoSaveDraft skips when there's nothing meaningful entered, which is fine —
+  //  the dashboard will just show as empty.)
+  autoSaveDraft();
+  closeSideTracker();
+  // Hide all stages, show the dashboard
+  __doc.querySelectorAll('.stage').forEach(s => s.classList.remove('visible'));
+  __doc.getElementById('stage-dashboard').classList.add('visible');
+  renderDashboard();
+  scrollAppToTop();
+}
+
+function buildTrackerRows() {
+  // Build a list of [section, label, value, editStage, clearFn] for what's been set
+  const rows = [];
+  const c = state.customer;
+  const ap = state.activeProject;
+
+  // Customer
+  if (c.name) rows.push({ section: 'Customer', label: 'Name', value: c.name, stage: 1 });
+  if (c.phone) rows.push({ section: 'Customer', label: 'Phone', value: c.phone, stage: 1 });
+  if (c.email) rows.push({ section: 'Customer', label: 'Email', value: c.email, stage: 1 });
+  if (c.address) rows.push({ section: 'Customer', label: 'Address', value: c.address, stage: 1 });
+
+  // Project + measurements
+  if (ap.type) {
+    rows.push({ section: 'Project', label: 'Type', value: PROJECT_META[ap.type].icon + ' ' + PROJECT_META[ap.type].name, stage: 2, clear: () => { ap.type = null; ap.measurements = {}; } });
+    const m = ap.measurements;
+    if (ap.type === 'fence' && (m.linearft || m.height)) rows.push({ section: 'Project', label: 'Size', value: `${m.linearft||0} ft × ${m.height||0} ft (${styleName(m.style)})`, stage: 3, clear: () => { ap.measurements = {}; } });
+    else if (ap.type === 'deck' && (m.flat || m.rail || m.stairs)) rows.push({ section: 'Project', label: 'Size', value: `${m.flat||0} sq ft flat${m.rail?` + ${m.rail} ln ft rail`:''}${m.stairs?` + ${m.stairs} stairs`:''}`, stage: 3, clear: () => { ap.measurements = {}; } });
+    else if ((ap.type === 'pergola' || ap.type === 'barn' || ap.type === 'ceiling') && m.sqft) rows.push({ section: 'Project', label: 'Size', value: `${m.sqft} sq ft`, stage: 3, clear: () => { ap.measurements = {}; } });
+
+    // Wood age (Step 3)
+    if (ap.woodAge) {
+      const ageLabel = { new: 'Brand-new (<6 mo)', weathered: 'Weathered (6 mo–2 yr)', aged: 'Aged (2+ yr)' }[ap.woodAge];
+      rows.push({ section: 'Project', label: 'Wood age', value: ageLabel, stage: 3, clear: () => { ap.woodAge = null; } });
+    }
+
+    // Condition
+    if (ap.condition) rows.push({ section: 'Project', label: 'Prep', value: CONDITION_META[ap.condition].label, stage: 4 });
+
+    // Product + previously stained
+    if (ap.productType === 'water') rows.push({ section: 'Project', label: 'Product', value: '💧 Water-Based', stage: 5 });
+    else if (ap.productType === 'oil') rows.push({ section: 'Project', label: 'Product', value: '🛢️ Oil-Based', stage: 5 });
+    else if (ap.productType === 'hoa') rows.push({ section: 'Project', label: 'Product', value: '🏘️ HOA: ' + (ap.hoa.brand || '?') + ' / ' + (ap.hoa.color || '?'), stage: 5 });
+
+    if (ap.previousStain.wasStained) {
+      const t = ap.previousStain.previousProductType;
+      const label = t === 'water' ? 'Water-based' : (t === 'oil' ? 'Oil-based' : (t === 'unsure' ? 'Unsure' : 'Yes'));
+      rows.push({ section: 'Project', label: 'Prev stain', value: label + (ap.previousStain.brand ? ` (${ap.previousStain.brand})` : ''), stage: 5 });
+    }
+
+    // Tier
+    if (ap.tier && !isHoa()) {
+      const tm = getTierMeta(ap.productType, ap.tier);
+      if (tm) rows.push({ section: 'Project', label: 'Tier', value: ap.tier.charAt(0).toUpperCase() + ap.tier.slice(1) + ' — ' + tm.product, stage: 6 });
+    } else if (isHoa()) {
+      rows.push({ section: 'Project', label: 'Tier', value: 'HOA-Specified (locked)', stage: 6 });
+    }
+
+    // Color
+    if (ap.selectedColor) rows.push({ section: 'Project', label: 'Color', value: ap.selectedColor.name + (ap.selectedColor.code ? ` (${ap.selectedColor.code})` : ''), stage: 7, clear: () => { ap.selectedColor = null; } });
+    else if (isHoa() && ap.hoa.color) rows.push({ section: 'Project', label: 'Color', value: 'HOA: ' + ap.hoa.color, stage: 5 });
+    else if (isClearSealer()) rows.push({ section: 'Project', label: 'Color', value: 'Clear (no pigment)', stage: 6 });
+
+    // Add-ons
+    const addonCount = Object.keys(ap.addons).length + Object.keys(ap.serviceAddons).length + (ap.customAddons||[]).length;
+    if (addonCount > 0) rows.push({ section: 'Project', label: 'Add-ons', value: `${addonCount} selected`, stage: 8, clear: () => { ap.addons = {}; ap.serviceAddons = {}; ap.customAddons = []; } });
+
+    // Discount
+    if (ap.selectedDiscounts && ap.selectedDiscounts.length > 0) {
+      const labels = ap.selectedDiscounts.map(id => {
+        const d = DISCOUNTS.find(x => x.id === id);
+        return d ? `${d.label} (−${(d.rate*100).toFixed(0)}%)` : null;
+      }).filter(Boolean).join(', ');
+      rows.push({ section: 'Project', label: 'Discounts', value: labels, stage: 9, clear: () => { ap.selectedDiscounts = []; } });
+    }
+  }
+
+  return rows;
+}
+
+function renderSidePanel() {
+  const totals = computeAllTotals();
+  const rows = buildTrackerRows();
+  const bundled = state.bundledProjects;
+  const tab = __doc.getElementById('sideTrackerTab');
+  const countEl = __doc.getElementById('sideTrackerCount');
+  const bodyEl = __doc.getElementById('sideTrackerBody');
+  const totalEl = __doc.getElementById('sideTrackerTotal');
+
+  // Visibility: only when the user has made any meaningful selection, and
+  // never on the dashboard / success screens (which are their own surfaces).
+  const dashboardVisible = __doc.getElementById('stage-dashboard').classList.contains('visible');
+  const successVisible = __doc.getElementById('stage-success') && __doc.getElementById('stage-success').classList.contains('visible');
+  const hasSelections = (rows.length > 0) || bundled.length > 0;
+  const shouldShow = hasSelections && !dashboardVisible && !successVisible;
+  tab.classList.toggle('visible', shouldShow);
+  // Header-mounted button mirrors the floating tab's visibility and count.
+  const headerBtn = __doc.getElementById('headerSideTrackerBtn');
+  const headerCount = __doc.getElementById('headerSideTrackerCount');
+  if (headerBtn) headerBtn.style.display = shouldShow ? 'inline-flex' : 'none';
+  if (headerCount) headerCount.textContent = String(rows.length + bundled.length);
+  if (dashboardVisible || successVisible) closeSideTracker();
+  countEl.textContent = rows.length + bundled.length;
+  totalEl.textContent = '$' + Math.round(totals.finalTotal).toLocaleString();
+
+  // Group rows by section
+  const sections = {};
+  rows.forEach(r => { (sections[r.section] = sections[r.section] || []).push(r); });
+
+  let html = '';
+  if (Object.keys(sections).length === 0 && bundled.length === 0) {
+    html = '<div class="empty-state">Start picking options and they\'ll appear here. You can edit or remove any selection at any time.</div>';
+  } else {
+    Object.entries(sections).forEach(([sec, items]) => {
+      html += `<div class="tracker-section"><h4>${sec}</h4>`;
+      items.forEach((r, idx) => {
+        const clearBtn = r.clear ? `<button class="clear" onclick="clearTrackerRow('${r.section}',${idx})" title="Clear">×</button>` : '';
+        html += `<div class="tracker-row">
+          <span class="tr-label">${r.label}</span>
+          <span class="tr-value">${r.value}</span>
+          <div class="tr-actions">
+            <button class="edit" onclick="closeSideTracker();showStage(${r.stage})" title="Edit">✎</button>
+            ${clearBtn}
+          </div>
+        </div>`;
+      });
+      html += '</div>';
+    });
+
+    if (bundled.length > 0) {
+      html += '<div class="tracker-section"><h4>Bundled Projects (10% off)</h4>';
+      bundled.forEach((p, i) => {
+        html += `<div class="tracker-row">
+          <span class="tr-label">${PROJECT_META[p.type].icon}</span>
+          <span class="tr-value">${PROJECT_META[p.type].name} — $${Math.round(p._cached.subtotal).toLocaleString()}</span>
+          <div class="tr-actions">
+            <button class="edit" onclick="closeSideTracker();editBundledProject(${i})" title="Edit">✎</button>
+            <button class="clear" onclick="if(confirm('Remove?'))removeBundledProject(${i})" title="Remove">×</button>
+          </div>
+        </div>`;
+      });
+      html += '</div>';
+    }
+  }
+  bodyEl.innerHTML = html;
+}
+
+function clearTrackerRow(section, idx) {
+  // Re-build rows to find the clear function (rows are rebuilt on every render)
+  const rows = buildTrackerRows().filter(r => r.section === section);
+  const target = rows[idx];
+  if (target && target.clear) {
+    target.clear();
+    renderSidePanel();
+    updateRunningTotal();
+  }
+}
+
+/* ============================================================
+   INFO MODAL — popup explanations for any term
+   ============================================================ */
+const INFO_TOPICS = {
+  six_month_rule: {
+    title: 'Why does 6 months matter?',
+    body: `<p>Bare wood that's been exposed to weather for more than 6 months has typically picked up enough surface damage that staining over it without a soft wash will compromise the bond — even if the wood still looks fairly clean from a distance.</p>
+      <p><strong>What 6+ months of exposure does to wood:</strong></p>
+      <ul>
+        <li><strong>Surface fibers break down</strong> from UV. Those fibers are no longer structurally sound — anything we stain on top of them is sitting on dead wood that'll flake off.</li>
+        <li><strong>Mildew and algae</strong> begin to colonize the pores, even if invisible. If we trap them under stain, they'll grow through and lift the finish.</li>
+        <li><strong>pH balance shifts</strong> — fresh wood is roughly neutral; weathered wood becomes alkaline. New stain bonds best to a freshly-brightened, pH-balanced surface.</li>
+        <li><strong>Grey tone develops</strong> in the top layer. Staining over greyed wood without lifting it first leaves muddy, uneven color.</li>
+      </ul>
+      <p><strong>The fix:</strong> a soft wash with sodium metasilicate to clear dead fibers and mildew, followed by an oxalic-acid brightener to restore pH and lift the grey. Adds 1 day to the project but is the difference between a stain that lasts the rated lifespan vs. one that fails in 12–18 months.</p>
+      <p style="margin-top:14px;padding:10px 12px;background:var(--gold-pale);border-left:3px solid var(--gold);border-radius:6px;color:#5a4a1f;">If the wood is on a fully-covered porch (no rain, no UV) the 6-month rule is more lenient — judge by appearance. But anything in direct sun and weather for 6+ months should get a soft wash.</p>`
+  },
+  pergola_overhead: {
+    title: 'What is "overhead access challenge"?',
+    body: `<p>Pergolas always involve overhead work — but sometimes the site makes that work meaningfully harder. The "overhead access challenge" flag adds a $200 line item to cover the extra time, equipment, and care needed when access is restricted.</p>
+      <p>Check this if any of these apply:</p>
+      <ul>
+        <li><strong>Built over a deck with railings</strong> — we have to work around the rails or position ladders on the deck surface (more setup, slower progress).</li>
+        <li><strong>Surrounded by mature landscaping</strong> — shrubs, trees, or planter beds that can't be moved force us to maneuver in tight spaces with extra tarping to protect plants.</li>
+        <li><strong>Over a pool, hot tub, or pond</strong> — water below means extra fall protection, plank-over-water setup, and no spraying (brushed application only).</li>
+        <li><strong>Pergola over 10 ft tall</strong> — taller ladders, more trips up and down, sometimes scaffolding instead.</li>
+        <li><strong>Attached to a second-story balcony</strong> — work from above adds time and risk.</li>
+        <li><strong>Hardscape directly below</strong> (pavers, stamped concrete, outdoor kitchen) — we can't drop anything, so movement is slower and tarping is heavier.</li>
+      </ul>
+      <p>If the pergola is freestanding over grass or simple patio with room to set ladders comfortably on all sides, leave this unchecked.</p>`
+  },
+  why_prev_stain: {
+    title: 'Why does it matter if the wood was previously stained?',
+    body: `<p>Knowing what was used before helps us choose the right approach for recoating.</p>
+      <ul>
+        <li><strong>Water on water</strong>, or <strong>oil on oil</strong> — usually works with just a soft wash. The new stain bonds to the old one because they're chemically similar.</li>
+        <li><strong>Switching types</strong> (oil ↔ water) — requires a full strip-and-sand. The two chemistries don't bond well.</li>
+        <li><strong>Peeling or chipping existing finish</strong> — must be stripped regardless of type. Leaving it underneath causes the new stain to fail.</li>
+      </ul>
+      <p>If you're not sure what was used, that's fine — we'll do a small test patch on-site to confirm before quoting prep work.</p>`
+  },
+  cond_no_wash: {
+    title: 'No Wash — when is it appropriate?',
+    body: `<p><strong>No Wash</strong> is the lightest prep level — included in the base price, no premium added.</p>
+      <p>Best for wood that is genuinely new: recently installed, no UV exposure, no greying, no mildew. A light surface cleaning is all that's needed before stain — no chemical prep required.</p>
+      <p>If you see <strong>any</strong> greying, fading, or mildew spots — even faint ones — pick Soft Wash instead. New stain can't bond to weathered wood without the prep step.</p>`
+  },
+  cond_soft_wash: {
+    title: 'Soft Wash + Brightener — the most common prep',
+    body: `<p>This is the prep we use on the majority of fence and deck jobs. It handles a wide range of wood conditions without the labor cost of stripping.</p>
+      <p><strong>What it involves:</strong></p>
+      <ul>
+        <li>A sodium-metasilicate-based cleaner that breaks down dead surface fibers, dirt, and mildew</li>
+        <li>An oxalic-acid brightener that neutralizes the wood's pH and removes any silver/grey patina</li>
+        <li>The result: clean, slightly opened wood pores that allow new stain to penetrate and bond</li>
+      </ul>
+      <p><strong>Best for:</strong> Greyed wood, faded wood, mildew presence, OR re-staining over an existing finish of the <em>same type</em> (water on water, oil on oil) that's still in good condition.</p>`
+  },
+  cond_strip_sand: {
+    title: 'Strip & Sand — when is it actually necessary?',
+    body: `<p>Stripping is the most labor-intensive prep level. We <strong>only</strong> recommend it when truly needed:</p>
+      <ul>
+        <li><strong>Peeling, flaking, or chipping</strong> existing stain — leaving it underneath causes the new stain to fail in months</li>
+        <li><strong>Switching stain types</strong> (oil ↔ water) — the two chemistries don't bond well, so the old finish has to come off completely</li>
+      </ul>
+      <p>If you're recoating an existing finish that's still in good shape — even if it looks faded — Soft Wash is usually enough. You don't need to strip every time.</p>
+      <p><strong>The process:</strong> chemical strip appropriate to the old finish (sodium metasilicate for water-based; solvent-based for oil), followed by 80–100 grit sanding to feather edges and expose fresh wood.</p>`
+  },
+  water_vs_oil: {
+    title: 'Water-based vs. oil-based stain',
+    body: `<p><strong>Water-based stains</strong> (like SW Woodscapes) dry fast (1–4 hours between coats), have low odor, clean up with water, and re-coat easily down the road. They lay on top of the wood more than they penetrate. Best when the wood was previously stained with water-based, or when you want low VOC / fast turnaround.</p>
+      <p><strong>Oil-based stains</strong> (like EXPERT Stain &amp; Seal) penetrate deeper into the wood, bring out grain more vividly, and resist UV breakdown longer — particularly important in the Southeast where summer sun is harsh. They typically last 30–50% longer per coat than water-based, but have stronger odor during application and slower dry time.</p>
+      <p>You can't mix the two — switching from one to the other requires stripping the existing finish completely.</p>`
+  },
+  hoa_explained: {
+    title: 'What does "HOA-Required" mean?',
+    body: `<p>If your home is governed by a Homeowners Association with rules about exterior wood finishes, they often specify exactly which brand, transparency, and color you can use. Failing to follow it can result in fines or a required re-do at your cost.</p>
+      <p>When you pick the HOA-Required option, we:</p>
+      <ul>
+        <li>Capture the exact spec from your HOA documentation for your records and this quote</li>
+        <li>Skip our standard color picker (since your HOA already chose the color)</li>
+        <li>Lock the price to our Performance-tier rate (other tier options don't apply)</li>
+      </ul>
+      <p><strong>Important — we do not apply HOA-specified products ourselves.</strong> Our application services use the SW Woodscapes and EXPERT product lines we know and warranty. All we need from you here is the requirement on paper — just tell us what your HOA mandates and we'll log it for the quote. Next steps are discussed in person at scheduling.</p>`
+  },
+  tier_help: {
+    title: 'How do I choose a tier?',
+    body: `<p>The three tiers represent escalating levels of protection, longevity, and value:</p>
+      <ul>
+        <li><strong>Essential</strong> — budget-friendly basic protection. Use for rental properties, fences in shade, or short-term needs. Will need a refresh in 18–24 months.</li>
+        <li><strong>Performance ★ (Recommended)</strong> — our most-quoted tier. Best balance of price and longevity (3–5 years). 90-day touch-up visit included.</li>
+        <li><strong>Showcase</strong> — premium-level protection (4–7 years). The cost-per-year is often lower than going cheap and re-doing the work sooner.</li>
+      </ul>
+      <p>The cost-per-year number under each price is the most useful comparison — it shows what you're really paying over the life of the stain.</p>`
+  },
+  bundle_discount: {
+    title: 'How does the bundle discount work?',
+    body: `<p>Bundling 2 or more separate staining projects in a single quote automatically saves you <strong>10% off the total</strong>. Examples that count as separate projects:</p>
+      <ul>
+        <li>A fence + a deck</li>
+        <li>A pergola + a wooden ceiling</li>
+        <li>Two fences on different sides of the property</li>
+      </ul>
+      <p>The bundle discount stacks on top of any project-level discounts you pick on Step 9 (veteran, teacher, cash payment, etc.) — those have their own combined cap of 14% per project. Bundle 10% applies separately on top.</p>`
+  },
+  prep_chem: {
+    title: 'What chemicals do you use for prep?',
+    body: `<p>Two main products, depending on what the wood needs:</p>
+      <ul>
+        <li><strong>Sodium metasilicate</strong> — an alkaline cleaner. Breaks down dead wood fibers, dirt, and mildew. Safe for plants when diluted properly and rinsed.</li>
+        <li><strong>Oxalic acid</strong> — a wood brightener. Neutralizes the wood's pH after the cleaner, removes silver/grey weathering, and opens the wood pores so new stain can bond. Also derived naturally from many plants (rhubarb leaves, spinach).</li>
+      </ul>
+      <p>For stripping previously stained wood we use additional products appropriate to the old finish — sodium-metasilicate-based for water-based stain, often citrus-based or solvent-based for oil-based stain.</p>`
+  },
+  rain_refresh: {
+    title: 'What is SW Woodscapes Rain Refresh?',
+    body: `<p>SW Woodscapes Rain Refresh is a separate Sherwin-Williams solid-color exterior wood stain with <strong>Self-Cleaning Technology</strong> — rainfall lifts surface dirt off the finish so it stays looking new longer.</p>
+      <p>It carries a <strong>10-year limited manufacturer warranty</strong> from Sherwin-Williams. It's the product we use for the Showcase water-based tier (not an additive — it's a different SKU than regular Woodscapes).</p>
+      <p style="margin-top:14px;padding:10px 12px;background:var(--gold-pale);border-left:3px solid var(--gold);border-radius:6px;color:#5a4a1f;">SW markets Rain Refresh as "stays cleaner, longer" — we don't promise a specific lifespan beyond what's in the manufacturer warranty.</p>`
+  },
+  citronella: {
+    title: 'What is the Citronella additive?',
+    body: `<p>EXPERT Citronella is an oil-based stain additive that mixes into the can during application. It deters carpenter bees, wasps, and other biting insects from drilling into the wood — a real problem for cedar fences in the Southeast.</p>
+      <p>It does <em>not</em> change the color of the stain or its appearance. The effect lasts as long as the stain itself (typically 4–5 years for Performance, 6–7 for Showcase). It's compatible with all EXPERT oil-based products; not available for water-based.</p>`
+  }
+};
+
+function openInfoModal(topicKey, triggerEl) {
+  const topic = INFO_TOPICS[topicKey];
+  if (!topic) return;
+  __doc.getElementById('infoModalTitle').textContent = topic.title;
+  __doc.getElementById('infoModalBody').innerHTML = topic.body;
+  const backdrop = __doc.getElementById('infoModalBackdrop');
+  // In a content-sized iframe the modal must be JS-positioned near the click,
+  // not fixed at viewport center — there is no internal viewport. Anchor the
+  // modal slightly above where the (i) button was clicked so the user sees
+  // it without scrolling.
+  let topY = 0;
+  if (triggerEl && triggerEl.getBoundingClientRect) {
+    const rect = triggerEl.getBoundingClientRect();
+    topY = Math.max(0, rect.top - 60);
+  }
+  backdrop.style.top = topY + 'px';
+  backdrop.classList.add('open');
+}
+function closeInfoModal() {
+  const backdrop = __doc.getElementById('infoModalBackdrop');
+  backdrop.classList.remove('open');
+  backdrop.style.top = '';
+}
+
+// Wire info buttons globally — uses event delegation since buttons can be re-rendered
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.info-btn');
+  if (btn) { e.stopPropagation(); openInfoModal(btn.dataset.info, btn); }
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { closeInfoModal(); closeSideTracker(); }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('info-btn')) {
+    e.preventDefault();
+    openInfoModal(e.target.dataset.info, e.target);
+  }
+});
+
+/* ============================================================
+   CONFETTI — fires when a customer qualifies for a discount
+   ============================================================ */
+let _confettiThrottle = 0;
+function fireConfetti() {
+  // Throttle so rapid clicks don't spam
+  const now = Date.now();
+  if (now - _confettiThrottle < 600) return;
+  _confettiThrottle = now;
+  const colors = ['#2d6e4e', '#c89b3c', '#5a8d68', '#c84d3a', '#3a7095'];
+  for (let i = 0; i < 36; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + 'vw';
+    piece.style.top = '-20px';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = (Math.random() * 0.3) + 's';
+    piece.style.animationDuration = (1.2 + Math.random() * 0.8) + 's';
+    piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+    __doc.appendChild(piece);
+    setTimeout(() => piece.remove(), 2400);
+  }
+}
+
+/* ============================================================
+   DASHBOARD + AUTO-SAVE DRAFTS
+   ============================================================ */
+const DRAFT_STORAGE_KEY = 'sss_quote_drafts_v1';
+let autoSaveTimer = null;
+
+function getDrafts() {
+  try {
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) { return []; }
+}
+
+function setDrafts(arr) {
+  try { localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(arr)); } catch (e) { console.warn('Draft save failed:', e); }
+}
+
+function autoSaveDraft() {
+  // Don't save if nothing meaningful entered
+  if (!state.customer.name && !state.activeProject.type && state.bundledProjects.length === 0) return;
+  // Don't save on the dashboard itself
+  if (state.currentStage === 'dashboard') return;
+
+  const drafts = getDrafts();
+  const existing = drafts.findIndex(d => d.quoteId === state.quoteId);
+  const snapshot = {
+    quoteId: state.quoteId,
+    lastSavedAt: new Date().toISOString(),
+    customerName: state.customer.name || '(unnamed customer)',
+    employeeName: state.customer.employee || '',
+    stageReached: state.maxStageReached,
+    state: JSON.parse(JSON.stringify(state))
+  };
+  if (existing >= 0) drafts[existing] = snapshot;
+  else drafts.unshift(snapshot);
+  // Keep most-recent 20 only
+  setDrafts(drafts.slice(0, 20));
+}
+
+function scheduleAutoSave() {
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(autoSaveDraft, 1500); // 1.5s debounce
+}
+
+function renderDashboard() {
+  const drafts = getDrafts();
+  __doc.getElementById('clearDraftsBtn').style.display = drafts.length > 0 ? 'inline-flex' : 'none';
+  const list = __doc.getElementById('draftsList');
+  if (drafts.length === 0) {
+    list.innerHTML = `
+      <div class="empty-drafts">
+        <div class="empty-icon">📋</div>
+        <h3>No drafts yet</h3>
+        <p>Click "Start New Quote" above to begin a quote. Your progress will auto-save here every couple of seconds.</p>
+      </div>`;
+    return;
+  }
+  list.innerHTML = `
+    <h3 style="font-size:14px;color:var(--slate);text-transform:uppercase;letter-spacing:0.08em;margin: 24px 0 12px;">Recent drafts (${drafts.length})</h3>
+    ${drafts.map((d, i) => {
+      const ago = timeSince(new Date(d.lastSavedAt));
+      const totals = d.state.bundledProjects.length > 0 || d.state.activeProject.type
+        ? computeDraftTotal(d.state)
+        : 0;
+      return `
+        <div class="draft-card">
+          <div class="draft-card-main">
+            <div class="draft-customer">${d.customerName}</div>
+            <div class="draft-meta">
+              <span class="quote-id-mono">${d.quoteId}</span>
+              <span>·</span>
+              <span>by ${d.employeeName || 'unknown'}</span>
+              <span>·</span>
+              <span>${ago}</span>
+              <span>·</span>
+              <span>Step ${d.stageReached || 1} of 10</span>
+            </div>
+            ${totals > 0 ? `<div class="draft-running-total">$${Math.round(totals).toLocaleString()} running total</div>` : ''}
+          </div>
+          <div class="draft-card-actions">
+            <button class="btn btn-primary" onclick="resumeDraft(${i})">Resume →</button>
+            <button class="btn-ghost-danger" onclick="deleteDraft(${i})" aria-label="Delete">🗑</button>
+          </div>
+        </div>`;
+    }).join('')}`;
+}
+
+function computeDraftTotal(s) {
+  // Quick total estimate for dashboard display (without mutating state)
+  const orig = JSON.parse(JSON.stringify(state));
+  Object.assign(state, JSON.parse(JSON.stringify(s)));
+  const totals = computeAllTotals();
+  Object.assign(state, orig);
+  return totals.finalTotal;
+}
+
+function timeSince(date) {
+  const seconds = Math.floor((new Date() - date) / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return minutes + ' min ago';
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return hours + ' hr ago';
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'yesterday';
+  if (days < 7) return days + ' days ago';
+  return date.toLocaleDateString();
+}
+
+function startNewQuote() {
+  // Hide dashboard, reset state, jump to Step 1
+  __doc.getElementById('stage-dashboard').classList.remove('visible');
+  // Reset state (keep employee if set previously)
+  const employee = state.customer.employee || '';
+  state.customer = { name: '', phone: '', email: '', address: '', jobberNum: '', employee };
+  state.activeProject = makeBlankProject();
+  state.bundledProjects = [];
+  state.editingBundleIdx = null;
+  state.paymentMethod = 'deposit';
+  state.notes = '';
+  state.quoteId = makeQuoteId();
+  state.maxStageReached = 1;
+
+  __doc.getElementById('quoteNum').textContent = state.quoteId;
+  __doc.querySelectorAll('input').forEach(i => { if (i.type !== 'checkbox' && i.type !== 'radio') i.value = ''; });
+  const empField = __doc.getElementById('employeeName');
+  if (empField) empField.value = employee;
+  const ta = __doc.getElementById('quoteNotesField'); if (ta) ta.value = '';
+  showStage(1);
+  updateRunningTotal();
+}
+
+function resumeDraft(idx) {
+  const drafts = getDrafts();
+  const d = drafts[idx];
+  if (!d) return;
+  // Restore state from snapshot
+  Object.assign(state, d.state);
+  if (typeof state.notes !== 'string') state.notes = '';
+  // Re-hydrate form fields from customer state
+  ['custName','custPhone','custEmail','custAddress','jobberNum','employeeName'].forEach(id => {
+    const map = { custName:'name', custPhone:'phone', custEmail:'email', custAddress:'address', jobberNum:'jobberNum', employeeName:'employee' };
+    const el = __doc.getElementById(id);
+    if (el) el.value = state.customer[map[id]] || '';
+  });
+  const ta = __doc.getElementById('quoteNotesField'); if (ta) ta.value = state.notes || '';
+  __doc.getElementById('quoteNum').textContent = state.quoteId;
+  __doc.getElementById('stage-dashboard').classList.remove('visible');
+  showStage(d.stageReached || 1);
+  updateRunningTotal();
+}
+
+function deleteDraft(idx) {
+  if (!confirm('Delete this draft? This cannot be undone.')) return;
+  const drafts = getDrafts();
+  drafts.splice(idx, 1);
+  setDrafts(drafts);
+  renderDashboard();
+}
+
+function clearAllDrafts() {
+  if (!confirm('Delete ALL drafts? This cannot be undone.')) return;
+  setDrafts([]);
+  renderDashboard();
+}
+
+// Hook auto-save into the key state-changing function
+const _origUpdateRunningTotal = updateRunningTotal;
+updateRunningTotal = function() {
+  // If compute throws for any reason, swallow it so auto-save still fires below
+  try { _origUpdateRunningTotal.apply(this, arguments); }
+  catch (err) { console.warn('[Calculator] updateRunningTotal threw:', err); }
+  scheduleAutoSave();
+};
+
+/* ============================================================
+   INIT
+   ============================================================ */
+// On load: show dashboard if any drafts exist OR start fresh
+renderDashboard();
+// (was: window.addEventListener for SSS_QUOTE_SAVED — not needed in Custom Element context)
+
+/* ============================================================
+   TAP-VS-DRAG GUARD — if the finger moves more than 8px between
+   touchstart and touchend, suppress the synthesized click. This way
+   when the user drags to scroll, they don't accidentally select a
+   card they were scrolling past. Pure taps (no movement) still work.
+   ============================================================ */
+(function setupTapGuard() {
+  let startX = 0, startY = 0, dragged = false;
+  const THRESHOLD = 8;
+  document.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) { dragged = false; return; }
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    dragged = false;
+  }, { capture: true, passive: true });
+  document.addEventListener('touchmove', (e) => {
+    if (e.touches.length !== 1) return;
+    const dx = Math.abs(e.touches[0].clientX - startX);
+    const dy = Math.abs(e.touches[0].clientY - startY);
+    if (dx > THRESHOLD || dy > THRESHOLD) dragged = true;
+  }, { capture: true, passive: true });
+  document.addEventListener('click', (e) => {
+    if (dragged) { e.stopPropagation(); e.preventDefault(); dragged = false; }
+  }, { capture: true });
+})();
+  // Expose for inline onclick=/onchange= handlers in markup.
+  Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, applyCustomColor, removeCustomAddon, state });
+
+  }
+
+  class SSSCalculator extends HTMLElement {
+    connectedCallback() {
+      if (this._initialized) return;
+      this._initialized = true;
+      this._shadow = this.attachShadow({ mode: 'open' });
+      this._shadow.innerHTML = '<style>' + STYLE + '</style>' + HTML;
+      const self = this;
+      loadJsPDF().finally(() => {
+        try { initCalculator.call(self, self._shadow, self); }
+        catch (e) { console.error('[SSS Calculator] init failed:', e); }
+      });
+    }
+  }
+
+  customElements.define('sss-calculator', SSSCalculator);
+})();
