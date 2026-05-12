@@ -586,7 +586,8 @@ const state = {
   editingBundleIdx: null,
   paymentMethod: 'deposit',
   notes: '',                    // Quote-level free-form notes — shown on Review, sent to Jobber
-  quoteId: ''
+  quoteId: '',
+  cloudRowId: null              // _id of the cloud row once created — null until first cloud save
 };
 
 function makeBlankProject() {
@@ -3430,6 +3431,25 @@ function finalizeQuote() {
   };
   generatePDF();
   try { __host.dispatchEvent(new CustomEvent('sssQuoteFinalize', { detail: payload, bubbles: true, composed: true })); } catch (e) { console.warn('CustomEvent dispatch failed:', e); }
+
+  // Cloud: persist final state then mark the row as finished. If there's
+  // no cloud row yet (e.g., user blew through the whole calc faster than
+  // the debounced auto-save), create one inline.
+  (async () => {
+    try {
+      const finalPayload = buildCloudPayload();
+      if (!state.cloudRowId && finalPayload && typeof __sssBridge !== 'undefined') {
+        const r = await __sssBridge.call('createQuote', { payload: finalPayload });
+        if (r && r.ok && r.quote && r.quote._id) state.cloudRowId = r.quote._id;
+      } else if (state.cloudRowId && finalPayload) {
+        await __sssBridge.call('updateQuote', { quoteRowId: state.cloudRowId, patch: finalPayload });
+      }
+      if (state.cloudRowId) {
+        await __sssBridge.call('setQuoteStatus', { quoteRowId: state.cloudRowId, status: 'finished' });
+      }
+    } catch (e) { console.warn('[SSS Cloud] finalize failed:', e); }
+  })();
+
   __doc.querySelectorAll('.stage').forEach(s => s.classList.remove('visible'));
   __doc.getElementById('stage-success').classList.add('visible');
 }
@@ -3444,6 +3464,7 @@ function resetQuote() {
   state.paymentMethod = 'deposit';
   state.notes = '';
   state.quoteId = makeQuoteId();
+  state.cloudRowId = null;     // forget the prior cloud row — next save creates a new one
   state.maxStageReached = 1;
   const ta = __doc.getElementById('quoteNotesField'); if (ta) ta.value = '';
   __doc.getElementById('quoteNum').textContent = state.quoteId;
@@ -3859,6 +3880,7 @@ function autoSaveDraft() {
   const existing = drafts.findIndex(d => d.quoteId === state.quoteId);
   const snapshot = {
     quoteId: state.quoteId,
+    cloudRowId: state.cloudRowId || null,
     lastSavedAt: new Date().toISOString(),
     customerName: state.customer.name || '(unnamed customer)',
     employeeName: state.customer.employee || '',
@@ -3869,6 +3891,95 @@ function autoSaveDraft() {
   else drafts.unshift(snapshot);
   // Keep most-recent 20 only
   setDrafts(drafts.slice(0, 20));
+
+  // Fire-and-forget cloud save. localStorage above is the canonical
+  // local cache; cloud is best-effort so a network hiccup never blocks
+  // the rep from moving forward.
+  cloudSaveDraft();
+}
+
+/* ============================================================
+   CLOUD AUTO-SAVE — mirrors localStorage to EmployeeQuotes collection
+   ============================================================ */
+let __cloudSaveInFlight = false;
+let __cloudSavePending  = false;
+
+function buildCloudPayload() {
+  // Reject obviously-empty drafts so we don't litter the dashboard with
+  // junk rows the rep didn't really start.
+  if (!state.customer.name && !state.activeProject.type && state.bundledProjects.length === 0) return null;
+
+  let totals;
+  try { totals = computeAllTotals(); } catch (e) { totals = { sumBeforeBundle: 0, bundleDiscount: 0, bundleEligible: false, finalTotal: 0 }; }
+  const allProjects = [
+    ...(state.activeProject.type ? [{ ...state.activeProject }] : []),
+    ...state.bundledProjects
+  ];
+
+  return {
+    customer: {
+      name:    state.customer.name    || '',
+      phone:   state.customer.phone   || '',
+      email:   state.customer.email   || '',
+      address: state.customer.address || ''
+    },
+    projects: allProjects.map(p => ({
+      type: p.type, productType: p.productType, tier: p.tier,
+      condition: p.condition, selectedColor: p.selectedColor,
+      hoa: p.hoa, previousStain: p.previousStain,
+      measurements: p.measurements,
+      addons: p.addons, serviceAddons: p.serviceAddons,
+      customAddons: p.customAddons || [],
+      selectedDiscounts: p.selectedDiscounts || []
+    })),
+    totals: {
+      sumBeforeBundle: totals.sumBeforeBundle,
+      bundleDiscount:  totals.bundleDiscount,
+      bundleEligible:  totals.bundleEligible,
+      final:           totals.finalTotal
+    },
+    notes:          state.notes || '',
+    paymentMethod:  state.paymentMethod || '',
+    bundleEligible: !!totals.bundleEligible
+  };
+}
+
+async function cloudSaveDraft() {
+  if (typeof __sssBridge === 'undefined' || !__sssBridge.call) return;
+  // Coalesce concurrent saves: one in flight + one queued.
+  if (__cloudSaveInFlight) { __cloudSavePending = true; return; }
+  const payload = buildCloudPayload();
+  if (!payload) return;
+
+  __cloudSaveInFlight = true;
+  try {
+    let res;
+    if (!state.cloudRowId) {
+      res = await __sssBridge.call('createQuote', { payload });
+      if (res && res.ok && res.quote && res.quote._id) {
+        state.cloudRowId = res.quote._id;
+        // The server assigns a sequential quoteId; adopt it so the
+        // human-readable label matches what's in the database.
+        if (res.quote.quoteId) {
+          state.quoteId = res.quote.quoteId;
+          const qnEl = __doc.getElementById('quoteNum');
+          if (qnEl) qnEl.textContent = state.quoteId;
+        }
+      }
+    } else {
+      res = await __sssBridge.call('updateQuote', { quoteRowId: state.cloudRowId, patch: payload });
+    }
+    if (!res || !res.ok) console.warn('[SSS Cloud] save failed:', res);
+  } catch (e) {
+    console.warn('[SSS Cloud] save threw:', e);
+  } finally {
+    __cloudSaveInFlight = false;
+    if (__cloudSavePending) {
+      __cloudSavePending = false;
+      // Run again on next tick so the new state is captured.
+      setTimeout(cloudSaveDraft, 0);
+    }
+  }
 }
 
 function scheduleAutoSave() {
@@ -3953,6 +4064,7 @@ function startNewQuote() {
   state.paymentMethod = 'deposit';
   state.notes = '';
   state.quoteId = makeQuoteId();
+  state.cloudRowId = null;     // fresh quote — first auto-save will mint a new cloud row
   state.maxStageReached = 1;
 
   __doc.getElementById('quoteNum').textContent = state.quoteId;
@@ -3971,6 +4083,9 @@ function resumeDraft(idx) {
   // Restore state from snapshot
   Object.assign(state, d.state);
   if (typeof state.notes !== 'string') state.notes = '';
+  // Older drafts (saved before cloud sync) may not have cloudRowId — that's
+  // fine, the next auto-save will create a new cloud row for them.
+  if (typeof state.cloudRowId === 'undefined') state.cloudRowId = d.cloudRowId || null;
   // Re-hydrate form fields from customer state
   ['custName','custPhone','custEmail','custAddress','jobberNum','employeeName'].forEach(id => {
     const map = { custName:'name', custPhone:'phone', custEmail:'email', custAddress:'address', jobberNum:'jobberNum', employeeName:'employee' };
@@ -3985,15 +4100,31 @@ function resumeDraft(idx) {
 }
 
 function deleteDraft(idx) {
-  if (!confirm('Delete this draft? This cannot be undone.')) return;
+  if (!confirm('Delete this draft? It will move to the Trash folder (cloud) and clear locally.')) return;
   const drafts = getDrafts();
+  const removed = drafts[idx];
   drafts.splice(idx, 1);
   setDrafts(drafts);
+  // Soft-delete in the cloud so the dashboard can still show / restore it.
+  if (removed && removed.cloudRowId && typeof __sssBridge !== 'undefined') {
+    __sssBridge.call('setQuoteStatus', { quoteRowId: removed.cloudRowId, status: 'trashed' })
+      .catch(e => console.warn('[SSS Cloud] trash failed:', e));
+  }
   renderDashboard();
 }
 
 function clearAllDrafts() {
-  if (!confirm('Delete ALL drafts? This cannot be undone.')) return;
+  if (!confirm('Delete ALL local drafts? Cloud copies move to the Trash folder.')) return;
+  const drafts = getDrafts();
+  // Move every cloud-backed local draft to trash in parallel.
+  if (typeof __sssBridge !== 'undefined') {
+    drafts.forEach(d => {
+      if (d.cloudRowId) {
+        __sssBridge.call('setQuoteStatus', { quoteRowId: d.cloudRowId, status: 'trashed' })
+          .catch(e => console.warn('[SSS Cloud] trash failed:', e));
+      }
+    });
+  }
   setDrafts([]);
   renderDashboard();
 }
