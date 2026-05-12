@@ -29,77 +29,67 @@
   function initCalculator(__doc, __host) {
 
 /* ============================================================
-   WIX BACKEND BRIDGE
+   WIX BACKEND BRIDGE — HTTP-functions edition
    ============================================================
-   The calc runs inside a Custom Element with a Shadow DOM. Wix
-   page code can't postMessage to us anymore, so we use a CustomEvent
-   bridge:
-     - sssBackendCall   (calc → page)  request a backend operation
-     - data-backend-response attr on host (page → calc) carries replies
+   The earlier CustomEvent/attribute bridge depended on the Velo $w
+   wrapper exposing setAttribute() and on() — that turned out to be
+   unreliable across Wix element types. We now fetch backend
+   operations directly from /_functions/<method>, which:
+     - works in any Wix mode (preview, editor, live)
+     - doesn't depend on page-code.js being installed
+     - inherits the user's logged-in session via cookies
+     - uses standard HTTP, easy to debug in the Network tab
 
-   In the build script, the inline JS gets wrapped as
-     function initCalculator(__doc, __host) { ... }
-   so __host is the Custom Element instance (window scope), and we
-   can safely dispatch from it / observe its attributes from here.
-   When this file is loaded directly (no build) the fallbacks below
-   make backend calls no-op without crashing.
+   Required server side:
+     backend/http-functions.js  (HTTP endpoints)
+     backend/employeeQuotes.jsw (data layer, called by http-functions)
    ============================================================ */
 const __sssBridge = (function () {
-  const host = (typeof __host !== 'undefined') ? __host : null;
-  const pending = new Map();
-  let seq = 0;
   let employee = { id: '', email: '' };
+  let initStarted = false;
 
-  function callBackend(method, args = {}) {
-    if (!host) {
-      // No host = running outside a Custom Element (local dev). Don't crash;
-      // just return a soft failure so callers can fall back to localStorage.
-      return Promise.resolve({ ok: false, error: 'no_bridge' });
-    }
-    return new Promise((resolve) => {
-      const requestId = `r${++seq}_${Date.now()}`;
-      pending.set(requestId, resolve);
-      host.dispatchEvent(new CustomEvent('sssBackendCall', {
-        detail: { requestId, method, args },
-        bubbles: true, composed: true
-      }));
-      // 30s timeout so a dead bridge never wedges the UI.
-      setTimeout(() => {
-        if (pending.has(requestId)) {
-          pending.delete(requestId);
-          resolve({ ok: false, error: 'timeout' });
-        }
-      }, 30000);
-    });
-  }
+  // Methods that don't take a body — use GET. Everything else POSTs JSON.
+  const GET_METHODS = new Set(['whoami']);
 
-  if (host) {
-    const obs = new MutationObserver(() => {
-      const raw = host.getAttribute('data-backend-response');
-      if (!raw) return;
-      let parsed;
-      try { parsed = JSON.parse(raw); } catch (e) { return; }
-      if (!parsed) return;
-
-      if (parsed.kind === 'init' && parsed.employee) {
-        employee = parsed.employee;
-        console.log('[SSS Bridge] connected, employee:', employee.email || '(none)');
-      } else if (parsed.kind === 'reply' && parsed.requestId) {
-        const resolver = pending.get(parsed.requestId);
-        if (resolver) {
-          pending.delete(parsed.requestId);
-          resolver(parsed.result);
-        }
-      } else if (parsed.kind === 'finalizeReply') {
-        // Surfaced for the review-step "Sent ✓ SSS-…" badge.
-        window.dispatchEvent(new CustomEvent('sssFinalizeReply', { detail: parsed }));
+  async function callBackend(method, args) {
+    try {
+      const isGet = GET_METHODS.has(method);
+      const resp = await fetch('/_functions/' + method, {
+        method: isGet ? 'GET' : 'POST',
+        credentials: 'include',
+        headers: isGet ? {} : { 'Content-Type': 'application/json' },
+        body: isGet ? undefined : JSON.stringify(args || {})
+      });
+      if (!resp.ok) {
+        // 404 means the backend file isn't deployed yet; 401 = not logged in
+        return { ok: false, error: 'http_' + resp.status };
       }
-    });
-    obs.observe(host, { attributes: true, attributeFilter: ['data-backend-response'] });
+      return await resp.json();
+    } catch (e) {
+      return { ok: false, error: e.message || 'fetch_failed' };
+    }
   }
+
+  // On first call to .ready(), fetch the current employee identity.
+  // Cached for the lifetime of the page.
+  async function ready() {
+    if (initStarted) return employee;
+    initStarted = true;
+    const res = await callBackend('whoami');
+    if (res && res.ok && res.employee) {
+      employee = res.employee;
+      console.log('[SSS Bridge] connected, employee:', employee.email || '(none)');
+    } else {
+      console.warn('[SSS Bridge] whoami failed:', res);
+    }
+    return employee;
+  }
+  // Kick off init at load so it's ready by the time the dashboard renders.
+  ready();
 
   return {
     call: callBackend,
+    ready,
     getEmployee: () => employee,
     // Console smoke test: paste `window.__sssBridgeTest()` in the page console.
     test: async () => {
