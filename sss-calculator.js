@@ -79,10 +79,10 @@ const PRICING = {
     ],
     deck: [
       { id: 'deck_board_replace', name: 'Damaged deck board replacement', priceType: 'each', rate: 50, qtyLabel: 'boards' },
-      { id: 'loose_rescrew', name: 'Loose board re-screw', priceType: 'flat', rate: 50 },
+      { id: 'loose_rescrew', name: 'Loose board re-screw', priceType: 'flat', rate: 10 },
       { id: 'rail_caps', name: 'Railing post cap upgrade', priceType: 'each', rate: 25, qtyLabel: 'caps' },
       { id: 'antislip', name: 'Stair anti-slip strips', priceType: 'flat', rate: 100 },
-      { id: 'bench_planter', name: 'Built-in bench / planter staining', priceType: 'each', rate: 200, qtyLabel: 'pieces' },
+      { id: 'bench_planter', name: 'Built-in bench / planter staining', priceType: 'each', rate: 100, qtyLabel: 'pieces' },
       { id: 'wood_patch', name: 'Wood patching / filler repair', priceType: 'each', rate: 40, qtyLabel: 'boards' }
     ],
     pergola: [
