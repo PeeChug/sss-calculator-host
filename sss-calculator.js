@@ -1856,8 +1856,9 @@ function renderReferencePhotos() {
   grid.innerHTML = photos.map((p, idx) => {
     const cls = p.failed ? ' failed' : (p.uploading ? ' uploading' : '');
     const src = p.url || p.previewDataUrl || '';
+    const errTitle = p.failed && p.errorMsg ? ` title="${escapeHtml(p.errorMsg)}"` : '';
     return `
-      <div class="photo-card${cls}">
+      <div class="photo-card${cls}"${errTitle}>
         ${src ? `<img src="${escapeHtml(src)}" alt="">` : ''}
         <button type="button" class="photo-remove" onclick="removeReferencePhoto(${idx})" aria-label="Remove photo">×</button>
       </div>`;
@@ -1891,46 +1892,98 @@ async function onPhotosPicked(e) {
       size: f.size,
       uploading: true,
       failed: false,
+      errorMsg: '',
       url: '',
       previewDataUrl: ''
     };
     state.activeProject.referencePhotos.push(photo);
     renderReferencePhotos();
     // Process + upload in the background; the grid re-renders when it lands.
-    processAndUploadPhoto(f, photo).catch(err => {
+    // Hard timeout so a hung step (e.g. HEIC decode on iPad Safari) can't
+    // leave the card stuck on "Uploading…" forever.
+    Promise.race([
+      processAndUploadPhoto(f, photo),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('upload_timeout_60s')), 60000))
+    ]).catch(err => {
       console.warn('[SSS Photos] upload failed:', err);
       photo.uploading = false;
       photo.failed = true;
+      photo.errorMsg = (err && err.message) ? err.message : String(err);
       renderReferencePhotos();
     });
   }
 }
 
-// Downscale to PHOTO_PREVIEW_MAX_W, JPEG-encode at PHOTO_JPEG_QUALITY,
-// hand the resulting base64 to the backend. Net result: ~200-400 KB per
-// photo even if the rep snapped a 5 MB iPhone shot, which means fast
-// uploads and small Jobber attachment sizes.
+// Best-effort downscale + upload. The pipeline degrades gracefully:
+//   1. Try to read the file as a data URL
+//   2. Try to decode + downscale via canvas
+//   3. If either fails (HEIC on iPad Safari, broken JPEG, etc.) fall
+//      back to uploading the original file as-is so the photo still
+//      makes it to Wix Media — we just skip the size savings.
+// Each step logs to console so we can diagnose if something breaks.
 async function processAndUploadPhoto(file, photoRef) {
-  // 1. Render to canvas for downscale.
-  const dataUrl = await readFileAsDataURL(file);
-  photoRef.previewDataUrl = dataUrl;
-  renderReferencePhotos();
-  const downscaled = await downscaleDataUrl(dataUrl, PHOTO_PREVIEW_MAX_W, PHOTO_JPEG_QUALITY);
+  console.log('[SSS Photos] processing', file.name, file.type, file.size);
+  let uploadDataUrl = null;
 
-  // 2. Upload via bridge call. Backend hands base64 to Wix Media
-  // Manager and returns the wixstatic.com URL we'll send to Jobber.
-  const res = await __sssBridge.call('uploadReferencePhoto', {
-    dataUrl: downscaled,
-    fileName: photoRef.name,
-    quoteId: state.quoteId
-  });
-  if (!res || !res.ok || !res.url) {
-    throw new Error((res && res.error) || 'no_url_returned');
+  // Step 1: read into data URL (for preview + as upload payload)
+  try {
+    uploadDataUrl = await readFileAsDataURL(file);
+    photoRef.previewDataUrl = uploadDataUrl;
+    renderReferencePhotos();
+  } catch (e) {
+    console.warn('[SSS Photos] read-as-dataurl failed:', e);
+    throw new Error('file_read_failed: ' + (e && e.message ? e.message : e));
   }
-  photoRef.url = res.url;
+
+  // Step 2: try to downscale. Wrap in a 15s timeout so a broken
+  // decode (HEIC, very large dimensions) doesn't hang. If it fails,
+  // we keep the original data URL and ship that to the backend.
+  try {
+    const downscaled = await Promise.race([
+      downscaleDataUrl(uploadDataUrl, PHOTO_PREVIEW_MAX_W, PHOTO_JPEG_QUALITY),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('downscale_timeout_15s')), 15000))
+    ]);
+    if (downscaled && downscaled.length < uploadDataUrl.length) {
+      uploadDataUrl = downscaled;
+      console.log('[SSS Photos] downscaled, new size:', uploadDataUrl.length);
+    }
+  } catch (e) {
+    console.warn('[SSS Photos] downscale failed, uploading original:', e);
+  }
+
+  // Step 3: send to backend. Upload through HTTP function directly
+  // (NOT the bridge) so we get a clear network-tab entry + can read
+  // resp.status when something's off.
+  console.log('[SSS Photos] uploading', uploadDataUrl.length, 'bytes to /_functions/uploadReferencePhoto');
+  let respStatus = 0;
+  let respBody = null;
+  try {
+    const resp = await fetch('/_functions/uploadReferencePhoto', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        dataUrl: uploadDataUrl,
+        fileName: photoRef.name,
+        quoteId: state.quoteId
+      })
+    });
+    respStatus = resp.status;
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '');
+      throw new Error('http_' + resp.status + (text ? ': ' + text.slice(0, 200) : ''));
+    }
+    respBody = await resp.json();
+  } catch (e) {
+    console.warn('[SSS Photos] upload fetch failed (status=' + respStatus + '):', e);
+    throw e;
+  }
+
+  if (!respBody || !respBody.ok || !respBody.url) {
+    throw new Error('upload_no_url: ' + JSON.stringify(respBody || {}).slice(0, 200));
+  }
+  photoRef.url = respBody.url;
   photoRef.uploading = false;
-  // Drop the giant preview dataUrl now that we have the real URL
-  // (keeps the project payload small when it gets serialized).
   photoRef.previewDataUrl = '';
   renderReferencePhotos();
   triggerAutoSave();
@@ -1940,8 +1993,10 @@ function readFileAsDataURL(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload  = () => resolve(reader.result);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
+    reader.onerror = () => reject(reader.error || new Error('file_read_error'));
+    reader.onabort = () => reject(new Error('file_read_aborted'));
+    try { reader.readAsDataURL(file); }
+    catch (e) { reject(e); }
   });
 }
 
@@ -1949,17 +2004,21 @@ function downscaleDataUrl(dataUrl, maxW, quality) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
-      const ratio = Math.min(1, maxW / img.width);
-      const w = Math.round(img.width  * ratio);
-      const h = Math.round(img.height * ratio);
-      const canvas = __doc.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, w, h);
-      try { resolve(canvas.toDataURL('image/jpeg', quality)); }
-      catch (e) { reject(e); }
+      // Image decoded — drawing to canvas can still fail (CORS-tainted
+      // sources, etc.). Anything that throws past this point falls
+      // back to "use the original" in the caller.
+      try {
+        const ratio = Math.min(1, maxW / (img.width || maxW));
+        const w = Math.max(1, Math.round((img.width || maxW)  * ratio));
+        const h = Math.max(1, Math.round((img.height || maxW) * ratio));
+        const canvas = __doc.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      } catch (e) { reject(e); }
     };
-    img.onerror = reject;
+    img.onerror = (e) => reject(new Error('image_decode_failed'));
     img.src = dataUrl;
   });
 }
