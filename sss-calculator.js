@@ -4570,16 +4570,33 @@ function buildJobberLineItem(p, idx, total) {
     });
   }
 
-  // Project-level discounts applied
+  // Project-level discounts applied. Pull from the top-level DISCOUNTS
+  // array (not PRICING.discounts — that doesn't exist; old code was
+  // looking in the wrong place and falling through to raw IDs).
+  // Decorated with emojis + rate for a professional customer-facing
+  // line item description.
   if (p.selectedDiscounts && p.selectedDiscounts.length) {
-    const discountDefs = PRICING.discounts || [];
-    const labels = p.selectedDiscounts.map(id => {
-      const def = discountDefs.find(d => d.id === id);
-      return def ? (def.label || def.name || id) : id;
+    const DISCOUNT_EMOJI = {
+      bundle:       '📦',
+      vet_senior:   '🎖️',
+      teacher_edu:  '🎓',
+      referral:     '🤝',
+      repeat:       '🔄',
+      cash:         '💵',
+      same_day:     '⚡'
+    };
+    const discountList = p.selectedDiscounts.map(id => {
+      const def = (typeof DISCOUNTS !== 'undefined') ? DISCOUNTS.find(d => d.id === id) : null;
+      const label = def ? (def.label || def.name) : id;
+      const rate = def && typeof def.rate === 'number' ? def.rate : 0;
+      const emoji = DISCOUNT_EMOJI[id] || '🏷️';
+      const ratePct = rate > 0 ? ` — ${Math.round(rate * 100)}% off` : '';
+      return `${emoji} ${label}${ratePct}`;
     });
-    if (labels.length) {
+    if (discountList.length) {
       lines.push('');
-      lines.push(`Discounts applied: ${labels.join(', ')}`);
+      lines.push('Discounts applied:');
+      discountList.forEach(d => lines.push(`• ${d}`));
     }
   }
 
