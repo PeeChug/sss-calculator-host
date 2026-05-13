@@ -642,6 +642,10 @@ __doc.getElementById('quoteNum').textContent = state.quoteId;
 (function bootstrapDashboard() {
   const searchEl = __doc.getElementById('dashSearch');
   if (searchEl) searchEl.addEventListener('input', (e) => onDashSearchInput(e.target.value));
+  // Dashboard is the default-visible stage; no showStage() transition
+  // fires on initial load, so the progress bar would render until the
+  // rep navigates somewhere. Hide it up front.
+  try { refreshProgressBarVisibility(); } catch (e) { /* function defined later in script */ }
   // Apply any saved pricing overrides FIRST so the first render uses
   // the current rates, not the stale baked-in defaults. Fire-and-forget;
   // we re-render once it lands.
@@ -690,6 +694,7 @@ function returnToDashboard() {
   __doc.querySelectorAll('.stage').forEach(s => s.classList.remove('visible'));
   __doc.getElementById('stage-dashboard').classList.add('visible');
   if (typeof setSavePill === 'function') setSavePill('hidden');
+  refreshProgressBarVisibility();
   // Re-evaluate the "Projects in this quote" bubble bar — it self-hides
   // when the dashboard is visible, but only gets called from
   // updateRunningTotal which the dashboard doesn't trigger. Without
@@ -1040,6 +1045,26 @@ function refreshProgressBar() {
     _lastAutoScrolledStage = n;
     scrollProgressToActive();
   }
+  refreshProgressBarVisibility();
+}
+
+// Show the progress bar only during the actual quote-building flow.
+// Hidden on the dashboard, on the read-only view page, and on the
+// success/quote-saved page — none of those are part of the 10-step
+// progression so the bar is just noise (and on the dashboard, it
+// stayed visible after a View-then-Cancel round trip, which was the
+// reported bug). Anyone that transitions stages should call this
+// (refreshProgressBar invokes it for the happy path; explicit calls
+// in returnToDashboard / view-quote handlers cover the rest).
+function refreshProgressBarVisibility() {
+  const bar = __doc.getElementById('progress');
+  if (!bar) return;
+  const hideOn = ['stage-dashboard', 'stage-view', 'stage-success'];
+  const onHiddenStage = hideOn.some(id => {
+    const el = __doc.getElementById(id);
+    return el && el.classList.contains('visible');
+  });
+  bar.style.display = onHiddenStage ? 'none' : '';
 }
 
 // Smooth-scroll the progress bar so the currently-active step sits centered
@@ -6812,6 +6837,7 @@ function resumeCloudQuote(rowId) {
     if (status !== 'draft') {
       renderViewMode(res.quote);
       __doc.getElementById('stage-view').classList.add('visible');
+      refreshProgressBarVisibility();
       scrollAppToTop();
       return;
     }
