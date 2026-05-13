@@ -4262,10 +4262,29 @@ async function pushFinishedQuoteToJobber(rowId, force, sendMethod) {
             <td style="padding:8px;text-align:right;color:var(--navy);font-weight:700;" colspan="2">Customer-visible total in Jobber</td>
             <td style="padding:8px;text-align:right;font-family:ui-monospace,monospace;color:var(--navy);font-weight:700;font-size:13px;">${fmtMoney(sentFinalTotal)}</td>
           </tr>`;
-        const sendMethodPill = data.sendMethod === 'sms' ? '<span style="background:#e8f5ff;color:#0b69b8;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;">Sent via Text</span>'
-                            : data.sendMethod === 'email' ? '<span style="background:#e8f5ff;color:#0b69b8;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;">Sent via Email</span>'
-                            : data.sendMethod === 'none' ? '<span style="background:var(--line-soft);color:var(--slate);padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;">Uploaded only</span>'
-                            : '';
+        // Build a send-status pill. We split it from sendMethod so we
+        // can distinguish "rep requested send" from "Jobber actually
+        // sent". The follow-up auto-send mutation lives on Jobber's
+        // side and isn't on every API version, so the create can land
+        // even when the send doesn't.
+        const autoSend = data.autoSend || {};
+        function pill(bg, color, text) {
+          return `<span style="background:${bg};color:${color};padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;">${text}</span>`;
+        }
+        let sendMethodPill = '';
+        if (data.sendMethod === 'none') {
+          sendMethodPill = pill('var(--line-soft)', 'var(--slate)', 'Uploaded only');
+        } else if (data.sendMethod === 'email' || data.sendMethod === 'sms') {
+          const verb = data.sendMethod === 'sms' ? 'Text' : 'Email';
+          if (autoSend && autoSend.ok) {
+            sendMethodPill = pill('#e8f5ff', '#0b69b8', '✓ Sent via ' + verb);
+          } else if (autoSend && autoSend.attempted) {
+            sendMethodPill = pill('#fff4e5', '#a66400', '⚠ Auto-send failed — open in Jobber & hit Send') +
+              `<details style="margin-top:6px;"><summary style="cursor:pointer;font-size:11px;font-weight:600;color:#a66400;">Why?</summary><pre class="err-pre" style="font-size:11px;">${escapeHtml(JSON.stringify(autoSend, null, 2))}</pre></details>`;
+          } else {
+            sendMethodPill = pill('var(--line-soft)', 'var(--slate)', 'Ready in Jobber — Send not attempted');
+          }
+        }
         lineItemsBlock = `
           ${sendMethodPill ? `<div style="margin-top:8px;">${sendMethodPill}</div>` : ''}
           <details style="margin-top:10px;" open>
