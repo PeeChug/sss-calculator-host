@@ -4172,6 +4172,9 @@ async function pushFinishedQuoteToJobber(rowId, force) {
       const inputBlock = data && data.input
         ? `<details style="margin-top:6px;"><summary style="cursor:pointer;font-size:12px;font-weight:600;">Show payload we sent</summary><pre class="err-pre">${escapeHtml(JSON.stringify(data.input, null, 2))}</pre></details>`
         : '';
+      // Stash the full response for the copy button — easier than
+      // round-tripping through the DOM.
+      window.__lastJobberPushResponse = data;
       box.innerHTML = `
         <div class="jobber-push-row error">
           <span class="ico">⚠️</span>
@@ -4180,12 +4183,56 @@ async function pushFinishedQuoteToJobber(rowId, force) {
             ${primaryMsg ? `<div style="font-size:12px;margin-top:4px;word-break:break-word;">${escapeHtml(primaryMsg)}</div>` : ''}
             ${detailBlock}
             ${inputBlock}
-            <button class="btn btn-secondary" style="margin-top:10px;font-size:12px;padding:6px 12px;" onclick="pushFinishedQuoteToJobber('${escapeHtml(rowId)}')">🔄 Retry push</button>
+            <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px;" onclick="pushFinishedQuoteToJobber('${escapeHtml(rowId)}')">🔄 Retry push</button>
+              <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px;" onclick="copyJobberErrorToClipboard(this)">📋 Copy error</button>
+            </div>
           </div>
         </div>`;
     }
   } catch (e) {
     if (box) box.innerHTML = `<div class="jobber-push-row error"><span class="ico">⚠️</span><span>Network error — <button class="btn-link" onclick="pushFinishedQuoteToJobber('${escapeHtml(rowId)}')">retry</button></span></div>`;
+  }
+}
+
+// Copy the last Jobber push error to the clipboard so the user can
+// paste it back to me / a support ticket in one tap. Falls back to a
+// hidden textarea + execCommand for older browsers / restricted
+// contexts where navigator.clipboard isn't available.
+async function copyJobberErrorToClipboard(btnEl) {
+  const data = window.__lastJobberPushResponse;
+  if (!data) {
+    alert('No error response cached. Trigger the failure again first.');
+    return;
+  }
+  const text = JSON.stringify(data, null, 2);
+  let ok = false;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      ok = true;
+    }
+  } catch (e) { /* fall through to the legacy path */ }
+  if (!ok) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'absolute';
+      ta.style.left = '-9999px';
+      __doc.appendChild(ta);
+      ta.select();
+      ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch (e) { ok = false; }
+  }
+  if (btnEl) {
+    const original = btnEl.innerHTML;
+    btnEl.innerHTML = ok ? '✓ Copied' : '⚠️ Copy failed';
+    btnEl.disabled = true;
+    setTimeout(() => { btnEl.innerHTML = original; btnEl.disabled = false; }, 1800);
+  } else if (!ok) {
+    alert('Copy failed. The full response is at `window.__lastJobberPushResponse` in the console.');
   }
 }
 
@@ -5177,9 +5224,9 @@ async function loadJobberRequests() {
         </div>`;
     }).join('');
     panel.style.display = 'block';
-    // Default open on first load; user can collapse and it stays
-    // collapsed on the next render (we just won't force it open again).
-    if (!panel._reqInited) { panel.open = true; panel._reqInited = true; }
+    // Stay collapsed by default — the rep opens it when they want to
+    // see today's incoming requests. Once they've opened/closed it,
+    // their choice sticks for the rest of the session.
   } catch (e) {
     console.warn('[SSS] jobberRequests threw:', e);
     panel.style.display = 'none';
@@ -5752,12 +5799,12 @@ async function resendViewedQuoteToJobber(rowId, alreadyPushed) {
     });
     const data = await r.json();
     if (!data || !data.ok) {
-      // Log the full response so it's grabbable from console too.
       console.error('[Jobber push] full response:', data);
+      window.__lastJobberPushResponse = data;
       const err = (data && data.error) || 'unknown';
       const detail = data && data.detail ? '\n\nDetail:\n' + JSON.stringify(data.detail, null, 2) : '';
       const input = data && data.input ? '\n\nSent:\n' + JSON.stringify(data.input, null, 2) : '';
-      alert('Jobber push failed: ' + err + detail + input);
+      alert('Jobber push failed: ' + err + detail + input + '\n\n(Full response also available at window.__lastJobberPushResponse — open the success screen on a fresh attempt to use the Copy Error button.)');
     }
     // Refresh the view from the (now-updated) cloud row so the block reflects reality.
     const fetched = await __sssBridge.call('getQuote', { quoteRowId: rowId });
@@ -6090,7 +6137,7 @@ renderDashboard();
   }, { capture: true });
 })();
   // Expose for inline onclick=/onchange= handlers in markup.
-  Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, returnToDashboard, cancelNewQuote, refreshDashboardHard, pickCustSearchResult, clearPickedCustomer, convertJobberRequestToQuote, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, onFolderToggle, onDashSearchInput, openRowMenu, closeRowMenu, resumeCloudQuote, resumeLocalDraft, deleteLocalDraft, moveCloudQuote, duplicateCloudQuote, permanentlyDeleteCloud, duplicateCurrentForEdit, openProjectSwitchDialog, closeProjectSwitchDialog, confirmAddAnotherProject, confirmSwitchProject, openJobberPanel, closeJobberPanel, jobberConnect, jobberManualRefresh, jobberDisconnectConfirm, jobberTestConnection, pushFinishedQuoteToJobber, resendFinishedToJobber, resendViewedQuoteToJobber, resendCurrentQuoteFromSuccess, resendCurrentViewedToJobber, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, toggleEditPanel, applyCustomColor, removeCustomAddon, state });
+  Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, returnToDashboard, cancelNewQuote, refreshDashboardHard, pickCustSearchResult, clearPickedCustomer, convertJobberRequestToQuote, copyJobberErrorToClipboard, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, onFolderToggle, onDashSearchInput, openRowMenu, closeRowMenu, resumeCloudQuote, resumeLocalDraft, deleteLocalDraft, moveCloudQuote, duplicateCloudQuote, permanentlyDeleteCloud, duplicateCurrentForEdit, openProjectSwitchDialog, closeProjectSwitchDialog, confirmAddAnotherProject, confirmSwitchProject, openJobberPanel, closeJobberPanel, jobberConnect, jobberManualRefresh, jobberDisconnectConfirm, jobberTestConnection, pushFinishedQuoteToJobber, resendFinishedToJobber, resendViewedQuoteToJobber, resendCurrentQuoteFromSuccess, resendCurrentViewedToJobber, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, toggleEditPanel, applyCustomColor, removeCustomAddon, state });
 
   }
 
