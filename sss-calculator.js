@@ -5289,50 +5289,67 @@ function buildJobberLineItem(p, idx, total) {
     if (p.hoa.notes) lines.push(`📋 HOA notes: ${p.hoa.notes}`);
   }
 
-  // Scope / measurements
+  // Scope / measurements — collect human-readable bits, then render
+  // either as a single inline line (if one item) or as a bulleted
+  // section (if multiple). Keeps the description tight on simple
+  // quotes while making complex multi-component projects scannable.
   const m = p.measurements || {};
-  let scope = '';
+  const scopeItems = [];
+  const fmtNum = (n) => Number(n).toLocaleString();
+
   if (p.type === 'fence') {
-    if (m.linearft) scope = `${m.linearft} ln ft × ${m.height || 0} ft`;
-    if (m.style)    scope += ` · ${STYLE_LABELS[m.style] || m.style} style`;
-    // One-side scope detail — show the partial split when the rep
-    // entered a specific portion (shared with neighbor, etc.) so the
-    // customer sees exactly which section is priced as one-side.
+    // Lead with overall dimensions + style.
+    if (m.linearft) {
+      const lead = `${fmtNum(m.linearft)} ln ft × ${m.height || 0} ft tall`;
+      const styleSuffix = m.style ? ` (${STYLE_LABELS[m.style] || m.style} style)` : '';
+      scopeItems.push(lead + styleSuffix);
+    } else if (m.style) {
+      scopeItems.push(`${STYLE_LABELS[m.style] || m.style} style`);
+    }
+    // One-side breakdown — important detail that affects pricing.
     if (m.oneSided) {
       const total   = Number(m.linearft) || 0;
       const partial = Number(m.oneSidedLnFt) || 0;
       if (partial > 0 && partial < total) {
-        const bothSides = total - partial;
-        scope += ` · ${partial} ln ft one-side only, ${bothSides} ln ft both sides`;
+        scopeItems.push(`${fmtNum(partial)} ln ft stained one side only`);
+        scopeItems.push(`${fmtNum(total - partial)} ln ft stained both sides`);
       } else {
-        scope += ` · one-sided staining (entire fence)`;
+        scopeItems.push('One-sided staining (entire fence)');
       }
     }
   } else if (p.type === 'deck') {
-    const parts = [];
-    if (m.flat)       parts.push(`${m.flat} sq ft flat${m.underneath ? ' (underside included)' : ''}`);
-    if (m.rail)       parts.push(`${m.rail} ln ft railing`);
-    if (m.stairs)     parts.push(`${m.stairs} stairs`);
-    if (m.lattice)    parts.push(`${m.lattice} sq ft lattice`);
-    scope = parts.join(', ');
+    if (m.flat)    scopeItems.push(`${fmtNum(m.flat)} sq ft flat decking${m.underneath ? ' (underside included)' : ''}`);
+    if (m.rail)    scopeItems.push(`${fmtNum(m.rail)} ln ft of railing`);
+    if (m.stairs)  scopeItems.push(`${fmtNum(m.stairs)} stair${m.stairs > 1 ? 's' : ''}`);
+    if (m.lattice) scopeItems.push(`${fmtNum(m.lattice)} sq ft lattice / skirting`);
   } else if (p.type === 'pergola') {
-    if (m.length && m.width) scope = `${m.length}' × ${m.width}'${m.height ? ` × ${m.height}' tall` : ''}`;
-    else if (m.sqft)         scope = `${m.sqft} sq ft`;
-    if (m.overhead) scope += ` · overhead access`;
+    if (m.length && m.width) {
+      const heightSuffix = m.height ? ` × ${m.height}' tall` : '';
+      scopeItems.push(`${m.length}' × ${m.width}' footprint${heightSuffix}`);
+    }
+    if (m.sqft) scopeItems.push(`${fmtNum(m.sqft)} sq ft of stainable surface`);
+    if (m.overhead) scopeItems.push('Overhead access required (attached to house or roofed)');
   } else if (p.type === 'barn') {
-    if (m.sqft)         scope = `${m.sqft} sq ft siding`;
-    if (m.trim)         scope += ` · ${m.trim} ln ft trim`;
-    if (m.cupolaCount)  scope += ` · ${m.cupolaCount} cupola${m.cupolaCount > 1 ? 's' : ''}`;
-    if (m.heightPremium) scope += ` · over 12 ft`;
-    if (m.liftDays)     scope += ` · ${m.liftDays} day(s) lift rental`;
+    if (m.sqft)          scopeItems.push(`${fmtNum(m.sqft)} sq ft of siding`);
+    if (m.trim)          scopeItems.push(`${fmtNum(m.trim)} ln ft of trim`);
+    if (m.cupolaCount)   scopeItems.push(`${m.cupolaCount} cupola${m.cupolaCount > 1 ? 's' : ''}`);
+    if (m.heightPremium) scopeItems.push('Walls over 12 ft tall (height premium applies)');
+    if (m.liftDays)      scopeItems.push(`${m.liftDays} day${m.liftDays > 1 ? 's' : ''} of equipment lift rental`);
   } else if (p.type === 'ceiling') {
-    if (m.sqft)        scope = `${m.sqft} sq ft`;
-    if (m.tng)         scope += ` · T&G premium`;
-    if (m.beamLnFt)    scope += ` · ${m.beamLnFt} ln ft beams`;
-    if (m.fixtures)    scope += ` · ${m.fixtures} fixture${m.fixtures > 1 ? 's' : ''}`;
-    if (m.fans)        scope += ` · ${m.fans} fan${m.fans > 1 ? 's' : ''}`;
+    if (m.sqft)     scopeItems.push(`${fmtNum(m.sqft)} sq ft of ceiling surface`);
+    if (m.tng)      scopeItems.push('Tongue-and-groove ceiling (premium application)');
+    if (m.beamLnFt) scopeItems.push(`${fmtNum(m.beamLnFt)} ln ft of exposed beams`);
+    if (m.fixtures) scopeItems.push(`${m.fixtures} light fixture${m.fixtures > 1 ? 's' : ''} to mask & work around`);
+    if (m.fans)     scopeItems.push(`${m.fans} ceiling fan${m.fans > 1 ? 's' : ''} to mask & work around`);
+    if (m.furnProtect) scopeItems.push('Indoor furniture / floor protection required');
   }
-  if (scope) lines.push(`📐 Scope: ${scope}`);
+
+  if (scopeItems.length === 1) {
+    lines.push(`📐 Scope: ${scopeItems[0]}`);
+  } else if (scopeItems.length > 1) {
+    lines.push('📐 Scope:');
+    scopeItems.forEach(item => lines.push(`  • ${item}`));
+  }
 
   // Wood age / surface condition + prep — combined into one section
   // so the customer isn't reading "Wood:" and "Prep:" as two different
