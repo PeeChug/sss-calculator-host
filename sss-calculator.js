@@ -5323,8 +5323,6 @@ async function resendViewedQuoteToJobber(rowId, alreadyPushed) {
   if (!confirm(msg)) return;
 
   const summaryEl = __doc.getElementById('viewSummary');
-  // Lightweight inline loading state on the Jobber block — find it and
-  // replace just that section.
   const existingBlock = summaryEl && summaryEl.querySelector('.vs-jobber');
   if (existingBlock) {
     existingBlock.innerHTML = '<div class="vs-jobber-status"><span class="ico">⏳</span><span>Sending to Jobber…</span></div>';
@@ -5332,6 +5330,22 @@ async function resendViewedQuoteToJobber(rowId, alreadyPushed) {
   }
 
   try {
+    // CRITICAL: refresh the cloud row with the CURRENT hydrated state
+    // before pushing. Old rows (saved before the subtotal-stamping
+    // fix) don't have line item prices on the projects[] JSON, which
+    // is why Jobber was getting $0. Now we re-run buildCloudPayload
+    // (which computes _cached and includes subtotal at the project
+    // level) and patch the row so the backend's pushQuote has real
+    // prices to read.
+    if (typeof buildCloudPayload === 'function') {
+      try {
+        const refreshed = buildCloudPayload();
+        if (refreshed && typeof __sssBridge !== 'undefined') {
+          await __sssBridge.call('updateQuote', { quoteRowId: rowId, patch: refreshed });
+        }
+      } catch (e) { console.warn('[SSS] pre-push row refresh failed (non-fatal):', e); }
+    }
+
     const r = await fetch('/_functions/pushToJobber', {
       method: 'POST',
       credentials: 'include',
