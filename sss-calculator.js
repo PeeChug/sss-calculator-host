@@ -4658,12 +4658,17 @@ function buildCloudPayload() {
     employee: state.customer.employee || '',
     jobberJobNum: state.customer.jobberNum || '',
     projects: allProjects.map((p, idx) => {
-      // Pre-build the Jobber line item (name + rich multi-line description)
-      // here in the frontend where we have full access to PRICING tables
-      // and label helpers — the backend doesn't need to re-implement them.
       let jobberLine = { name: '', description: '' };
       try { jobberLine = buildJobberLineItem(p, idx, allProjects.length); }
       catch (e) { console.warn('[SSS] buildJobberLineItem threw:', e); }
+
+      const cachedSubtotal     = (p._cached && Number(p._cached.subtotal))       || 0;
+      const cachedDiscountAmt  = (p._cached && Number(p._cached.discountAmount)) || 0;
+      // Pre-discount = what the project would cost without the per-project
+      // discount applied. We send this as the Jobber line item unitPrice
+      // so the customer sees the full price, and the discount shows up
+      // as its own line in Jobber's quote UI.
+      const preDiscountSubtotal = cachedSubtotal + cachedDiscountAmt;
 
       return {
         type: p.type, productType: p.productType, tier: p.tier,
@@ -4674,25 +4679,28 @@ function buildCloudPayload() {
         addons: p.addons, serviceAddons: p.serviceAddons,
         customAddons: p.customAddons || [],
         selectedDiscounts: p.selectedDiscounts || [],
-        // Subtotal as a top-level field — survives cloud round-trips where
-        // _cached gets stripped. The backend uses this for line item unitPrice.
-        subtotal: (p._cached && p._cached.subtotal) || 0,
-        // Pre-built Jobber line item content so the backend can drop it
-        // straight into quoteCreate without re-deriving labels.
+        // Subtotal & discount fields — all survive cloud round-trips.
+        subtotal:           cachedSubtotal,
+        discountAmount:     cachedDiscountAmt,
+        preDiscountSubtotal: preDiscountSubtotal,
         _jobberName: jobberLine.name,
         _jobberDescription: jobberLine.description
       };
     }),
     totals: {
-      sumBeforeBundle: totals.sumBeforeBundle,
-      bundleDiscount:  totals.bundleDiscount,
-      bundleEligible:  totals.bundleEligible,
-      final:           totals.finalTotal,
+      sumBeforeBundle:      totals.sumBeforeBundle,
+      bundleDiscount:       totals.bundleDiscount,
+      bundleEligible:       totals.bundleEligible,
+      // Sum of per-project discount amounts across all projects on the
+      // quote. The backend adds this to bundleDiscount to compute the
+      // total dollar discount applied at Jobber's quote level.
+      totalDiscountSavings: totals.totalDiscountSavings || 0,
+      final:                totals.finalTotal,
       // Stage progress — stored inside the totals JSON so we don't need
       // a schema change. Restored on resume so reps land on the step they
       // were last on, not jumped to Step 10 with an incomplete project.
-      _currentStage:   state.currentStage,
-      _maxStageReached: state.maxStageReached
+      _currentStage:        state.currentStage,
+      _maxStageReached:     state.maxStageReached
     },
     notes:          state.notes || '',
     paymentMethod:  state.paymentMethod || '',
