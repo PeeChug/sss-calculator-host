@@ -610,6 +610,14 @@ function makeBlankProject() {
   return {
     type: null, measurements: {},
     condition: null, productType: 'oil', tier: 'performance',
+    // *Confirmed flags differentiate "user explicitly clicked a card"
+    // from "we set the default for them". When false, on arriving at
+    // that step we snap the selection to the *recommendation*, not
+    // whatever was stamped during a bundled-project copy or stale
+    // state. The user clicking any card flips the corresponding flag
+    // to true, locking in their choice across re-renders.
+    conditionConfirmed: false,
+    productConfirmed: false,
     tierConfirmed: false,         // true once user explicitly clicks a tier card (or HOA mode auto-confirms)
     woodAge: null,                // 'new' | 'weathered' | 'aged' — captured on Step 3, gates Step 4 options
     selectedColor: null,
@@ -1002,8 +1010,25 @@ function showStage(n) {
 
   if (n === 2) renderProjectTypeCards();
   if (n === 3) renderMeasurements();
-  if (n === 4) renderConditionCards();
-  if (n === 5) renderProductStage();
+  if (n === 4) {
+    // Snap to the recommended condition on first arrival. Once the
+    // user has explicitly clicked a card, conditionConfirmed locks it
+    // in and we leave their choice alone on re-render.
+    if (!state.activeProject.conditionConfirmed) {
+      const reco = typeof recommendCondition === 'function' ? recommendCondition() : null;
+      if (reco) state.activeProject.condition = reco;
+    }
+    renderConditionCards();
+  }
+  if (n === 5) {
+    // Snap to the recommended product on first arrival.
+    if (!state.activeProject.productConfirmed) {
+      const reco = typeof recommendedProduct === 'function' ? recommendedProduct() : null;
+      // Don't auto-flip into HOA — that's an explicit opt-in flow.
+      if (reco && reco !== 'hoa') state.activeProject.productType = reco;
+    }
+    renderProductStage();
+  }
   if (n === 6) {
     // Smart default — Performance is the recommended tier for nearly all customers.
     // Auto-confirm it on first arrival so the total reflects a real number immediately;
@@ -2317,6 +2342,9 @@ function renderConditionCards() {
       if (e.target.classList.contains('info-btn')) return;
       const newCond = card.dataset.cond;
       state.activeProject.condition = newCond;
+      // Lock in the user's explicit pick so we don't snap back to
+      // the recommendation on re-render.
+      state.activeProject.conditionConfirmed = true;
       __doc.querySelectorAll('#conditionCards .condition-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
       __doc.getElementById('stage4Next').disabled = false;
@@ -2397,6 +2425,9 @@ function renderProductStage() {
       // chosen for the new product (if any).
       rememberCurrentColor();
       state.activeProject.productType = prod;
+      // Lock in the user's explicit pick so we don't snap back to
+      // the recommendation on re-render.
+      state.activeProject.productConfirmed = true;
       if (prev !== prod) restoreColorForCurrentLib();
       // When switching product family, drop incompatible addons
       delete state.activeProject.addons.citronella;
