@@ -4543,7 +4543,7 @@ async function pushFinishedQuoteToJobber(rowId, force, sendMethod) {
           if (att.ok) {
             photosPill = pill('#e8f5ff', '#0b69b8', `✓ ${photoCount} reference photo${photoCount === 1 ? '' : 's'} attached`);
           } else if (att.attempted) {
-            photosPill = pill('#fff4e5', '#a66400', `📷 ${photoCount} photo${photoCount === 1 ? '' : 's'} included as links in description — native attach unavailable`);
+            photosPill = pill('#fff4e5', '#a66400', `📷 ${photoCount} photo${photoCount === 1 ? '' : 's'} included as links in description`);
           } else {
             photosPill = pill('var(--line-soft)', 'var(--slate)', `📷 ${photoCount} photo${photoCount === 1 ? '' : 's'} included as links in description`);
           }
@@ -4572,7 +4572,7 @@ async function pushFinishedQuoteToJobber(rowId, force, sendMethod) {
             ${lineItemsBlock}
             <div style="margin-top:10px;">
               ${openLink}
-              <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px;" onclick="resendFinishedToJobber('${escapeHtml(rowId)}')">🔄 Re-send to Jobber</button>
+              <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px;margin-top:14px;" onclick="resendFinishedToJobber('${escapeHtml(rowId)}')">🔄 Re-send to Jobber</button>
             </div>
           </div>
         </div>`;
