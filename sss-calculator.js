@@ -3896,14 +3896,43 @@ async function pushFinishedQuoteToJobber(rowId, force) {
       const openLink = data.jobberWebUri
         ? `<a href="${escapeHtml(data.jobberWebUri)}" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:10px;font-size:12px;padding:6px 12px;text-decoration:none;display:inline-block;margin-right:6px;">↗ Open in Jobber</a>`
         : '';
+      // Surface the line items we sent so the rep can verify prices.
+      // If Jobber shows $0 but our sent unitPrice was non-zero, the
+      // problem is on Jobber's side (silent field rejection) — paste
+      // me the values and we'll fix it.
+      let lineItemsBlock = '';
+      if (Array.isArray(data.sentLineItems) && data.sentLineItems.length) {
+        const rows = data.sentLineItems.map(li => `
+          <tr>
+            <td style="padding:4px 8px;">${escapeHtml(li.name)}</td>
+            <td style="padding:4px 8px;text-align:right;font-family:ui-monospace,monospace;">${fmtMoney(li.unitPrice || 0)}</td>
+            <td style="padding:4px 8px;text-align:right;font-family:ui-monospace,monospace;">${fmtMoney(li.totalPrice || 0)}</td>
+          </tr>
+        `).join('');
+        lineItemsBlock = `
+          <details style="margin-top:10px;">
+            <summary style="cursor:pointer;font-size:12px;font-weight:600;">Show line items sent to Jobber</summary>
+            <table style="margin-top:6px;font-size:12px;width:100%;background:#fff;border-radius:4px;color:var(--navy);">
+              <thead><tr style="border-bottom:1px solid var(--line);">
+                <th style="padding:4px 8px;text-align:left;">Item</th>
+                <th style="padding:4px 8px;text-align:right;">Unit Price</th>
+                <th style="padding:4px 8px;text-align:right;">Total</th>
+              </tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </details>`;
+      }
       box.innerHTML = `
         <div class="jobber-push-row success">
           <span class="ico">✓</span>
           <div style="flex: 1;">
             <div><strong>Sent to Jobber${escapeHtml(wasAlready)}</strong></div>
             ${numberLine}
-            ${openLink}
-            <button class="btn btn-secondary" style="margin-top:10px;font-size:12px;padding:6px 12px;" onclick="resendFinishedToJobber('${escapeHtml(rowId)}')">🔄 Re-send to Jobber</button>
+            ${lineItemsBlock}
+            <div style="margin-top:10px;">
+              ${openLink}
+              <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px;" onclick="resendFinishedToJobber('${escapeHtml(rowId)}')">🔄 Re-send to Jobber</button>
+            </div>
           </div>
         </div>`;
     } else {
