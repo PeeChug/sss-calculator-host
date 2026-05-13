@@ -4128,12 +4128,26 @@ function generatePDF() {
    FINALIZE
    ============================================================ */
 function finalizeQuote(sendMethod) {
-  // sendMethod: 'email' | 'sms' | 'none' — chosen via the three buttons
-  // on the review page. 'none' = upload to Jobber only (the rep will
-  // manually send from Jobber's UI). Default falls back to 'email' for
-  // callers that haven't been migrated yet.
-  if (!sendMethod) sendMethod = 'email';
+  // sendMethod: 'open' | 'none' — chosen via the two buttons on the
+  // review page. 'open' = save the quote and open it in Jobber so the
+  // rep can hit Send from there. 'none' = save quietly. Default to
+  // 'open' for callers that haven't been migrated.
+  if (!sendMethod) sendMethod = 'open';
   state.__sendMethod = sendMethod;
+  state.__jobberOpened = false;
+  // Pre-open the Jobber tab during the user's click (so it's a real
+  // user gesture and the popup blocker doesn't kill it). We'll
+  // navigate this tab to the Jobber URL once the push response comes
+  // back. Safari/iPad will swallow window.open() inside an async
+  // fetch callback — but it allows the call here, mid-click.
+  if (sendMethod === 'open') {
+    try {
+      // about:blank is the safe placeholder. We update .location.href
+      // when the Jobber URL is known. Some browsers strip the
+      // returned reference if popup blocker fires; we guard for that.
+      state.__jobberTabRef = window.open('about:blank', '_blank');
+    } catch (e) { state.__jobberTabRef = null; }
+  }
   const totals = computeAllTotals();
   const allProjects = [...(state.activeProject.type ? [{ ...state.activeProject, _cached: totals.active }] : []), ...state.bundledProjects];
   const payload = {
@@ -4236,7 +4250,7 @@ async function pushFinishedQuoteToJobber(rowId, force, sendMethod) {
         : '';
       const wasAlready = data.alreadyPushed ? ' (already in Jobber)' : '';
       const openLink = data.jobberWebUri
-        ? `<a href="${escapeHtml(data.jobberWebUri)}" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:10px;font-size:12px;padding:6px 12px;text-decoration:none;display:inline-block;margin-right:6px;">↗ Open in Jobber</a>`
+        ? `<a href="${escapeHtml(data.jobberWebUri)}" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:10px;font-size:14px;padding:10px 18px;text-decoration:none;display:inline-block;margin-right:6px;">↗ Open in Jobber</a>`
         : '';
       // Surface the line items we sent so the rep can verify prices.
       // If Jobber shows $0 but our sent unitPrice was non-zero, the
@@ -4289,13 +4303,25 @@ async function pushFinishedQuoteToJobber(rowId, force, sendMethod) {
         } else {
           sendMethodPill = pill('var(--line-soft)', 'var(--slate)', 'Saved as Draft in Jobber');
         }
-        // If the rep picked "Generate & Open in Jobber", actually
-        // open the quote in a new tab as soon as the push lands.
-        // (Done once via the state flag so a re-render doesn't open it
-        // a second time.)
+        // If the rep picked "Generate & Open in Jobber", navigate the
+        // tab we pre-opened during their click to the Jobber URL.
+        // Pre-opening during the click is what dodges Safari's popup
+        // blocker (window.open from inside an async fetch callback
+        // always gets blocked). If the pre-opened ref is null (popup
+        // blocker fired anyway), we fall back to a regular window.open
+        // and worst case the prominent "Open in Jobber" button below
+        // is still right there for the rep to click.
         if (data.sendMethod === 'open' && data.jobberWebUri && !state.__jobberOpened) {
           state.__jobberOpened = true;
-          try { window.open(data.jobberWebUri, '_blank', 'noopener'); } catch (e) { /* popup blocked — link still in the success block */ }
+          const tab = state.__jobberTabRef;
+          try {
+            if (tab && !tab.closed) {
+              tab.location.href = data.jobberWebUri;
+            } else {
+              window.open(data.jobberWebUri, '_blank', 'noopener');
+            }
+          } catch (e) { /* blocked — prominent CTA below still works */ }
+          state.__jobberTabRef = null;
         }
         lineItemsBlock = `
           ${sendMethodPill ? `<div style="margin-top:8px;">${sendMethodPill}</div>` : ''}
