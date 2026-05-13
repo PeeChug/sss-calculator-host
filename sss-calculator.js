@@ -578,7 +578,17 @@ const CONDITION_META = {
    STATE
    ============================================================ */
 const state = {
-  customer: { name: '', phone: '', email: '', address: '', jobberNum: '', employee: '' },
+  // Customer state — keeps the legacy single-field `name` and
+  // `address` (still used by the current Step 1 form) AND adds the
+  // structured fields that Jobber's ClientCreateInput / AddressAttributes
+  // expect. If only `name` and `address` are filled, the backend
+  // splits them automatically on push.
+  customer: {
+    name: '', phone: '', email: '', address: '',
+    firstName: '', lastName: '', companyName: '',
+    street1: '', street2: '', city: '', province: '', postalCode: '',
+    jobberNum: '', employee: ''
+  },
   currentStage: 1,
   maxStageReached: 1,           // For bidirectional nav — bumps as user advances
   activeProject: makeBlankProject(),
@@ -666,7 +676,12 @@ function cancelNewQuote() {
   // Reset state to a fresh quote. Keep the employee name — they're
   // probably about to start another one.
   const employee = state.customer.employee || '';
-  state.customer = { name: '', phone: '', email: '', address: '', jobberNum: '', employee };
+  state.customer = {
+    name: '', phone: '', email: '', address: '',
+    firstName: '', lastName: '', companyName: '',
+    street1: '', street2: '', city: '', province: '', postalCode: '',
+    jobberNum: '', employee
+  };
   state.activeProject = makeBlankProject();
   state.bundledProjects = [];
   state.editingBundleIdx = null;
@@ -3949,7 +3964,12 @@ function resendCurrentQuoteFromSuccess() {
 function resetQuote() {
   if (!confirm('Start a new quote? Current quote will be cleared.')) return;
   const employee = state.customer.employee;
-  state.customer = { name: '', phone: '', email: '', address: '', jobberNum: '', employee };
+  state.customer = {
+    name: '', phone: '', email: '', address: '',
+    firstName: '', lastName: '', companyName: '',
+    street1: '', street2: '', city: '', province: '', postalCode: '',
+    jobberNum: '', employee
+  };
   state.activeProject = makeBlankProject();
   state.bundledProjects = [];
   state.editingBundleIdx = null;
@@ -4540,21 +4560,54 @@ function buildJobberLineItem(p, idx, total) {
 function buildCloudPayload() {
   // Reject obviously-empty drafts so we don't litter the dashboard with
   // junk rows the rep didn't really start.
-  if (!state.customer.name && !state.activeProject.type && state.bundledProjects.length === 0) return null;
+  const hasCustomerName = state.customer.name || state.customer.firstName || state.customer.lastName;
+  if (!hasCustomerName && !state.activeProject.type && state.bundledProjects.length === 0) return null;
 
   let totals;
-  try { totals = computeAllTotals(); } catch (e) { totals = { sumBeforeBundle: 0, bundleDiscount: 0, bundleEligible: false, finalTotal: 0 }; }
+  try { totals = computeAllTotals(); } catch (e) { totals = { active: { subtotal: 0 }, bundled: [], sumBeforeBundle: 0, bundleDiscount: 0, bundleEligible: false, finalTotal: 0 }; }
+  // CRITICAL: computeAllTotals() RETURNS the totals object but doesn't
+  // set `_cached` on state.activeProject. Without this stamp, the
+  // subtotal we send to the cloud (and downstream to Jobber) is 0.
+  // That's what was producing $0 line items in Jobber's UI.
   const allProjects = [
-    ...(state.activeProject.type ? [{ ...state.activeProject }] : []),
+    ...(state.activeProject.type ? [{ ...state.activeProject, _cached: totals.active }] : []),
     ...state.bundledProjects
   ];
 
+  // Combined display fields (legacy compat) — derived from the
+  // structured fields when present, otherwise from the existing
+  // single-field shape. Old drafts that only have `name`/`address`
+  // continue to work without migration.
+  const combinedName = state.customer.firstName || state.customer.lastName
+    ? `${state.customer.firstName || ''} ${state.customer.lastName || ''}`.trim()
+    : (state.customer.name || '');
+  const combinedAddr = state.customer.street1
+    ? [
+        state.customer.street1,
+        state.customer.street2,
+        [state.customer.city, state.customer.province, state.customer.postalCode].filter(Boolean).join(' ')
+      ].filter(Boolean).join(', ')
+    : (state.customer.address || '');
+
   return {
     customer: {
-      name:    state.customer.name    || '',
+      // Legacy combined fields (used by the dashboard, read-only view, etc.)
+      name:    combinedName,
+      address: combinedAddr,
       phone:   state.customer.phone   || '',
       email:   state.customer.email   || '',
-      address: state.customer.address || ''
+      // Structured fields — these are what get passed to Jobber's
+      // AddressAttributes (street1/street2/city/province/postalCode).
+      // Optional; the backend falls back to splitting the combined
+      // values if the structured ones are empty.
+      firstName:   state.customer.firstName   || '',
+      lastName:    state.customer.lastName    || '',
+      companyName: state.customer.companyName || '',
+      street1:     state.customer.street1     || '',
+      street2:     state.customer.street2     || '',
+      city:        state.customer.city        || '',
+      province:    state.customer.province    || '',
+      postalCode:  state.customer.postalCode  || ''
     },
     employee: state.customer.employee || '',
     jobberJobNum: state.customer.jobberNum || '',
@@ -5291,12 +5344,25 @@ function duplicateCurrentForEdit() {
 }
 
 function hydrateStateFromCloud(q) {
-  // Rehydrate the calc state from a cloud row's structured projects + customer.
+  // Rehydrate the calc state from a cloud row's structured projects +
+  // customer. Restore both legacy single-field values AND the structured
+  // fields (Jobber-style). Old drafts have only name/address; newer
+  // drafts have structured fields too. Either way, both shapes are
+  // populated so display, edit, and Jobber push all just work.
+  const qc = q.customer || {};
   state.customer = {
-    name:    (q.customer && q.customer.name)    || '',
-    phone:   (q.customer && q.customer.phone)   || '',
-    email:   (q.customer && q.customer.email)   || '',
-    address: (q.customer && q.customer.address) || '',
+    name:        qc.name        || '',
+    phone:       qc.phone       || '',
+    email:       qc.email       || '',
+    address:     qc.address     || '',
+    firstName:   qc.firstName   || '',
+    lastName:    qc.lastName    || '',
+    companyName: qc.companyName || '',
+    street1:     qc.street1     || '',
+    street2:     qc.street2     || '',
+    city:        qc.city        || '',
+    province:    qc.province    || '',
+    postalCode:  qc.postalCode  || '',
     jobberNum: '',
     employee: q.employeeName || ''
   };
@@ -5461,7 +5527,12 @@ function startNewQuote() {
   __doc.getElementById('stage-dashboard').classList.remove('visible');
   // Reset state (keep employee if set previously)
   const employee = state.customer.employee || '';
-  state.customer = { name: '', phone: '', email: '', address: '', jobberNum: '', employee };
+  state.customer = {
+    name: '', phone: '', email: '', address: '',
+    firstName: '', lastName: '', companyName: '',
+    street1: '', street2: '', city: '', province: '', postalCode: '',
+    jobberNum: '', employee
+  };
   state.activeProject = makeBlankProject();
   state.bundledProjects = [];
   state.editingBundleIdx = null;
