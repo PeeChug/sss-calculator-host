@@ -641,6 +641,11 @@ function returnToDashboard() {
   __doc.querySelectorAll('.stage').forEach(s => s.classList.remove('visible'));
   __doc.getElementById('stage-dashboard').classList.add('visible');
   if (typeof setSavePill === 'function') setSavePill('hidden');
+  // Re-evaluate the "Projects in this quote" bubble bar — it self-hides
+  // when the dashboard is visible, but only gets called from
+  // updateRunningTotal which the dashboard doesn't trigger. Without
+  // this, the bar stays stuck in whatever state the quote left it in.
+  try { renderProjectBubbles(); } catch (e) {}
   dashState.loaded = false;
   renderDashboard();
   scrollAppToTop();
@@ -4066,6 +4071,8 @@ function saveAndReturnToDashboard() {
   __doc.getElementById('stage-dashboard').classList.add('visible');
   // Hide the save pill — it's a quote-context indicator, not relevant here.
   if (typeof setSavePill === 'function') setSavePill('hidden');
+  // Hide the "Projects in this quote" bubble bar — same fix as returnToDashboard.
+  try { renderProjectBubbles(); } catch (e) {}
   // Always re-fetch on dashboard visit so newly saved/finished rows appear.
   dashState.loaded = false;
   renderDashboard();
