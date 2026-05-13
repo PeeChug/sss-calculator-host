@@ -3771,36 +3771,61 @@ function computeDIYComparison(proTotal) {
     if (p.type === 'fence' || p.type === 'barn') needsSprayer = true;
     if (p.type === 'deck' && m.underneath) { needsSprayer = true; sprayerNote = ' (needed for underside/joist access)'; }
 
-    // Wash prep — if the customer would do a soft wash or strip/sand,
-    // they're buying cleaner + brightener AND need a pressure washer.
-    // Strip/sand: 1.5× chems (heavier mix + more passes) + more time
-    // already captured by addonHrs above.
-    if (p.prep === 'soft_wash' || p.prep === 'strip_sand') {
+    // Wash prep — the prep choice is stored on `p.condition` (NOT
+    // `p.prep` — earlier guess was wrong, which is why this block was
+    // silently never firing). Soft wash and strip/sand both require
+    // a pressure washer + cleaner + brightener. Strip/sand is much
+    // slower because of the extra scrub/sand pass.
+    //
+    // Time per the user's calibration: soft wash adds ~6 hours per
+    // 100 linear feet of fence (so roughly 6h / 200 sq ft for non-
+    // fence projects, since 100 lf at 6ft tall ≈ 600 sq ft of one-
+    // side surface). Strip/sand takes ~2.5× as long.
+    let prepHoursForThisProj = 0;
+    if (p.condition === 'soft_wash' || p.condition === 'strip_sand') {
       needsWashChems = true;
       needsPressureWasher = true;
-      // One 5-gal pail of each chem covers ~800 sq ft of deck/pergola
-      // or ~200 lin ft of fence (varies with concentration). Round up.
-      let prepArea;
-      if (p.type === 'fence') prepArea = (m.linearft || 0) / 200 * 800;
-      else if (p.type === 'deck') prepArea = ((m.flat || 0) * (m.underneath ? 2 : 1) + (m.lattice || 0));
-      else prepArea = (m.sqft || 0);
-      const pailsForThisProj = Math.max(1, Math.ceil(prepArea / 800));
-      // Strip/sand needs ~50% more chemistry (stronger mix + extra pass)
-      const multiplier = p.prep === 'strip_sand' ? 1.5 : 1.0;
-      washChemPails += Math.ceil(pailsForThisProj * multiplier);
-      if (p.prep === 'strip_sand' && !washChemNote.includes('strip')) {
-        washChemNote = ' (includes the heavier mix needed when stripping back to bare wood)';
+      // Coverage units — pick the scope number that the chem rate is
+      // calibrated against: lin ft for fences, sq ft for everything else.
+      let prepScope = 0;
+      if (p.type === 'fence') prepScope = m.linearft || 0;
+      else if (p.type === 'deck') prepScope = (m.flat || 0) * (m.underneath ? 2 : 1) + (m.lattice || 0);
+      else prepScope = m.sqft || 0;
+
+      // Chem pails — one 5-gal pail of each covers ~200 lin ft of
+      // fence OR ~800 sq ft of flat surface at typical concentrations.
+      const pailsForThisProj = p.type === 'fence'
+        ? Math.max(1, Math.ceil(prepScope / 200))
+        : Math.max(1, Math.ceil(prepScope / 800));
+      // Strip/sand needs ~50% more chemistry (stronger mix + extra pass).
+      const chemMultiplier = p.condition === 'strip_sand' ? 1.5 : 1.0;
+      washChemPails += Math.ceil(pailsForThisProj * chemMultiplier);
+
+      // Prep time — soft wash 6 hrs per 100 lf fence (or per 600 sq
+      // ft equivalent on flat surfaces). Strip/sand ~2.5× that.
+      const softWashRate = p.type === 'fence' ? (6 / 100) : (6 / 600);
+      const stripMultiplier = p.condition === 'strip_sand' ? 2.5 : 1.0;
+      prepHoursForThisProj = Math.max(2, Math.ceil(prepScope * softWashRate * stripMultiplier));
+      totalHours += prepHoursForThisProj;
+
+      if (p.condition === 'strip_sand' && !washChemNote.includes('strip')) {
+        washChemNote = ' (heavier mix needed for stripping back to bare wood)';
       }
     }
 
     const coatNote = isOneCoat ? '1 coat' : (p.productType === 'oil' ? 'oil-based' : '2 coats');
     const pailsLabel = pails === 1 ? '1 pail' : `${pails} pails`;
-    // Per-project total = stain + tools + time + citronella + addon impact
-    // (sprayer is amortized across all projects so isn't included here).
-    const projectTotal = stainTotalForProj + toolsCost + (hours * 25) + citronellaCostForProj + addonMat;
+    // Per-project total = stain + tools + time (staining + prep) +
+    // citronella + addon impact. (sprayer + pressure washer are
+    // amortized across all projects so they aren't included here.)
+    const projectHours = hours + prepHoursForThisProj;
+    const projectTotal = stainTotalForProj + toolsCost + (projectHours * 25) + citronellaCostForProj + addonMat;
     const addonNote = addonPro > 0 ? `, +$${addonMat} addon materials, +${addonHrs} hrs for add-ons` : '';
+    const prepHoursNote = prepHoursForThisProj > 0
+      ? `, +${prepHoursForThisProj} hrs ${p.condition === 'strip_sand' ? 'strip/sand prep' : 'soft wash prep'}`
+      : '';
     projectLines.push({
-      label: `${PROJECT_META[p.type].icon} ${PROJECT_META[p.type].name} — ${pailsLabel} × $${pailCost} stain, $${toolsCost} tools, ${hours} hrs @ $25/hr${citronellaCostForProj > 0 ? `, +$${citronellaCostForProj} citronella` : ''}${addonNote}`,
+      label: `${PROJECT_META[p.type].icon} ${PROJECT_META[p.type].name} — ${pailsLabel} × $${pailCost} stain, $${toolsCost} tools, ${projectHours} hrs @ $25/hr${citronellaCostForProj > 0 ? `, +$${citronellaCostForProj} citronella` : ''}${prepHoursNote}${addonNote}`,
       total: projectTotal
     });
   });
