@@ -111,7 +111,7 @@ const PRICING = {
   deck:  { tiers: { essential: 0.80, performance: 1.0, showcase: 1.30 }, rates: { flat: 4.00, railing: 6.00, stair: 25.00, lattice: 3.00 }, underneathMultiplier: 2, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
   pergola: { tiers: { essential: 4.40, performance: 5.50, showcase: 7.15 }, overheadAccessFlat: 200, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
   barn:    { tiers: { essential: 2.60, performance: 3.25, showcase: 4.23 }, heightPremium: 1.30, liftRentalPerDay: 400, trimRate: 1.50, cupolaFlat: 200, prep: { no_wash: 0, soft_wash: 0.85, strip_sand: 2.10 }, unit: 'sq ft' },
-  ceiling: { tiers: { essential: 2.60, performance: 3.25, showcase: 4.23 }, tngPremium: 0.50, beamRate: 8.00, fixtureRemoval: 50, fanRemoval: 100, furnitureProtFlat: 100, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
+  ceiling: { tiers: { essential: 3.40, performance: 4.25, showcase: 5.55 }, tngPremium: 0.50, beamRate: 8.00, fixtureRemoval: 50, fanRemoval: 100, furnitureProtFlat: 100, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
   stainUpgrades: [
     { id: 'citronella',  name: 'EXPERT Natural Defense additive', restr: 'Oil only', product: 'oil',
       priceType: 'per_unit', rate: 1.50, minCharge: 70,
@@ -2084,7 +2084,7 @@ const MEASURE_TIPS = {
   deck:    { ico: '📏', title: 'What we count on a deck', body: 'Flat surface (sq ft) covers the top boards only. Railings are itemized in linear feet — a 40-ft perimeter railing counts as 40 ln ft regardless of how many rails it has. Stairs are counted individually by tread (not risers).' },
   pergola: { ico: '📏', title: 'Why pergola surface area is bigger than it looks', body: 'Total surface includes the top and bottom of every beam, all four sides of the posts, plus rafters and any decorative elements — not just the footprint. A 12×12 pergola is usually 180–220 sq ft of actual stainable surface, not 144.' },
   barn:    { ico: '📏', title: 'How we measure barn siding', body: 'Siding sq ft is calculated wall by wall (length × height for each wall). We don\'t subtract for normal-sized windows and doors. For walls above 12 ft, a height premium applies and a lift rental may be needed — typically quoted together.' },
-  ceiling: { ico: '📏', title: 'What\'s included in a ceiling job', body: 'Beyond the sq ft of the ceiling itself, interior jobs include moving furniture, masking floors and walls, and removing/reinstalling light fixtures or fans. Tongue-and-groove and beam two-toning add complexity but a richer final look.' }
+  ceiling: { ico: '📏', title: 'What\'s included in a ceiling job', body: 'Beyond the sq ft of the ceiling itself, interior jobs include moving furniture, masking floors and walls, and covering/masking light fixtures and ceiling fans (we don\'t remove them — we cover them to protect from overspray). Tongue-and-groove and beam two-toning add complexity but a richer final look.' }
 };
 
 function renderMeasurements() {
@@ -2177,8 +2177,8 @@ function renderMeasurements() {
         <div class="form-grid">
           <div class="field"><label>Ceiling area (sq ft)</label><input type="number" min="0" step="1" id="m_ceilSqFt" placeholder="e.g. 280"></div>
           <div class="field"><label>Beam length total (linear ft)</label><input type="number" min="0" step="1" id="m_beamLnFt" placeholder="optional"><div class="hint">Only if beams stained different color</div></div>
-          <div class="field"><label>Light fixtures to remove/reinstall</label><input type="number" min="0" step="1" id="m_fixtures" placeholder="0"></div>
-          <div class="field"><label>Ceiling fans to remove/reinstall</label><input type="number" min="0" step="1" id="m_fans" placeholder="0"></div>
+          <div class="field"><label>Light fixtures to cover &amp; mask</label><input type="number" min="0" step="1" id="m_fixtures" placeholder="0"></div>
+          <div class="field"><label>Ceiling fans to cover &amp; mask</label><input type="number" min="0" step="1" id="m_fans" placeholder="0"></div>
         </div>
         <div class="toggle-row" data-toggle="m_tng" style="margin-top:8px;"><span class="box"></span><span class="name">Tongue-and-groove</span></div>
         <div class="toggle-row" data-toggle="m_furnProtect" style="margin-top:8px;"><span class="box"></span><span class="name">Indoor furniture / floor protection needed</span></div>
@@ -2389,7 +2389,7 @@ const MEASURE_TUTORIAL = {
       </ul>
       <p style="margin-bottom:8px;"><strong>Fixtures &amp; fans:</strong></p>
       <ul style="padding-left:20px;line-height:1.7;">
-        <li>Count each fixture or fan we'll need to remove + reinstall. Common: 1 fan + 2 lights per porch.</li>
+        <li>Count each fixture or fan we'll need to cover &amp; mask (we don't remove them — we wrap them so no stain reaches them). Common: 1 fan + 2 lights per porch.</li>
       </ul>`
   }
 };
@@ -4216,9 +4216,12 @@ function computeDIYComparison(proTotal) {
       // SW Woodscapes Solid 5gal retail ≈ $320; Rain Refresh ≈ $385
       return p.tier === 'showcase' ? 385 : 320;
     }
-    // Oil family
-    // EXPERT Stain & Seal 5gal ≈ $264; EXPERT Log & Timber Oil 5gal ≈ $340
-    return p.tier === 'showcase' ? 340 : 264;
+    // Oil family. EXPERT Stain & Seal 5gal ≈ $264. EXPERT Log & Timber
+    // Oil (Showcase tier) is roughly DOUBLE that at retail — the
+    // formulation includes carpenter-bee deterrence and is rated for
+    // the EXPERT Limited Lifetime 3-Step System, so the homeowner
+    // price reflects the premium. Was $340; corrected up.
+    return p.tier === 'showcase' ? 680 : 264;
   }
   // Citronella additive (EXPERT Natural Defense) — homeowner price roughly
   // $100 per 5 gallons of stain.
@@ -4562,8 +4565,8 @@ function describeMeasurementLines() {
     { label: 'Ceiling area', value: `${m.sqft || 0} sq ft` },
     ...(m.tng ? [{ label: 'Tongue-and-groove', value: 'Yes' }] : []),
     ...(m.beamLnFt ? [{ label: 'Beam two-tone', value: `${m.beamLnFt} ln ft` }] : []),
-    ...(m.fixtures ? [{ label: 'Fixtures removed', value: `${m.fixtures}` }] : []),
-    ...(m.fans ? [{ label: 'Fans removed', value: `${m.fans}` }] : []),
+    ...(m.fixtures ? [{ label: 'Fixtures covered & masked', value: `${m.fixtures}` }] : []),
+    ...(m.fans ? [{ label: 'Fans covered & masked', value: `${m.fans}` }] : []),
     ...(m.furnProtect ? [{ label: 'Furniture protection', value: 'Yes' }] : [])
   ];
   return [];
