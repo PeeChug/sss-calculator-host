@@ -966,7 +966,7 @@ function paintRepChip() {
   if (!header) return;
   let chip = __doc.getElementById('repChip');
   if (!chip) {
-    chip = __doc.createElement('button');
+    chip = document.createElement('button');
     chip.id = 'repChip';
     chip.type = 'button';
     chip.className = 'rep-chip';
@@ -1017,7 +1017,7 @@ function closeRepMenu() {
 }
 function toggleRepMenu(ev) {
   if (__repMenuEl) { closeRepMenu(); return; }
-  const menu = __doc.createElement('div');
+  const menu = document.createElement('div');
   menu.className = 'rep-chip-menu';
   const isAdmin = __currentRep && __currentRep.role === 'admin';
   const adminBits = isAdmin
@@ -2486,7 +2486,7 @@ function downscaleDataUrl(dataUrl, maxW, quality) {
         const ratio = Math.min(1, maxW / (img.width || maxW));
         const w = Math.max(1, Math.round((img.width || maxW)  * ratio));
         const h = Math.max(1, Math.round((img.height || maxW) * ratio));
-        const canvas = __doc.createElement('canvas');
+        const canvas = document.createElement('canvas');
         canvas.width = w; canvas.height = h;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, w, h);
@@ -7415,7 +7415,7 @@ function compactDiscountOverride(arr) {
 function paToast(msg) {
   let t = __doc.getElementById('paToast');
   if (!t) {
-    t = __doc.createElement('div');
+    t = document.createElement('div');
     t.id = 'paToast';
     t.className = 'pa-toast';
     __doc.appendChild(t);
