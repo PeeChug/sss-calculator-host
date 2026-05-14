@@ -775,14 +775,27 @@ async function authFetch(url, opts) {
 }
 
 async function checkAuthAndGate() {
+  // Diagnostic: show what's in each storage channel at refresh time
+  // so we can see whether the token is actually persisting and
+  // whether authFetch is sending it on the status request.
+  let lsToken = null, ssToken = null, ckToken = null;
+  try { lsToken = (typeof localStorage !== 'undefined' && localStorage.getItem(AUTH_STORAGE_KEY)) || null; } catch (e) {}
+  try { ssToken = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(AUTH_STORAGE_KEY)) || null; } catch (e) {}
+  ckToken = _readJsCookie(AUTH_STORAGE_KEY);
+  console.log('[SSS Auth] checkAuthAndGate — token sources:', {
+    localStorage: lsToken ? lsToken.slice(0, 12) + '… (' + lsToken.length + ')' : null,
+    sessionStorage: ssToken ? ssToken.slice(0, 12) + '… (' + ssToken.length + ')' : null,
+    cookie: ckToken ? ckToken.slice(0, 12) + '… (' + ckToken.length + ')' : null,
+    resolved: getAuthToken() ? 'YES (length ' + getAuthToken().length + ')' : 'NO'
+  });
+
   let status = null;
   try {
     const r = await authFetch('/_functions/authStatus');
     status = await r.json();
+    console.log('[SSS Auth] authStatus response:', status);
   } catch (e) {
-    // Fail-open in dev / offline preview: a broken backend shouldn't
-    // hard-lock the rep out. We still show the gate but pre-fill an
-    // error hint so they know what's going on.
+    console.warn('[SSS Auth] authStatus fetch threw:', e);
     showAuthGate(true, 'auth_unreachable');
     return;
   }
@@ -1116,29 +1129,11 @@ async function openChangePinPrompt() {
   else alert('Failed to update PIN: ' + ((data && data.error) || 'unknown error'));
 }
 
-// Hard refresh button — for tablets running this as a home-screen
-// web app where pull-to-refresh / Cmd+R aren't easily reachable. The
-// custom element lives inside Wix's page, so we reload the parent
-// window (the real page URL) rather than the shadow-DOM internals.
-// Falls through to a soft re-fetch if reload is somehow blocked.
+// Soft refresh — re-fetches data without reloading the page. Was a
+// hard parent reload, but that nuked the auth context too, forcing
+// a re-sign-in every time the rep clicked Refresh. Soft refresh
+// keeps the rep signed in and just fetches fresh dashboard data.
 function refreshDashboardHard() {
-  try {
-    // Prefer parent reload — this is the Wix page that hosts the
-    // Custom Element. Reloading it pulls fresh JS from the CDN AND
-    // re-runs every backend call from a clean slate.
-    if (window.top && window.top.location && window.top.location.reload) {
-      window.top.location.reload();
-      return;
-    }
-  } catch (e) { /* cross-origin guard — fall through */ }
-  try {
-    if (window.parent && window.parent !== window) {
-      window.parent.location.reload();
-      return;
-    }
-  } catch (e) { /* fall through */ }
-  try { window.location.reload(); return; } catch (e) {}
-  // Last resort — soft refresh: re-fetch dashboard data only.
   if (typeof loadDashboardData === 'function') {
     dashState.loaded = false;
     loadDashboardData().then(renderDashboard);
