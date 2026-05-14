@@ -7161,9 +7161,18 @@ async function adminCreateRep() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ initials, displayName, email, pin, role })
   });
-  const data = await r.json().catch(() => null);
+  let data = null;
+  let bodyText = '';
+  try { bodyText = await r.clone().text(); } catch (e) {}
+  try { data = await r.json(); } catch (e) {}
+  console.log('[SSS Admin] adminCreateRep response:', { status: r.status, ok: r.ok, data, bodyPreview: bodyText.slice(0, 300) });
   if (data && data.ok) { loadAndRenderReps(); }
-  else alert('Failed to create rep: ' + ((data && data.error) || 'unknown'));
+  else {
+    const msg = (data && data.error)
+      ? 'Failed to create rep: ' + data.error + (data.detail ? ' — ' + JSON.stringify(data.detail).slice(0, 200) : '') + ' (HTTP ' + r.status + ')'
+      : 'Failed to create rep: HTTP ' + r.status + (bodyText ? ' — ' + bodyText.slice(0, 200) : '');
+    alert(msg);
+  }
 }
 
 async function adminResetRepPin(repId, label) {
@@ -7193,43 +7202,73 @@ async function adminDeleteRep(repId, label) {
 }
 
 // ---- Devices admin -----------------------------------------------
+// Hide revoked/expired sessions by default — they're rarely useful
+// in the admin view. Toggle keeps them around for audit when needed.
+var __adminDevicesShowAll = false;
 async function loadAndRenderDevices() {
   const body = __doc.getElementById('devicesTabBody');
   if (!body) { console.log('[SSS Admin] loadAndRenderDevices: body missing, abort'); return; }
   const ticket = body.dataset.ticket;
-  console.log('[SSS Admin] loadAndRenderDevices starting, ticket=', ticket);
   try {
     const r = await authFetch('/_functions/authListDevices');
     const data = await r.json();
-    console.log('[SSS Admin] loadAndRenderDevices response:', data);
     const liveBody = __doc.getElementById('devicesTabBody');
     if (!liveBody || liveBody.dataset.ticket !== ticket) {
-      console.log('[SSS Admin] loadAndRenderDevices: ticket stale, skip write');
       return;
     }
     if (!data || !data.ok) {
       liveBody.innerHTML = `<div class="folder-empty" style="color:var(--coral);">Couldn't load devices: ${escapeHtml((data && data.error) || 'unknown')}</div>`;
       return;
     }
-    const rows = (data.devices || []).map(d => {
+    // Classify each device — active sessions are the only ones the
+    // admin cares about most of the time. Revoked/expired ones get
+    // collapsed into a separate count + toggle.
+    const allDevices = data.devices || [];
+    const now = new Date();
+    function isActive(d) {
+      if (d.revoked) return false;
+      if (d.expiresAt && new Date(d.expiresAt) < now) return false;
+      return true;
+    }
+    const activeDevices  = allDevices.filter(isActive);
+    const archivedCount  = allDevices.length - activeDevices.length;
+    const showAll = !!__adminDevicesShowAll;
+    const visibleDevices = showAll ? allDevices : activeDevices;
+
+    function renderRow(d) {
       const last = d.lastUsedAt ? timeSince(new Date(d.lastUsedAt)) : '—';
       const exp  = d.expiresAt ? new Date(d.expiresAt).toLocaleDateString() : '—';
       const status = d.revoked
         ? '<span style="color:var(--coral);font-weight:700;font-size:11px;">REVOKED</span>'
-        : (d.expiresAt && new Date(d.expiresAt) < new Date()
+        : (d.expiresAt && new Date(d.expiresAt) < now
           ? '<span style="color:#a66400;font-weight:700;font-size:11px;">EXPIRED</span>'
           : '<span style="color:#1f4d36;font-weight:700;font-size:11px;">ACTIVE</span>');
+      const label = d.label || '(no label)';
       return `
         <div class="rep-row" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;background:var(--paper);">
           <div style="flex:1;min-width:0;">
-            <div style="font-weight:700;color:var(--navy);font-size:13px;">${escapeHtml(d.label || '(no label)')} <span style="font-size:10px;font-weight:500;color:var(--slate);">${escapeHtml((d.repInitials || '?').toUpperCase())}</span></div>
+            <div style="font-weight:700;color:var(--navy);font-size:13px;">${escapeHtml(label)} <span style="font-size:10px;font-weight:500;color:var(--slate);">${escapeHtml((d.repInitials || '?').toUpperCase())}</span></div>
             <div style="font-size:11px;color:var(--slate);">${status} · last used ${escapeHtml(last)} · expires ${escapeHtml(exp)}</div>
           </div>
-          ${d.revoked ? '' : `<button class="btn btn-ghost-danger" style="padding:6px 10px;font-size:11px;" onclick="adminRevokeDevice('${escapeHtml(d._id)}','${escapeHtml(d.label || 'this device')}')">Revoke</button>`}
+          ${d.revoked ? '' : `<button class="btn btn-ghost-danger" style="padding:6px 10px;font-size:11px;" onclick="adminRevokeDevice('${escapeHtml(d._id)}','${escapeHtml(label)}')">Revoke</button>`}
         </div>`;
-    }).join('');
+    }
+    const rows = visibleDevices.map(renderRow).join('');
+
+    const revokeAllBtn = activeDevices.length > 1
+      ? `<button class="btn btn-ghost-danger" style="padding:6px 12px;font-size:12px;" onclick="adminRevokeAllDevices()">🚪 Revoke all (${activeDevices.length})</button>`
+      : '';
+    const toggleBtn = archivedCount > 0
+      ? `<button class="btn btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="toggleAdminDevicesShowAll()">${showAll ? 'Hide' : 'Show'} ${archivedCount} revoked/expired</button>`
+      : '';
     liveBody.innerHTML = `
-      <div style="margin-bottom:14px;font-size:12px;color:var(--slate);">${(data.devices || []).length} device session${(data.devices || []).length === 1 ? '' : 's'} on file. Revoke any that shouldn't be authenticated — the rep will be sent back to the sign-in screen on their next request.</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+        <div style="font-size:12px;color:var(--slate);flex:1;min-width:200px;">${activeDevices.length} active session${activeDevices.length === 1 ? '' : 's'}${archivedCount > 0 ? ` · ${archivedCount} revoked/expired hidden` : ''}.</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${toggleBtn}
+          ${revokeAllBtn}
+        </div>
+      </div>
       ${rows || '<div class="folder-empty">No active devices.</div>'}`;
   } catch (e) {
     const liveBodyErr = __doc.getElementById('devicesTabBody');
@@ -7247,6 +7286,40 @@ async function adminRevokeDevice(deviceId, label) {
   const data = await r.json().catch(() => null);
   if (data && data.ok) loadAndRenderDevices();
   else alert('Failed to revoke: ' + ((data && data.error) || 'unknown'));
+}
+
+function toggleAdminDevicesShowAll() {
+  __adminDevicesShowAll = !__adminDevicesShowAll;
+  // Force a re-load so the body re-renders with the new filter state.
+  // (Setting innerHTML directly would leave the ticket guard in place
+  // and the re-fetch wouldn't write back.)
+  __paAdminTicket++;
+  const body = __doc.getElementById('devicesTabBody');
+  if (body) {
+    body.dataset.ticket = String(__paAdminTicket);
+    body.innerHTML = '<div style="padding:8px 0;color:var(--slate);font-size:13px;">Loading devices…</div>';
+  }
+  loadAndRenderDevices();
+}
+
+async function adminRevokeAllDevices() {
+  if (!confirm('Revoke ALL active device sessions? Every signed-in rep (including you) will be sent back to the sign-in screen. Use this when you suspect a compromise or want a clean slate.')) return;
+  // Fetch the current list and revoke each active one in parallel.
+  const r = await authFetch('/_functions/authListDevices');
+  const data = await r.json().catch(() => null);
+  if (!data || !data.ok) { alert('Failed to load devices'); return; }
+  const now = new Date();
+  const active = (data.devices || []).filter(d => !d.revoked && !(d.expiresAt && new Date(d.expiresAt) < now));
+  const results = await Promise.all(active.map(d =>
+    authFetch('/_functions/authRevokeDevice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceId: d._id })
+    }).then(rr => rr.json().catch(() => null))
+  ));
+  const okCount = results.filter(r => r && r.ok).length;
+  alert(`Revoked ${okCount} of ${active.length} active device${active.length === 1 ? '' : 's'}.`);
+  loadAndRenderDevices();
 }
 
 // Add-ons tab — edits the `rate` and (where applicable) `minCharge`
@@ -8159,7 +8232,7 @@ renderDashboard();
   }, { capture: true });
 })();
   // Expose for inline onclick=/onchange= handlers in markup.
-  Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, returnToDashboard, cancelNewQuote, refreshDashboardHard, pickCustSearchResult, clearPickedCustomer, convertJobberRequestToQuote, copyJobberErrorToClipboard, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, onFolderToggle, onDashSearchInput, openRowMenu, closeRowMenu, resumeCloudQuote, resumeLocalDraft, deleteLocalDraft, moveCloudQuote, duplicateCloudQuote, permanentlyDeleteCloud, duplicateCurrentForEdit, toggleBulkMode, toggleBulkRow, bulkClearSelection, bulkSetStatus, bulkPermanentlyDelete, openPricingAdmin, closePricingAdmin, switchPricingAdminTab, savePricingAdmin, resetPricingAdmin, removeReferencePhoto, signOutAndReload, openChangePinPrompt, closeRepMenu, adminCreateRep, adminResetRepPin, adminDeleteRep, adminRevokeDevice, openProjectSwitchDialog, closeProjectSwitchDialog, confirmAddAnotherProject, confirmSwitchProject, openJobberPanel, closeJobberPanel, jobberConnect, jobberManualRefresh, jobberDisconnectConfirm, jobberTestConnection, pushFinishedQuoteToJobber, resendFinishedToJobber, resendViewedQuoteToJobber, resendCurrentQuoteFromSuccess, resendCurrentViewedToJobber, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, toggleEditPanel, applyCustomColor, removeCustomAddon, state });
+  Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, returnToDashboard, cancelNewQuote, refreshDashboardHard, pickCustSearchResult, clearPickedCustomer, convertJobberRequestToQuote, copyJobberErrorToClipboard, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, onFolderToggle, onDashSearchInput, openRowMenu, closeRowMenu, resumeCloudQuote, resumeLocalDraft, deleteLocalDraft, moveCloudQuote, duplicateCloudQuote, permanentlyDeleteCloud, duplicateCurrentForEdit, toggleBulkMode, toggleBulkRow, bulkClearSelection, bulkSetStatus, bulkPermanentlyDelete, openPricingAdmin, closePricingAdmin, switchPricingAdminTab, savePricingAdmin, resetPricingAdmin, removeReferencePhoto, signOutAndReload, openChangePinPrompt, closeRepMenu, adminCreateRep, adminResetRepPin, adminDeleteRep, adminRevokeDevice, adminRevokeAllDevices, toggleAdminDevicesShowAll, openProjectSwitchDialog, closeProjectSwitchDialog, confirmAddAnotherProject, confirmSwitchProject, openJobberPanel, closeJobberPanel, jobberConnect, jobberManualRefresh, jobberDisconnectConfirm, jobberTestConnection, pushFinishedQuoteToJobber, resendFinishedToJobber, resendViewedQuoteToJobber, resendCurrentQuoteFromSuccess, resendCurrentViewedToJobber, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, toggleEditPanel, applyCustomColor, removeCustomAddon, state });
 
   }
 
