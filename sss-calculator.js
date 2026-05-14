@@ -7148,7 +7148,18 @@ async function loadAndRenderReps() {
   }
 }
 
+// Module-level in-flight guard. Even if the user double-clicks /
+// hits Enter while a click is queued, we only fire one request.
+// Without this, two requests would race; the first creates the rep
+// and the second returns `initials_taken` (with the alert showing
+// the second response). Sequential clicks (after one completes) are
+// fine — the flag clears in the finally block.
+var __adminCreateRepInFlight = false;
 async function adminCreateRep() {
+  if (__adminCreateRepInFlight) {
+    console.log('[SSS Admin] adminCreateRep: already in flight, ignoring duplicate click');
+    return;
+  }
   const initials    = (__doc.getElementById('newRepInitials').value || '').trim();
   const displayName = (__doc.getElementById('newRepName').value || '').trim();
   const email       = (__doc.getElementById('newRepEmail').value || '').trim();
@@ -7156,22 +7167,40 @@ async function adminCreateRep() {
   const role        = (__doc.getElementById('newRepRole').value || 'rep');
   if (!initials || !pin) { alert('Initials and PIN are required.'); return; }
   if (!/^\d{4,8}$/.test(pin)) { alert('PIN must be 4–8 digits.'); return; }
-  const r = await authFetch('/_functions/authCreateRep', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ initials, displayName, email, pin, role })
-  });
-  let data = null;
-  let bodyText = '';
-  try { bodyText = await r.clone().text(); } catch (e) {}
-  try { data = await r.json(); } catch (e) {}
-  console.log('[SSS Admin] adminCreateRep response:', { status: r.status, ok: r.ok, data, bodyPreview: bodyText.slice(0, 300) });
-  if (data && data.ok) { loadAndRenderReps(); }
-  else {
-    const msg = (data && data.error)
-      ? 'Failed to create rep: ' + data.error + (data.detail ? ' — ' + JSON.stringify(data.detail).slice(0, 200) : '') + ' (HTTP ' + r.status + ')'
-      : 'Failed to create rep: HTTP ' + r.status + (bodyText ? ' — ' + bodyText.slice(0, 200) : '');
-    alert(msg);
+  __adminCreateRepInFlight = true;
+  // Find the submit button and disable it while we wait — gives the
+  // rep visual feedback (and physically prevents double clicks even
+  // if the in-flight flag somehow gets bypassed).
+  const btn = __doc.querySelector('button[onclick="adminCreateRep()"]');
+  const originalText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Creating…'; }
+  try {
+    const r = await authFetch('/_functions/authCreateRep', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ initials, displayName, email, pin, role })
+    });
+    let data = null;
+    let bodyText = '';
+    try { bodyText = await r.clone().text(); } catch (e) {}
+    try { data = await r.json(); } catch (e) {}
+    console.log('[SSS Admin] adminCreateRep response:', { status: r.status, ok: r.ok, data, bodyPreview: bodyText.slice(0, 300) });
+    if (data && data.ok) {
+      // Reset form fields after success.
+      try { __doc.getElementById('newRepInitials').value = ''; } catch (e) {}
+      try { __doc.getElementById('newRepName').value = ''; } catch (e) {}
+      try { __doc.getElementById('newRepEmail').value = ''; } catch (e) {}
+      try { __doc.getElementById('newRepPin').value = ''; } catch (e) {}
+      loadAndRenderReps();
+    } else {
+      const msg = (data && data.error)
+        ? 'Failed to create rep: ' + data.error + (data.detail ? ' — ' + JSON.stringify(data.detail).slice(0, 200) : '') + ' (HTTP ' + r.status + ')'
+        : 'Failed to create rep: HTTP ' + r.status + (bodyText ? ' — ' + bodyText.slice(0, 200) : '');
+      alert(msg);
+    }
+  } finally {
+    __adminCreateRepInFlight = false;
+    if (btn) { btn.disabled = false; btn.textContent = originalText || '＋ Add rep'; }
   }
 }
 
