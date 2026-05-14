@@ -891,12 +891,44 @@ function paintRepChip() {
     chip.id = 'repChip';
     chip.type = 'button';
     chip.className = 'rep-chip';
+    chip.title = 'Account menu — sign out, change PIN, manage reps';
     chip.onclick = (e) => { e.stopPropagation(); toggleRepMenu(e); };
     header.appendChild(chip);
   }
   const inits = (__currentRep.initials || '?').toUpperCase().slice(0, 2);
   const name  = __currentRep.displayName || __currentRep.initials || '';
-  chip.innerHTML = `<span class="rep-initials">${escapeHtml(inits)}</span><span class="rep-chip-name">${escapeHtml(name)}</span>`;
+  // Trailing ▾ caret makes it obvious the chip is a dropdown trigger.
+  chip.innerHTML = `<span class="rep-initials">${escapeHtml(inits)}</span><span class="rep-chip-name">${escapeHtml(name)}</span><span style="font-size:10px;opacity:0.6;margin-left:2px;">▾</span>`;
+  // Whenever we paint the chip we also know the rep is authenticated,
+  // so stamp the rep's displayName into state.customer.employee. That
+  // single field feeds buildCloudPayload, the Jobber push, and the
+  // PDF — so a single mutation here flows everywhere downstream.
+  if (state && state.customer) {
+    state.customer.employee = name;
+    state.repId   = __currentRep._id;
+    state.repName = name;
+  }
+  // Hide the manual "Quoting Employee" input on Step 1 — the rep is
+  // already known and shouldn't be re-typed (which let one rep
+  // accidentally credit a quote to another). Reflect their name in
+  // a static read-only display instead.
+  hideManualEmployeeField();
+}
+
+function hideManualEmployeeField() {
+  const empInput = __doc.getElementById('employeeName');
+  if (!empInput) return;
+  const field = empInput.closest('.field');
+  if (!field) return;
+  // Replace the field's contents with a read-only display so the
+  // layout stays consistent (keeps the form grid row count intact).
+  field.innerHTML = `
+    <label>Quoting Employee</label>
+    <div style="padding:12px 14px;background:var(--line-soft);border-radius:8px;font-size:14px;color:var(--navy);font-weight:600;">
+      ${escapeHtml(__currentRep && __currentRep.displayName || '—')}
+      <span style="font-size:11px;font-weight:500;color:var(--slate);margin-left:6px;">(signed in)</span>
+    </div>
+  `;
 }
 
 let __repMenuEl = null;
@@ -4770,7 +4802,14 @@ function finalizeQuote(sendMethod) {
   const allProjects = [...(state.activeProject.type ? [{ ...state.activeProject, _cached: totals.active }] : []), ...state.bundledProjects];
   const payload = {
     quoteId: state.quoteId, createdAt: new Date().toISOString(),
-    customer: state.customer, employee: state.customer.employee,
+    customer: state.customer,
+    // employee = freeform name we've always sent. When the rep is
+    // authenticated, this mirrors __currentRep.displayName so the
+    // PDF + Jobber notes show the right name. repId / repName are
+    // the authoritative auth-backed fields for cloud-save audit.
+    employee: (__currentRep && __currentRep.displayName) || state.customer.employee || '',
+    repId:   (__currentRep && __currentRep._id) || '',
+    repName: (__currentRep && __currentRep.displayName) || '',
     paymentMethod: state.paymentMethod,
     sendMethod,
     notes: state.notes || '',
@@ -5824,7 +5863,9 @@ function buildCloudPayload() {
       jobberClientId:   state.customer.jobberClientId   || '',
       jobberPropertyId: state.customer.jobberPropertyId || ''
     },
-    employee: state.customer.employee || '',
+    employee: (__currentRep && __currentRep.displayName) || state.customer.employee || '',
+    repId:   (__currentRep && __currentRep._id) || '',
+    repName: (__currentRep && __currentRep.displayName) || '',
     jobberJobNum: state.customer.jobberNum || '',
     projects: allProjects.map((p, idx) => {
       let jobberLine = { name: '', description: '' };
