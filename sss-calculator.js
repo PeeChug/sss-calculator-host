@@ -822,10 +822,13 @@ async function onAuthSubmit(e) {
       });
       let data = null;
       try { data = await r.json(); } catch (e) {}
+      // Log full response (incl. _trace) to console no matter what,
+      // so we can debug any "rep saved with empty hash" mystery.
+      console.log('[SSS Auth] authCreateRep response:', data);
       if (!r.ok || !data || !data.ok) {
-        showAuthError(prettyAuthError(data && data.error) + (data && data.error === 'admin_signin_required_to_add_rep' ? ' (Reps already exist — sign in instead.)' : ''));
-        // If the backend says reps DO exist, switch the form to
-        // sign-in mode so the rep isn't stuck on a dead screen.
+        let extra = '';
+        if (data && data._trace) extra = ' · trace: ' + JSON.stringify(data._trace);
+        showAuthError(prettyAuthError(data && data.error) + (data && data.error === 'admin_signin_required_to_add_rep' ? ' (Reps already exist — sign in instead.)' : '') + extra);
         if (data && data.error === 'admin_signin_required_to_add_rep') {
           __authBootstrap = false;
           showAuthGate(false, null);
