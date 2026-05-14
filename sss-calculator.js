@@ -709,15 +709,56 @@ let __authBootstrap = false;
 // Custom Element context (third-party cookie restrictions), so we
 // hold the token ourselves and send it explicitly.
 const AUTH_STORAGE_KEY = 'sss_auth_token';
+// Wix's Custom Element runs inside an iframe whose origin can change
+// between page loads (opaque-origin sandboxing in some configs).
+// localStorage on those iframes gets wiped per refresh. We fan the
+// token out across THREE channels — localStorage, sessionStorage,
+// and a non-HttpOnly cookie — so as long as ANY of them survives,
+// the rep stays signed in. The backend also reads from a cookie set
+// via Set-Cookie OR from the Authorization header. Belt + suspenders
+// + duct tape.
+function _safeStorageGet(store) {
+  try { return store && store.getItem(AUTH_STORAGE_KEY); }
+  catch (e) { return null; }
+}
+function _safeStorageSet(store, value) {
+  try {
+    if (value) store.setItem(AUTH_STORAGE_KEY, value);
+    else store.removeItem(AUTH_STORAGE_KEY);
+  } catch (e) { /* sandbox blocked */ }
+}
+function _readJsCookie(name) {
+  try {
+    const parts = (document.cookie || '').split(';');
+    for (const p of parts) {
+      const t = p.trim();
+      if (t.indexOf(name + '=') === 0) return decodeURIComponent(t.slice(name.length + 1));
+    }
+  } catch (e) {}
+  return null;
+}
+function _writeJsCookie(name, value, maxAgeSeconds) {
+  try {
+    if (value) {
+      document.cookie = name + '=' + encodeURIComponent(value) + '; path=/; max-age=' + maxAgeSeconds + '; SameSite=Lax';
+    } else {
+      document.cookie = name + '=; path=/; max-age=0; SameSite=Lax';
+    }
+  } catch (e) {}
+}
 function getAuthToken() {
-  try { return localStorage.getItem(AUTH_STORAGE_KEY) || ''; }
-  catch (e) { return ''; }
+  return _safeStorageGet(typeof localStorage !== 'undefined' ? localStorage : null)
+      || _safeStorageGet(typeof sessionStorage !== 'undefined' ? sessionStorage : null)
+      || _readJsCookie(AUTH_STORAGE_KEY)
+      || '';
 }
 function setAuthToken(token) {
-  try {
-    if (token) localStorage.setItem(AUTH_STORAGE_KEY, token);
-    else localStorage.removeItem(AUTH_STORAGE_KEY);
-  } catch (e) { /* localStorage blocked — falls back to cookie */ }
+  if (typeof localStorage   !== 'undefined') _safeStorageSet(localStorage, token);
+  if (typeof sessionStorage !== 'undefined') _safeStorageSet(sessionStorage, token);
+  // 7-day non-HttpOnly cookie (we don't lose anything security-wise vs
+  // the HttpOnly cookie since JS already needs the token to send it
+  // as a Bearer header).
+  _writeJsCookie(AUTH_STORAGE_KEY, token, 7 * 24 * 60 * 60);
 }
 // Centralized fetch wrapper: adds the Bearer header when a token
 // exists. Use this for ALL backend calls so we never accidentally
