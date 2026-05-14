@@ -790,8 +790,8 @@ function showAuthGate(bootstrap, errorCode) {
   if (status) { status.style.display = 'none'; status.className = 'auth-status'; status.innerHTML = ''; }
   if (errorCode) showAuthError(prettyAuthError(errorCode));
   else hideAuthError();
-  // Wire the submit handler once.
-  const form = __doc.getElementById('authForm');
+  // Wire the submit handler once. `form` was already declared above
+  // when revealing the form's display; reuse it instead of redeclaring.
   if (form && !form._wired) {
     form._wired = true;
     form.addEventListener('submit', onAuthSubmit);
