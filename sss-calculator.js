@@ -792,7 +792,11 @@ function prettyAuthError(code) {
   if (code === 'missing_credentials') return 'Initials and PIN are both required.';
   if (code === 'missing_fields') return 'Please fill in all required fields.';
   if (code === 'auth_unreachable') return 'Auth service is unreachable. Check your connection and reload.';
-  if (code === 'auth_secret_not_configured') return 'Backend setup incomplete — SSS_AUTH_SECRET secret needs to be set in Wix Editor.';
+  if (code === 'admin_signin_required_to_add_rep') return 'Reps already exist — please sign in instead.';
+  if (code === 'not_signed_in') return 'Session expired or missing. Please sign in.';
+  if (code === 'admin_only') return 'Admin access required for this action.';
+  if (code === 'device_revoked') return 'This device\'s session was revoked. Sign in again.';
+  if (code === 'session_expired') return 'Your session expired. Sign in again.';
   return 'Sign-in failed: ' + code;
 }
 
@@ -816,15 +820,32 @@ async function onAuthSubmit(e) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initials, displayName, email, pin })
       });
-      const data = await r.json();
-      if (!data || !data.ok) {
-        showAuthError(prettyAuthError(data && data.error));
+      let data = null;
+      try { data = await r.json(); } catch (e) {}
+      if (!r.ok || !data || !data.ok) {
+        showAuthError(prettyAuthError(data && data.error) + (data && data.error === 'admin_signin_required_to_add_rep' ? ' (Reps already exist — sign in instead.)' : ''));
+        // If the backend says reps DO exist, switch the form to
+        // sign-in mode so the rep isn't stuck on a dead screen.
+        if (data && data.error === 'admin_signin_required_to_add_rep') {
+          __authBootstrap = false;
+          showAuthGate(false, null);
+        }
         return;
       }
-      // Bootstrap-created the admin. Immediately sign them in so they
-      // land on the calc fully authed.
-      const signRes = await doSignIn(initials, pin);
-      if (!signRes) return;
+      // Bootstrap response includes the rep AND sets the auth cookie
+      // server-side, so we can drop straight into the calc — no
+      // follow-up signIn call needed.
+      if (data.rep) {
+        __currentRep = data.rep;
+        __authBootstrap = false;
+        hideAuthGate();
+        paintRepChip();
+        try { if (typeof loadDashboardData === 'function') { dashState.loaded = false; loadDashboardData().then(renderDashboard); } } catch (e) {}
+      } else {
+        // Fallback (backend didn't auto-sign-in for some reason):
+        // call signIn explicitly.
+        await doSignIn(initials, pin);
+      }
     } else {
       await doSignIn(initials, pin);
     }
