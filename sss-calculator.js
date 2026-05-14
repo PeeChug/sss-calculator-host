@@ -703,11 +703,40 @@ __doc.getElementById('quoteNum').textContent = state.quoteId;
 // out or their cookie expires.
 let __currentRep = null;
 let __authBootstrap = false;
+// Auth token (deviceId.signature) — stashed in localStorage on
+// sign-in and sent as `Authorization: Bearer <token>` on every
+// authenticated fetch. Cookie was unreliable in Wix's iframe-embedded
+// Custom Element context (third-party cookie restrictions), so we
+// hold the token ourselves and send it explicitly.
+const AUTH_STORAGE_KEY = 'sss_auth_token';
+function getAuthToken() {
+  try { return localStorage.getItem(AUTH_STORAGE_KEY) || ''; }
+  catch (e) { return ''; }
+}
+function setAuthToken(token) {
+  try {
+    if (token) localStorage.setItem(AUTH_STORAGE_KEY, token);
+    else localStorage.removeItem(AUTH_STORAGE_KEY);
+  } catch (e) { /* localStorage blocked — falls back to cookie */ }
+}
+// Centralized fetch wrapper: adds the Bearer header when a token
+// exists. Use this for ALL backend calls so we never accidentally
+// skip auth.
+async function authFetch(url, opts) {
+  opts = opts || {};
+  const headers = Object.assign({}, opts.headers || {});
+  const token = getAuthToken();
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  return fetch(url, Object.assign({}, opts, {
+    headers,
+    credentials: 'include'   // belt + suspenders so cookie also rides where supported
+  }));
+}
 
 async function checkAuthAndGate() {
   let status = null;
   try {
-    const r = await fetch('/_functions/authStatus', { credentials: 'include' });
+    const r = await authFetch('/_functions/authStatus');
     status = await r.json();
   } catch (e) {
     // Fail-open in dev / offline preview: a broken backend shouldn't
@@ -814,17 +843,17 @@ async function onAuthSubmit(e) {
     if (__authBootstrap) {
       const displayName = (__doc.getElementById('authDisplayName').value || '').trim();
       const email       = (__doc.getElementById('authEmail').value || '').trim();
-      const r = await fetch('/_functions/authCreateRep', {
+      const r = await authFetch('/_functions/authCreateRep', {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initials, displayName, email, pin })
       });
       let data = null;
       try { data = await r.json(); } catch (e) {}
-      // Log full response (incl. _trace) to console no matter what,
-      // so we can debug any "rep saved with empty hash" mystery.
       console.log('[SSS Auth] authCreateRep response:', data);
+      // Bootstrap path returns a token in the body — capture it
+      // immediately so subsequent fetches are authenticated.
+      if (data && data.ok && data.token) setAuthToken(data.token);
       if (!r.ok || !data || !data.ok) {
         let extra = '';
         if (data && data._trace) extra = ' · trace: ' + JSON.stringify(data._trace);
@@ -860,9 +889,8 @@ async function onAuthSubmit(e) {
 // Returns true on success (rep is now signed in), false on failure
 // (error already painted into the form).
 async function doSignIn(initials, pin) {
-  const r = await fetch('/_functions/authSignIn', {
+  const r = await authFetch('/_functions/authSignIn', {
     method: 'POST',
-    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ initials, pin })
   });
@@ -872,6 +900,8 @@ async function doSignIn(initials, pin) {
     showAuthError(prettyAuthError(data && data.error));
     return false;
   }
+  // Stash the bearer token for every subsequent request.
+  if (data.token) setAuthToken(data.token);
   __currentRep = data.rep;
   __authBootstrap = false;
   hideAuthGate();
@@ -972,8 +1002,10 @@ function toggleRepMenu(ev) {
 
 async function signOutAndReload() {
   try {
-    await fetch('/_functions/authSignOut', { method: 'POST', credentials: 'include' });
+    await authFetch('/_functions/authSignOut', { method: 'POST' });
   } catch (e) { /* fire-and-forget */ }
+  // Clear the bearer token so subsequent calls are unauthenticated.
+  setAuthToken('');
   __currentRep = null;
   // Drop the chip + show the gate again. A full reload would also
   // work but it's heavier than needed.
@@ -987,9 +1019,8 @@ async function openChangePinPrompt() {
   const pin = prompt('Enter a new 4–8 digit PIN for your account:');
   if (!pin) return;
   if (!/^\d{4,8}$/.test(pin.trim())) { alert('PIN must be 4–8 digits.'); return; }
-  const r = await fetch('/_functions/authUpdateRepPin', {
+  const r = await authFetch('/_functions/authUpdateRepPin', {
     method: 'POST',
-    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ repId: __currentRep._id, pin: pin.trim() })
   });
@@ -6892,7 +6923,7 @@ async function loadAndRenderReps() {
   const body = __doc.getElementById('repsTabBody');
   if (!body) return;
   try {
-    const r = await fetch('/_functions/authListReps', { credentials: 'include' });
+    const r = await authFetch('/_functions/authListReps');
     const data = await r.json();
     if (!data || !data.ok) {
       body.innerHTML = `<div class="folder-empty" style="color:var(--coral);">Couldn't load reps: ${escapeHtml((data && data.error) || 'unknown')}</div>`;
@@ -6938,8 +6969,8 @@ async function adminCreateRep() {
   const role        = (__doc.getElementById('newRepRole').value || 'rep');
   if (!initials || !pin) { alert('Initials and PIN are required.'); return; }
   if (!/^\d{4,8}$/.test(pin)) { alert('PIN must be 4–8 digits.'); return; }
-  const r = await fetch('/_functions/authCreateRep', {
-    method: 'POST', credentials: 'include',
+  const r = await authFetch('/_functions/authCreateRep', {
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ initials, displayName, email, pin, role })
   });
@@ -6952,8 +6983,8 @@ async function adminResetRepPin(repId, label) {
   const pin = prompt(`Set a new PIN for ${label}:`);
   if (!pin) return;
   if (!/^\d{4,8}$/.test(pin.trim())) { alert('PIN must be 4–8 digits.'); return; }
-  const r = await fetch('/_functions/authUpdateRepPin', {
-    method: 'POST', credentials: 'include',
+  const r = await authFetch('/_functions/authUpdateRepPin', {
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ repId, pin: pin.trim() })
   });
@@ -6964,8 +6995,8 @@ async function adminResetRepPin(repId, label) {
 
 async function adminDeleteRep(repId, label) {
   if (!confirm(`Remove ${label}? Their devices will be revoked. This cannot be undone.`)) return;
-  const r = await fetch('/_functions/authDeleteRep', {
-    method: 'POST', credentials: 'include',
+  const r = await authFetch('/_functions/authDeleteRep', {
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ repId })
   });
@@ -6979,7 +7010,7 @@ async function loadAndRenderDevices() {
   const body = __doc.getElementById('devicesTabBody');
   if (!body) return;
   try {
-    const r = await fetch('/_functions/authListDevices', { credentials: 'include' });
+    const r = await authFetch('/_functions/authListDevices');
     const data = await r.json();
     if (!data || !data.ok) {
       body.innerHTML = `<div class="folder-empty" style="color:var(--coral);">Couldn't load devices: ${escapeHtml((data && data.error) || 'unknown')}</div>`;
@@ -7012,8 +7043,8 @@ async function loadAndRenderDevices() {
 
 async function adminRevokeDevice(deviceId, label) {
   if (!confirm(`Revoke "${label}"? The rep will be signed out on this device.`)) return;
-  const r = await fetch('/_functions/authRevokeDevice', {
-    method: 'POST', credentials: 'include',
+  const r = await authFetch('/_functions/authRevokeDevice', {
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ deviceId })
   });
