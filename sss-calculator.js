@@ -654,6 +654,22 @@ __doc.getElementById('quoteNum').textContent = state.quoteId;
   // fires on initial load, so the progress bar would render until the
   // rep navigates somewhere. Hide it up front.
   try { refreshProgressBarVisibility(); } catch (e) { /* function defined later in script */ }
+  // Belt-and-suspenders: watch every `.stage` element's class for
+  // changes. Any time one's `.visible` toggles, re-evaluate the
+  // progress bar visibility. This way new stage transitions added
+  // later don't have to remember to call refreshProgressBarVisibility
+  // manually — the observer catches them.
+  try {
+    if (typeof MutationObserver !== 'undefined') {
+      const stages = __doc.querySelectorAll('.stage');
+      if (stages.length) {
+        const obs = new MutationObserver(() => {
+          try { refreshProgressBarVisibility(); } catch (e) {}
+        });
+        stages.forEach(s => obs.observe(s, { attributes: true, attributeFilter: ['class'] }));
+      }
+    }
+  } catch (e) { /* non-fatal */ }
   // Apply any saved pricing overrides FIRST so the first render uses
   // the current rates, not the stale baked-in defaults. Fire-and-forget;
   // we re-render once it lands.
@@ -4523,6 +4539,8 @@ function finalizeQuote(sendMethod) {
 
   __doc.querySelectorAll('.stage').forEach(s => s.classList.remove('visible'));
   __doc.getElementById('stage-success').classList.add('visible');
+  // Success isn't part of the 10-step flow — hide the progress bar.
+  try { refreshProgressBarVisibility(); } catch (e) {}
   // Reset success-screen Jobber block to "Pushing…" while the request runs.
   const jbox = __doc.getElementById('successJobberBlock');
   if (jbox) jbox.innerHTML = '<div class="jobber-push-row pending"><span class="ico">⏳</span><span>Pushing to Jobber…</span></div>';
@@ -4843,6 +4861,8 @@ function saveAndReturnToDashboard() {
   if (typeof setSavePill === 'function') setSavePill('hidden');
   // Hide the "Projects in this quote" bubble bar — same fix as returnToDashboard.
   try { renderProjectBubbles(); } catch (e) {}
+  // Hide the 10-step progress bar — we're back on the dashboard now.
+  try { refreshProgressBarVisibility(); } catch (e) {}
   // Always re-fetch on dashboard visit so newly saved/finished rows appear.
   dashState.loaded = false;
   renderDashboard();
