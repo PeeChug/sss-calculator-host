@@ -708,7 +708,12 @@ let __authBootstrap = false;
 // authenticated fetch. Cookie was unreliable in Wix's iframe-embedded
 // Custom Element context (third-party cookie restrictions), so we
 // hold the token ourselves and send it explicitly.
-const AUTH_STORAGE_KEY = 'sss_auth_token';
+// `var` (not `const`) — bootstrapDashboard runs above this point in
+// source order, and checkAuthAndGate dereferences AUTH_STORAGE_KEY
+// immediately. A `const` would be in the temporal dead zone at that
+// moment and throw "Cannot access 'AUTH_STORAGE_KEY' before
+// initialization" before any of the storage-channel diagnostics run.
+var AUTH_STORAGE_KEY = 'sss_auth_token';
 // Wix's Custom Element runs inside an iframe whose origin can change
 // between page loads (opaque-origin sandboxing in some configs).
 // localStorage on those iframes gets wiped per refresh. We fan the
