@@ -764,6 +764,54 @@ function setAuthToken(token) {
   // the HttpOnly cookie since JS already needs the token to send it
   // as a Bearer header).
   _writeJsCookie(AUTH_STORAGE_KEY, token, 7 * 24 * 60 * 60);
+  // CROSS-FRAME PERSISTENCE: ask the parent Wix page (page-code.js)
+  // to save the token in its own storage. The iframe's own
+  // localStorage gets wiped on every refresh, but the parent page's
+  // wix-storage-frontend.local persists across reloads. The parent's
+  // postMessage listener writes/reads on our behalf.
+  try {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: 'sss-storage',
+        op: token ? 'set' : 'clear',
+        value: token || ''
+      }, '*');
+    }
+  } catch (e) { /* parent unreachable — fine */ }
+}
+
+// Async — asks the parent Wix page for the previously-saved token.
+// Resolves with the token string, or '' on timeout. Used on
+// bootstrap to recover the session after every iframe-wipe refresh.
+function loadAuthTokenFromParent() {
+  return new Promise((resolve) => {
+    if (!window.parent || window.parent === window) { resolve(''); return; }
+    const reqId = 'sss-' + Math.random().toString(36).slice(2);
+    let done = false;
+    const handler = (event) => {
+      const m = event && event.data;
+      if (!m || m.type !== 'sss-storage-result' || m.requestId !== reqId) return;
+      done = true;
+      window.removeEventListener('message', handler);
+      resolve((m.value || '').toString());
+    };
+    window.addEventListener('message', handler);
+    try {
+      window.parent.postMessage({ type: 'sss-storage', op: 'get', requestId: reqId }, '*');
+    } catch (e) {
+      window.removeEventListener('message', handler);
+      resolve('');
+      return;
+    }
+    // Bail if the parent isn't responding (e.g. page-code.js not
+    // installed, or running outside Wix). 1.5s is enough for one
+    // RTT in normal conditions.
+    setTimeout(() => {
+      if (done) return;
+      window.removeEventListener('message', handler);
+      resolve('');
+    }, 1500);
+  });
 }
 // Centralized fetch wrapper: adds the Bearer header when a token
 // exists. Use this for ALL backend calls so we never accidentally
@@ -780,19 +828,38 @@ async function authFetch(url, opts) {
 }
 
 async function checkAuthAndGate() {
-  // Diagnostic: show what's in each storage channel at refresh time
-  // so we can see whether the token is actually persisting and
-  // whether authFetch is sending it on the status request.
+  // None of the iframe-side storage channels survive a page reload
+  // (Wix sandboxes the Custom Element iframe with an opaque origin
+  // that wipes localStorage / sessionStorage / cookies on every
+  // load). Recover the token from the parent Wix page's storage,
+  // which IS persistent. If parent returns a token, also write it
+  // to local channels so subsequent reads inside this session are
+  // synchronous and fast.
   let lsToken = null, ssToken = null, ckToken = null;
   try { lsToken = (typeof localStorage !== 'undefined' && localStorage.getItem(AUTH_STORAGE_KEY)) || null; } catch (e) {}
   try { ssToken = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(AUTH_STORAGE_KEY)) || null; } catch (e) {}
   ckToken = _readJsCookie(AUTH_STORAGE_KEY);
-  console.log('[SSS Auth] checkAuthAndGate — token sources:', {
+  console.log('[SSS Auth] checkAuthAndGate — local token sources:', {
     localStorage: lsToken ? lsToken.slice(0, 12) + '… (' + lsToken.length + ')' : null,
     sessionStorage: ssToken ? ssToken.slice(0, 12) + '… (' + ssToken.length + ')' : null,
-    cookie: ckToken ? ckToken.slice(0, 12) + '… (' + ckToken.length + ')' : null,
-    resolved: getAuthToken() ? 'YES (length ' + getAuthToken().length + ')' : 'NO'
+    cookie: ckToken ? ckToken.slice(0, 12) + '… (' + ckToken.length + ')' : null
   });
+
+  // If no local channel has the token, ask the parent page for one.
+  if (!lsToken && !ssToken && !ckToken) {
+    const parentToken = await loadAuthTokenFromParent();
+    if (parentToken) {
+      console.log('[SSS Auth] recovered token from parent page (len ' + parentToken.length + ')');
+      // Re-populate local channels so authFetch's getAuthToken
+      // returns it synchronously on subsequent calls this session.
+      try { localStorage.setItem(AUTH_STORAGE_KEY, parentToken); } catch (e) {}
+      try { sessionStorage.setItem(AUTH_STORAGE_KEY, parentToken); } catch (e) {}
+      _writeJsCookie(AUTH_STORAGE_KEY, parentToken, 7 * 24 * 60 * 60);
+    } else {
+      console.log('[SSS Auth] parent had no token either — sign-in required');
+    }
+  }
+  console.log('[SSS Auth] resolved token:', getAuthToken() ? 'YES (length ' + getAuthToken().length + ')' : 'NO');
 
   let status = null;
   try {
@@ -1109,7 +1176,10 @@ async function signOutAndReload() {
   try {
     await authFetch('/_functions/authSignOut', { method: 'POST' });
   } catch (e) { /* fire-and-forget */ }
-  // Clear the bearer token so subsequent calls are unauthenticated.
+  // Clear the bearer token everywhere — local channels AND the
+  // parent page's storage proxy. setAuthToken('') already does both
+  // (writes empty/clear to all three local channels + postMessages
+  // clear to the parent), so this single call handles it.
   setAuthToken('');
   __currentRep = null;
   // Drop the chip + show the gate again. A full reload would also
