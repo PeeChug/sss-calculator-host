@@ -5417,30 +5417,21 @@ function resendCurrentQuoteFromSuccess() {
 }
 
 function resetQuote() {
+  // Used by the success-screen "+ Start New Quote" button. Used to
+  // duplicate the startNewQuote logic inline but without the null
+  // guards — so if any single element lookup (employeeName, stage2Next,
+  // quoteNum) returned null, the function threw mid-reset and the user
+  // was stuck on the success screen with no obvious feedback. Delegate
+  // to the canonical fresh-quote routine, which has the guards.
   if (!confirm('Start a new quote? Current quote will be cleared.')) return;
-  const employee = state.customer.employee;
-  state.customer = {
-    name: '', phone: '', email: '', address: '',
-    firstName: '', lastName: '', companyName: '',
-    street1: '', street2: '', city: '', province: '', postalCode: '',
-    jobberClientId: '', jobberPropertyId: '',
-    jobberNum: '', employee
-  };
-  state.activeProject = makeBlankProject();
-  state.bundledProjects = [];
-  state.editingBundleIdx = null;
-  state.paymentMethod = 'deposit';
-  state.notes = '';
-  state.quoteId = makeQuoteId();
-  state.cloudRowId = null;     // forget the prior cloud row — next save creates a new one
-  state.maxStageReached = 1;
-  const ta = __doc.getElementById('quoteNotesField'); if (ta) ta.value = '';
-  __doc.getElementById('quoteNum').textContent = state.quoteId;
-  __doc.querySelectorAll('input').forEach(i => { if (i.type !== 'checkbox' && i.type !== 'radio') i.value = ''; });
-  __doc.getElementById('employeeName').value = employee;
-  __doc.getElementById('stage2Next').disabled = true;
-  showStage(1);
-  updateRunningTotal();
+  try {
+    startNewQuote();
+  } catch (e) {
+    // Last-resort fallback: if startNewQuote itself fails, at least
+    // get the rep off the success screen so they're not stranded.
+    console.error('[SSS] resetQuote: startNewQuote threw:', e);
+    try { returnToDashboard(); } catch (e2) {}
+  }
 }
 
 /* ============================================================
