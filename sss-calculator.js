@@ -4228,7 +4228,7 @@ function renderFinalBreakdown() {
         <li><strong>Fully licensed &amp; insured</strong> in South Carolina — no risk to you</li>
         ${(state.activeProject.tier === 'performance' || state.activeProject.tier === 'showcase') ? '<li><strong>Free 30-day touch-up visit</strong> — if you spot any miss, we come back free</li>' : ''}
         ${state.activeProject.tier === 'showcase' ? '<li><strong>Extended warranty available</strong> — add it on Step 8</li>' : ''}
-        <li><strong>We don't get paid until you're happy</strong> — only 25% deposit at scheduling; balance after completion (or financing through Wisetack)</li>
+        <li><strong>We don't get paid until you're happy</strong> — only 25% deposit at scheduling reserves your slot; balance is due after completion (Wisetack covers that 75% balance if you finance)</li>
         <li><strong>Quote is final &amp; transparent</strong> — no hidden fees, no surprise upsells on-site</li>
       </ul>
     </div>
@@ -4249,10 +4249,11 @@ function renderFinalBreakdown() {
         <label class="pay-opt" style="display:flex; align-items:flex-start; gap:10px; padding:12px; background:var(--paper); border:1.5px solid var(--line); border-radius:8px; cursor:pointer;">
           <input type="radio" name="pay" value="wisetack" ${state.paymentMethod === 'wisetack' ? 'checked' : ''} onchange="state.paymentMethod=this.value; renderFinalBreakdown();" style="margin-top:3px;">
           <div style="flex:1;">
-            <div style="font-weight:700; color:var(--navy);">Financing through Wisetack <span class="payment-pill" style="margin-left:6px;">0% APR available if you qualify</span></div>
+            <div style="font-weight:700; color:var(--navy);">25% deposit + financing through Wisetack <span class="payment-pill" style="margin-left:6px;">0% APR available if you qualify</span></div>
             <div style="margin-top:6px; font-size:13px; line-height:1.5;">
-              <strong style="color:var(--navy);">≈ $${Math.round(totals.finalTotal/24).toLocaleString()}/mo</strong> over 24 months · soft credit pull, no impact on your score<br>
-              <span style="font-size:11px;">*Estimate only — qualified applicants may receive 0% APR. Actual rate &amp; term determined by Wisetack after credit check.</span>
+              <strong style="color:var(--navy);">Deposit due at scheduling: $${Math.round(totals.finalTotal * 0.25).toLocaleString()}</strong><br>
+              <strong style="color:var(--navy);">Wisetack covers the remaining $${Math.round(totals.finalTotal * 0.75).toLocaleString()}</strong> — ≈ $${Math.round((totals.finalTotal * 0.75)/24).toLocaleString()}/mo over 24 months · soft credit pull, no impact on your score<br>
+              <span style="font-size:11px;">*Estimate only — qualified applicants may receive 0% APR. Actual rate &amp; term determined by Wisetack after credit check. The 25% deposit reserves your scheduling slot and is required on every quote.</span>
             </div>
           </div>
         </label>
@@ -4604,7 +4605,7 @@ function renderBundleOnlyBreakdown(totals) {
       <ul>
         <li><strong>Fully licensed &amp; insured</strong> in South Carolina — no risk to you</li>
         <li><strong>Free 30-day touch-up visit</strong> on Performance and Showcase tiers — if you spot any miss, we come back free</li>
-        <li><strong>We don't get paid until you're happy</strong> — only 25% deposit at scheduling; balance after completion (or financing through Wisetack)</li>
+        <li><strong>We don't get paid until you're happy</strong> — only 25% deposit at scheduling reserves your slot; balance is due after completion (Wisetack covers that 75% balance if you finance)</li>
         <li><strong>Quote is final &amp; transparent</strong> — no hidden fees, no surprise upsells on-site</li>
       </ul>
     </div>
@@ -4626,10 +4627,11 @@ function renderBundleOnlyBreakdown(totals) {
         <label class="pay-opt" style="display:flex; align-items:flex-start; gap:10px; padding:12px; background:var(--paper); border:1.5px solid var(--line); border-radius:8px; cursor:pointer;">
           <input type="radio" name="pay" value="wisetack" ${state.paymentMethod === 'wisetack' ? 'checked' : ''} onchange="state.paymentMethod=this.value; renderFinalBreakdown();" style="margin-top:3px;">
           <div style="flex:1;">
-            <div style="font-weight:700; color:var(--navy);">Financing through Wisetack <span class="payment-pill" style="margin-left:6px;">0% APR available if you qualify</span></div>
+            <div style="font-weight:700; color:var(--navy);">25% deposit + financing through Wisetack <span class="payment-pill" style="margin-left:6px;">0% APR available if you qualify</span></div>
             <div style="margin-top:6px; font-size:13px; line-height:1.5;">
-              <strong style="color:var(--navy);">≈ $${Math.round(totals.finalTotal/24).toLocaleString()}/mo</strong> over 24 months · soft credit pull, no impact on your score<br>
-              <span style="font-size:11px;">*Estimate only — qualified applicants may receive 0% APR. Actual rate &amp; term determined by Wisetack after credit check.</span>
+              <strong style="color:var(--navy);">Deposit due at scheduling: $${Math.round(totals.finalTotal * 0.25).toLocaleString()}</strong><br>
+              <strong style="color:var(--navy);">Wisetack covers the remaining $${Math.round(totals.finalTotal * 0.75).toLocaleString()}</strong> — ≈ $${Math.round((totals.finalTotal * 0.75)/24).toLocaleString()}/mo over 24 months · soft credit pull, no impact on your score<br>
+              <span style="font-size:11px;">*Estimate only — qualified applicants may receive 0% APR. Actual rate &amp; term determined by Wisetack after credit check. The 25% deposit reserves your scheduling slot and is required on every quote.</span>
             </div>
           </div>
         </label>
