@@ -1587,30 +1587,52 @@ function showStage(n) {
     // Snap to the recommended condition on first arrival. Once the
     // user has explicitly clicked a card, conditionConfirmed locks it
     // in and we leave their choice alone on re-render.
+    let condChanged = false;
     if (!state.activeProject.conditionConfirmed) {
       const reco = typeof recommendCondition === 'function' ? recommendCondition() : null;
-      if (reco) state.activeProject.condition = reco;
+      if (reco && state.activeProject.condition !== reco) {
+        state.activeProject.condition = reco;
+        condChanged = true;
+      }
     }
     renderConditionCards();
+    // Reflect the auto-applied recommendation in the header total
+    // immediately — otherwise the rep has to click the same card we
+    // already highlighted just to "commit" the same value.
+    if (condChanged) try { updateRunningTotal(); } catch (e) {}
   }
   if (n === 5) {
     // Snap to the recommended product on first arrival.
+    let prodChanged = false;
     if (!state.activeProject.productConfirmed) {
       const reco = typeof recommendedProduct === 'function' ? recommendedProduct() : null;
       // Don't auto-flip into HOA — that's an explicit opt-in flow.
-      if (reco && reco !== 'hoa') state.activeProject.productType = reco;
+      if (reco && reco !== 'hoa' && state.activeProject.productType !== reco) {
+        state.activeProject.productType = reco;
+        prodChanged = true;
+      }
     }
     renderProductStage();
+    // Product tier multiplier affects tierBase (oil vs water), so the
+    // header pill needs a recompute when the recommendation lands.
+    if (prodChanged) try { updateRunningTotal(); } catch (e) {}
   }
   if (n === 6) {
     // Smart default — Performance is the recommended tier for nearly all customers.
     // Auto-confirm it on first arrival so the total reflects a real number immediately;
     // user can still click Essential / Showcase to change.
+    let tierChanged = false;
     if (!state.activeProject.tierConfirmed && state.activeProject.productType !== 'hoa') {
-      state.activeProject.tier = 'performance';
+      if (state.activeProject.tier !== 'performance') state.activeProject.tier = 'performance';
       state.activeProject.tierConfirmed = true;
+      tierChanged = true;
     }
     renderTierCards();
+    // Without this call the Quote Total pill stays at whatever it was
+    // before tier confirmation (often $0). The user's experience: "I
+    // landed on the tier step but the price didn't update until I
+    // clicked the same Performance card we already highlighted."
+    if (tierChanged) try { updateRunningTotal(); } catch (e) {}
   }
   if (n === 1) {
     // Refresh the "Linked to Jobber: ..." badge — visible when a
@@ -2931,9 +2953,13 @@ function renderConditionCards() {
   });
   // Auto-select the recommended option if nothing is selected (or current pick is locked)
   if (!state.activeProject.condition || !allowed.includes(state.activeProject.condition)) {
+    const prev = state.activeProject.condition;
     state.activeProject.condition = reco;
     const recoCard = __doc.querySelector(`#conditionCards .condition-card[data-cond="${reco}"]`);
     if (recoCard) recoCard.classList.add('selected');
+    // Make the header pill catch up to the auto-applied choice without
+    // requiring the rep to click the already-highlighted card.
+    if (prev !== reco) try { updateRunningTotal(); } catch (e) {}
   }
   __doc.getElementById('stage4Next').disabled = false;
 }
