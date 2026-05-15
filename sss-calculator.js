@@ -5935,6 +5935,21 @@ function buildJobberLineItem(p, idx, total) {
     lines.push(`🪵 ${[tierLabel && `${tierLabel} tier`, prodLabel].filter(Boolean).join(' · ')}`);
   }
 
+  // --- WARRANTY LINE ---
+  // Per-line warranty/value tag so the customer sees what they're
+  // actually getting at this tier — not just a tier name. Drives home
+  // the "why does Showcase cost more" question before they have to ask.
+  const warrantyByTierProduct = {
+    'showcase-oil':   '🛡 EXPERT Limited Lifetime craftsmanship guarantee · Log & Timber Oil (5-yr manufacturer warranty)',
+    'showcase-water': '🛡 EXPERT Limited Lifetime craftsmanship guarantee · 3-Step System',
+    'performance-oil':   '🛡 EXPERT Stain & Seal · 2-yr manufacturer warranty on color & sheen',
+    'performance-water': '🛡 EXPERT semi-solid water-based · 3-yr manufacturer warranty',
+    'essential-oil':     '🛡 Single-coat oil sealer — value option (no warranty on color longevity)',
+    'essential-water':   '🛡 Single-coat water-based — value option (no warranty on color longevity)'
+  };
+  const wKey = `${p.tier}-${p.productType}`;
+  if (warrantyByTierProduct[wKey]) lines.push(warrantyByTierProduct[wKey]);
+
   // Color
   if (p.selectedColor) {
     const sc = p.selectedColor;
