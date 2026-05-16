@@ -159,16 +159,12 @@ const PRICING = {
   serviceAddons: [
     { id: 'touch_up_90', name: '30-day touch-up visit', priceType: 'flat', rate: 0,
       desc: 'If you spot any miss or thin spot in the first 30 days, we come back and touch it up at no charge. Included free on Performance and Showcase tiers.', defaultOn: true },
-    { id: 'plant_protect', name: 'Siding & hardware protection', priceType: 'flat', rate: 0,
-      desc: "Tarping, plastic sheeting, and masking around your siding, gutters, downspouts, light fixtures, and outdoor hardware so no overspray or splash ends up where it shouldn't.", defaultOn: true },
-    { id: 'weather_resched', name: 'Free weather rescheduling', priceType: 'flat', rate: 0,
+    { id: 'weather_resched', name: 'Free rescheduling', priceType: 'flat', rate: 0,
       desc: 'Stain needs dry weather to bond properly. If rain rolls in we reschedule at no charge — never an upcharge for the weather.', defaultOn: true },
     { id: 'pdf_quote', name: 'Detailed PDF quote emailed to you', priceType: 'flat', rate: 0,
       desc: 'You leave with a line-by-line PDF of every cost — measurements, tier, prep, add-ons, discounts. Easy to share with a spouse or partner, or pull up later for a referral.', defaultOn: true },
-    { id: 'message_support', name: '7-days-a-week message support', priceType: 'flat', rate: 0,
-      desc: "Direct text-message line to the project lead, available 7 days a week — before, during, and after the job. Questions about cure time, first wash, weather, anything — straight answer, no phone tag.", defaultOn: true },
-    { id: 'maint_reminder', name: 'Annual maintenance reminder', priceType: 'flat', rate: 0,
-      desc: "A friendly email at the 12-month mark to check the finish and plan any touch-up or recoat work proactively — before small issues become big ones.", defaultOn: true }
+    { id: 'message_support', name: '7-day message support', priceType: 'flat', rate: 0,
+      desc: "Direct text-message line to the project lead, available 7 days a week — before, during, and after the job. Questions about cure time, first wash, weather, anything — straight answer, no phone tag.", defaultOn: true }
   ],
   projectAddons: {
     fence: [
