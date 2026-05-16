@@ -230,7 +230,7 @@ const PRICING = {
     sodiumMetasilicatePerPail: 90,  // 5gal cleaner powder
     oxalicAcidPerPail:         90,  // 5gal brightener powder
     pressureWasherCost:       199,  // homeowner electric, one-time amortized
-    sprayerCost:              399,  // Graco-grade homeowner sprayer
+    sprayerCost:              280,  // Graco-grade homeowner sprayer
     hourlyLaborRate:           25,  // imputed DIY labor $/hr
     // Tooling cost per project type (brushes, rollers, masking, drop
     // cloths, ladder rental as relevant). One-time purchase amortized.
