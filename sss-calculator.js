@@ -136,9 +136,16 @@ const PRICING = {
   ceiling: { tiers: { essential: 3.40, performance: 4.25, showcase: 5.55 }, tngPremium: 0.50, beamRate: 8.00, fixtureRemoval: 50, fanRemoval: 100, furnitureProtFlat: 100, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
   stainUpgrades: [
     { id: 'citronella',  name: 'EXPERT Natural Defense additive', restr: 'Oil only', product: 'oil',
-      priceType: 'per_unit', rate: 1.50, minCharge: 70,
+      priceType: 'per_unit',
+      // Base rate is per sq ft (deck / pergola / barn / ceiling). Fence
+      // is priced per linear foot — same product, different surface
+      // density — so it carries a higher per-unit rate. `rateByProject`
+      // wins over `rate` when the current project type matches.
+      rate: 0.50,
+      rateByProject: { fence: 1.50 },
+      minCharge: 70,
       img: 'https://stainandsealsupply.com/cdn/shop/files/stain-and-seal-supply-expert-natural-defense-1_1024x.jpg?v=1752858115',
-      desc: 'Blend of citronella, cedarwood, cinnamon, geraniol, and lemongrass essential oils. Mixed at the can. Deters carpenter bees, wasps, termites, and 12+ outdoor pests without harming the wood finish. $1.50/ln ft with a $70 minimum.' },
+      desc: 'Blend of citronella, cedarwood, cinnamon, geraniol, and lemongrass essential oils. Mixed at the can. Deters carpenter bees, wasps, termites, and 12+ outdoor pests without harming the wood finish. $1.50/ln ft on fences, $0.50/sq ft on decks/pergolas/barns/ceilings, with a $70 minimum.' },
     { id: 'two_tone',    name: 'Two-tone application (boards vs. rails)', priceType: 'percent', rate: 0.40,
       img: 'https://static.wixstatic.com/media/6616da_591f17ae70b64c7995bb55ada0093914~mv2.png',
       desc: 'Different stain color on rails/posts vs. boards. Adds significant labor — masking, separate cure times, and two full application passes. +40% of base price.' },
@@ -3573,15 +3580,29 @@ function addonRow(a, group) {
 
 function needsQty(a) { return a.priceType === 'each' || a.priceType === 'each_lnft'; }
 
+// Resolve an addon's effective rate for the current project. Uses
+// `rateByProject[type]` if the addon declares per-project overrides
+// (e.g., citronella: $1.50/ln ft on fence, $0.50/sq ft elsewhere),
+// otherwise falls back to the flat `rate` field. Centralized so all
+// per_unit consumers — pricing math, breakdown display, catalog
+// labels — agree on what the customer is actually paying.
+function addonEffectiveRate(def, proj) {
+  if (!def) return 0;
+  if (def.rateByProject && proj && def.rateByProject[proj] != null) return def.rateByProject[proj];
+  return +def.rate || 0;
+}
+
 function formatAddonPrice(a) {
+  const proj = state.activeProject && state.activeProject.type;
+  const effRate = addonEffectiveRate(a, proj);
   // Anywhere a calculated rate would render as "$0" or "+$0", show "FREE" instead
-  if (!a.rate || a.rate === 0) return 'FREE';
-  if (a.priceType === 'flat') return `+$${a.rate}`;
-  if (a.priceType === 'each') return `$${a.rate} ea`;
-  if (a.priceType === 'each_lnft') return `$${a.rate}/ln ft`;
-  if (a.priceType === 'per_unit') return `+$${a.rate.toFixed(2)}/${PRICING[state.activeProject.type].unit}`;
-  if (a.priceType === 'per_unit_trim') return `$${a.rate.toFixed(2)}/ln ft trim`;
-  if (a.priceType === 'percent') return `+${(a.rate * 100).toFixed(0)}%`;
+  if (!effRate || effRate === 0) return 'FREE';
+  if (a.priceType === 'flat') return `+$${effRate}`;
+  if (a.priceType === 'each') return `$${effRate} ea`;
+  if (a.priceType === 'each_lnft') return `$${effRate}/ln ft`;
+  if (a.priceType === 'per_unit') return `+$${effRate.toFixed(2)}/${PRICING[proj].unit}`;
+  if (a.priceType === 'per_unit_trim') return `$${effRate.toFixed(2)}/ln ft trim`;
+  if (a.priceType === 'percent') return `+${(effRate * 100).toFixed(0)}%`;
   return '';
 }
 
@@ -3801,7 +3822,8 @@ function computeAddonsTotal() {
     else if (def.priceType === 'each_lnft') flat += def.rate * qty;
     else if (def.priceType === 'per_unit') {
       const units = proj === 'fence' ? (m.linearft || 0) : (m.sqft || m.flat || 0);
-      let amount = def.rate * units;
+      const rate = addonEffectiveRate(def, proj);
+      let amount = rate * units;
       if (def.minCharge && amount < def.minCharge && units > 0) amount = def.minCharge;
       flat += amount;
     }
@@ -4731,7 +4753,8 @@ function computeSingleAddonCost(id, qty) {
   if (def.priceType === 'each' || def.priceType === 'each_lnft') return def.rate * qty;
   if (def.priceType === 'per_unit') {
     const units = proj === 'fence' ? (m.linearft || 0) : (m.sqft || m.flat || 0);
-    let amount = def.rate * units;
+    const rate = addonEffectiveRate(def, proj);
+    let amount = rate * units;
     if (def.minCharge && amount < def.minCharge && units > 0) amount = def.minCharge;
     return amount;
   }
