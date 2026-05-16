@@ -6962,27 +6962,41 @@ function renderDashboard() {
 // ============================================================
 //  BULK SELECT — toggle mode, track selection, dispatch actions
 // ============================================================
-function toggleBulkMode() {
-  dashState.bulkMode = !dashState.bulkMode;
-  if (!dashState.bulkMode) dashState.selection.clear();
+// Re-sync the Select/Exit pill button's visual state to match
+// dashState.bulkMode. Called from every code path that flips bulkMode
+// so the button never desyncs from the actual state.
+function refreshBulkSelectButton() {
   const btn = __doc.getElementById('bulkSelectToggle');
-  if (btn) {
-    btn.classList.toggle('active', dashState.bulkMode);
-    // The pill icon+label structure means we update the children, not
-    // textContent (which would wipe the .ico / .lbl spans).
-    const ico = btn.querySelector('.ico');
-    const lbl = btn.querySelector('.lbl');
-    if (ico) ico.textContent = dashState.bulkMode ? '✕' : '☑️';
-    if (lbl) lbl.textContent = dashState.bulkMode ? 'Exit' : 'Select';
-  }
-  // Hide the action bar IMMEDIATELY when exiting bulk mode — used to
-  // depend on renderDashboard's downstream call to renderBulkActionBar,
-  // but renderDashboard has multiple early-return paths (loading state,
-  // empty state) that skip it, leaving the bar stuck on-screen with
-  // stale "X selected" content even though bulk mode is off.
-  if (!dashState.bulkMode) {
-    const bar = __doc.getElementById('bulkActionBar');
-    if (bar) { bar.style.display = 'none'; bar.innerHTML = ''; }
+  if (!btn) return;
+  btn.classList.toggle('active', !!dashState.bulkMode);
+  // The pill has icon + label child spans (mobile hides the label, so
+  // updating textContent without preserving the spans would wipe the
+  // icon too).
+  const ico = btn.querySelector('.ico');
+  const lbl = btn.querySelector('.lbl');
+  if (ico) ico.textContent = dashState.bulkMode ? '✕' : '☑️';
+  if (lbl) lbl.textContent = dashState.bulkMode ? 'Exit' : 'Select';
+}
+
+// Force-exit bulk mode regardless of previous state. Clears the
+// selection, resets the pill button, and hides the action bar inline.
+// Used by every "I'm done with bulk mode" path: the Exit pill,
+// post-action cleanup (after archive / trash / restore / delete), and
+// the "Cancel" button inside the action bar.
+function exitBulkMode() {
+  dashState.bulkMode = false;
+  dashState.selection.clear();
+  refreshBulkSelectButton();
+  const bar = __doc.getElementById('bulkActionBar');
+  if (bar) { bar.style.display = 'none'; bar.innerHTML = ''; }
+}
+
+function toggleBulkMode() {
+  if (dashState.bulkMode) {
+    exitBulkMode();
+  } else {
+    dashState.bulkMode = true;
+    refreshBulkSelectButton();
   }
   renderDashboard();
 }
@@ -7068,8 +7082,11 @@ function renderBulkActionBar() {
     <div class="bulk-actions">${buttons.join('')}</div>`;
 }
 
+// "Cancel" / "Done" button inside the action bar — fully exits bulk
+// mode rather than just clearing selection. Matches user mental model:
+// if they wanted to keep selecting, they'd just uncheck rows.
 function bulkClearSelection() {
-  dashState.selection.clear();
+  exitBulkMode();
   renderDashboard();
 }
 
@@ -7092,7 +7109,10 @@ async function bulkSetStatus(targetStatus) {
   await Promise.allSettled(cloudItems.map(({ item }) =>
     __sssBridge.call('setQuoteStatus', { quoteRowId: item._id, status: targetStatus })
   ));
-  dashState.selection.clear();
+  // Action's done — fully exit bulk mode so the Select pill resets and
+  // the bar dismisses. Used to just clear selection here, which left
+  // the pill stuck on "✕ Exit" even though the bar was gone.
+  exitBulkMode();
   // Reload data so the row moves to its new folder, then re-render.
   await loadDashboardData();
   renderDashboard();
@@ -7109,7 +7129,7 @@ async function bulkPermanentlyDelete() {
   await Promise.allSettled(trashItems.map(({ item }) =>
     __sssBridge.call('permanentlyDelete', { quoteRowId: item._id })
   ));
-  dashState.selection.clear();
+  exitBulkMode();
   await loadDashboardData();
   renderDashboard();
 }
