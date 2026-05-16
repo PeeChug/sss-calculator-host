@@ -183,7 +183,7 @@ const PRICING = {
     ],
     deck: [
       { id: 'deck_board_replace', name: 'Damaged deck board replacement', priceType: 'each', rate: 50, qtyLabel: 'boards' },
-      { id: 'loose_rescrew', name: 'Loose board re-screw', priceType: 'flat', rate: 10 },
+      { id: 'loose_rescrew', name: 'Loose board re-screw', priceType: 'flat', rate: 0 },
       { id: 'rail_caps', name: 'Railing post cap upgrade', priceType: 'each', rate: 25, qtyLabel: 'caps' },
       { id: 'antislip', name: 'Stair anti-slip strips', priceType: 'flat', rate: 100 },
       { id: 'bench_planter', name: 'Built-in bench / planter staining', priceType: 'each', rate: 100, qtyLabel: 'pieces' },
@@ -4552,7 +4552,7 @@ function computeDIYComparison(proTotal) {
   const perProjectHtml = projects.length > 1
     ? `<div class="diy-project-list">${projectLines.map(pl =>
         `<div class="diy-project-item"><span>${pl.label}</span><span>$${pl.total.toLocaleString()}</span></div>`
-      ).join('')}<div class="diy-project-item" style="font-style:italic;color:var(--slate);"><span>+ Graco Project Plus sprayer (shared)</span><span>$${sprayerCost.toLocaleString()}</span></div></div>` : '';
+      ).join('')}${sprayerCost > 0 ? `<div class="diy-project-item" style="font-style:italic;color:var(--slate);"><span>+ Graco Project Plus sprayer (shared)</span><span>$${sprayerCost.toLocaleString()}</span></div>` : ''}</div>` : '';
 
   return `
     <div class="diy-comparison">
@@ -4563,7 +4563,7 @@ function computeDIYComparison(proTotal) {
       ${totalCitronellaCost > 0 ? `<div class="diy-row"><span>EXPERT Natural Defense citronella additive ($${CITRONELLA_PER_PAIL} per 5 gal)</span><span>$${totalCitronellaCost.toLocaleString()}</span></div>` : ''}
       ${washChemCost > 0 ? `<div class="diy-row"><span>EXPERT Clean &amp; Bright system — sodium metasilicate cleaner + oxalic acid brightener (${washChemPails} × 5 gal each)${washChemNote}</span><span>$${washChemCost.toLocaleString()}</span></div>` : ''}
       ${pressureWasherCost > 0 ? `<div class="diy-row"><span>Pressure washer — homeowner-grade 2500 PSI electric (one-time purchase, used for prep wash)</span><span>$${pressureWasherCost}</span></div>` : ''}
-      ${sprayerCost > 0 ? `<div class="diy-row"><span>Graco Project Plus airless sprayer${sprayerNote}</span><span>$${sprayerCost}</span></div>` : `<div class="diy-row" style="color:var(--slate);font-style:italic;"><span>No sprayer needed — your project(s) are hand-applied (brushes and rollers) for proper coverage and detail</span><span>$0</span></div>`}
+      ${sprayerCost > 0 ? `<div class="diy-row"><span>Graco Project Plus airless sprayer${sprayerNote}</span><span>$${sprayerCost}</span></div>` : ''}
       <div class="diy-row"><span>Brushes, rollers, applicator pads, drop cloths, sheeting${projects.length>1 ? ' (all projects)' : ''}</span><span>$${totalToolsCost.toLocaleString()}</span></div>
       <div class="diy-row"><span>Your time (~${totalHours} hrs × $${HOURLY_RATE}/hr)</span><span>$${timeCost.toLocaleString()}</span></div>
       <div class="diy-row diy-total"><span>Estimated DIY cost</span><span>$${diyTotal.toLocaleString()}</span></div>
