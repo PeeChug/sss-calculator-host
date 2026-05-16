@@ -5948,8 +5948,19 @@ function buildJobberLineItem(p, idx, total) {
     farm:           'Farm-style'
   };
 
-  const projectName = (PROJ.name || (p.type || 'Project').replace(/^./, c => c.toUpperCase()));
-  const name = `${projectName} staining${total > 1 ? ` (#${idx + 1})` : ''}`;
+  // Polished line item title per project — replaces the previous generic
+  // "Fence staining" / "Deck staining". Reads more like a contractor's
+  // service description and matches the formal tone of the body intro.
+  const PROJECT_LINE_ITEM_NAMES = {
+    fence:   'Fence Maintenance Stain & Restoration',
+    deck:    'Deck Maintenance Stain & Restoration',
+    pergola: 'Pergola Maintenance Stain & Restoration',
+    barn:    'Barn & Outbuilding Maintenance Stain & Restoration',
+    ceiling: 'Ceiling Stain & Finishing'
+  };
+  const projectName = PROJECT_LINE_ITEM_NAMES[p.type]
+                   || (PROJ.name || (p.type || 'Project').replace(/^./, c => c.toUpperCase())) + ' Staining';
+  const name = `${projectName}${total > 1 ? ` (#${idx + 1})` : ''}`;
   const lines = [];
   // Section helper — blank line above an ALL-CAPS header so the
   // sections are scannable without leaning on emoji visual cues.
@@ -5962,23 +5973,27 @@ function buildJobberLineItem(p, idx, total) {
   // width that would mangle on small screens / PDFs.
   const kv = (label, value) => `${label}: ${value}`;
 
-  // --- INTRODUCTION ---
-  // Per-project-type "why this work matters" preface. Sets the value
-  // case for the customer before they hit the dry tier/scope/color
-  // details below. Tone: matter-of-fact, region-specific (we're in the
-  // Southeast — UV + humidity are the actual antagonists here).
-  // Customer reads this once, understands what they're paying for,
-  // and then the structured data below confirms the specifics.
+  // --- INTRODUCTION (description paragraph) ---
+  // Per-project-type opener that sets the value case before the customer
+  // reaches the structured tier / scope / color details below. The line
+  // item name (set above) serves as the implicit title for this paragraph,
+  // so we don't add an explicit "INTRODUCTION" header — the prose reads
+  // as a natural lead-in. Tone: measured, professional, framed around
+  // the cost of restoration vs. the cost of replacement.
   const PROJECT_INTROS = {
-    fence:   "Wood fences in the Southeast face year-round UV, summer humidity, and the constant wet/dry cycles that gray out cedar and pressure-treated pine within a couple seasons. A proper stain seals the grain against water intrusion (the #1 cause of rot at posts and end-grain), blocks UV that fades color and breaks down surface fibers, and adds 8-12 years of service life vs. an untreated fence. The work below is sized for your specific layout and condition.",
-    deck:    "Decks take the worst beating of any wood structure on a home — direct sun, foot traffic, water pooling between boards, and freeze/thaw cycles all compound into warping, splitting, and surface graying. A penetrating stain repels water before it soaks into the boards, blocks the UV that breaks down the natural wood fibers, and typically extends the deck's usable life by 5-8 years. Re-coating every 3-5 years (depending on tier) is dramatically cheaper than replacing boards or the entire deck frame.",
-    pergola: "Pergolas and other outdoor wood structures age fastest at the joints and end-grain, where water seeps in and stays. Staining seals those vulnerable spots, prevents the swelling that loosens hardware and opens joints, and keeps the wood looking intentional rather than weathered. Stained pergolas typically stay structurally sound 2-3x longer than untreated ones — and look the part the whole time.",
-    barn:    "Large vertical wood surfaces like barns and outbuildings face UV, wind-driven rain, and dust + pollen accumulation that accelerates surface degradation. Staining seals the grain, repels moisture at the end-grain (where most rot starts), and dramatically reduces the maintenance cycle — a properly stained barn typically needs recoating every 5-7 years rather than annual touch-ups on bare or paint-flaking wood. Protecting the siding now is far cheaper than replacing boards later.",
-    ceiling: "Indoor wood ceilings (tongue-and-groove, exposed beams, porch overhangs) deal with humidity swings, cooking residue if near a kitchen, and the natural movement of wood that opens hairline cracks over time. A quality stain seals against moisture, blocks staining from daily kitchen/smoke exposure, and unifies the natural color variation across boards from the mill. The result is a finished ceiling that reads as a design feature, not unfinished framing."
+    fence:
+      "Your fence is more than a property line — it shapes your home's curb appeal, defines outdoor space, and protects a meaningful investment in your property. Continuous exposure to direct sunlight, humidity, wind-driven rain, and seasonal moisture cycles gradually breaks down even the highest-quality cedar and pressure-treated lumber, leading to graying, splintering, and rot at the posts and end-grain where water tends to collect. Professionally cleaning, preparing, and staining your fence is one of the most effective ways to preserve its appearance, extend its structural life, and protect it from the elements — typically at a small fraction of the cost of a full tear-out and rebuild. Restoring and protecting an existing fence often represents a fraction of the investment required to replace it, making proactive maintenance a smart, cost-effective decision. Our process is designed to seal the grain against water intrusion, block the UV that fades color and breaks down surface fibers, and deliver a refined, uniform finish that holds up to the Southeast climate for years to come.",
+    deck:
+      "Your deck is a major extension of your home and a valuable investment that deserves proper protection and professional care. Exposure to sunlight, moisture, temperature changes, and everyday wear can gradually deteriorate even the highest-quality wood surfaces, leading to premature aging and costly repairs or replacement. Professionally cleaning, preparing, and staining your deck is one of the most effective ways to preserve its beauty, structural integrity, and long-term value — often at a fraction of the cost of rebuilding. In many cases, restoring and protecting an existing deck represents roughly twenty percent of the investment required for a full replacement, making proactive maintenance a smart and cost-effective decision. Our process is designed to enhance the natural character of the wood while providing durable protection against the elements, delivering a refined finish and lasting performance you can enjoy for years to come.",
+    pergola:
+      "Your pergola is a defining architectural feature of your outdoor space and a meaningful investment that deserves proper protection. Because it's exposed on all sides, a pergola ages faster than most wood structures — particularly at the joints, beam ends, and rafters where water can pool or seep into the grain. Left untreated, even well-built pergolas develop joint failure, swelling at the connections, and the dull gray surface tone that signals advanced UV breakdown. Professionally cleaning, preparing, and staining your pergola is one of the most effective ways to preserve its appearance, extend its structural life, and protect your investment — typically at a small fraction of the cost of rebuilding or replacing it. Our process is designed to enhance the natural character of the wood, seal vulnerable joints and end-grain against moisture, and deliver a refined finish that complements the rest of your outdoor living space for years to come.",
+    barn:
+      "Your barn or outbuilding represents a long-term investment whose siding serves as the structure's first line of defense against the elements. UV exposure, wind-driven rain, dust, and pollen accumulation gradually break down the surface fibers and open the door for moisture to penetrate the boards — starting most often at the end-grain and trim, where rot and surface failure typically take hold. Professionally cleaning, preparing, and staining your barn is one of the most effective ways to preserve its appearance, extend the life of the siding, and protect a significant investment — at a fraction of the cost of re-siding or board replacement. Restoring and protecting existing siding often represents a small fraction of the investment required for major repairs, making proactive maintenance a smart, cost-effective decision. Our process is designed to seal the wood against moisture, block the UV that drives surface degradation, and deliver a uniform, durable finish that holds up year after year.",
+    ceiling:
+      "Your wood ceiling — whether tongue-and-groove, exposed-beam, or open-rafter — is a high-visibility design element that anchors the entire room beneath it. Indoor humidity swings, cooking and smoke exposure, and the natural shrinkage and expansion of wood gradually cause uneven aging, hairline cracking, and discoloration over time. Professionally cleaning, preparing, and staining your ceiling is one of the most effective ways to preserve its beauty, unify color across the boards, and protect the wood from future moisture and residue — often at a fraction of the cost of removing and replacing the material. Restoring and finishing an existing ceiling typically represents a small fraction of the investment required to replace it, making proactive maintenance a smart and cost-effective decision. Our process is designed to enhance the natural grain of the wood, even out surface tone, and deliver a finished result that reads as an intentional design feature for years to come."
   };
   const intro = PROJECT_INTROS[p.type];
   if (intro) {
-    lines.push('INTRODUCTION');
     lines.push(intro);
     lines.push('');
   }
