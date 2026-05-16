@@ -5948,17 +5948,30 @@ function buildJobberLineItem(p, idx, total) {
     farm:           'Farm-style'
   };
 
-  // Polished line item title per project — replaces the previous generic
-  // "Fence staining" / "Deck staining". Reads more like a contractor's
-  // service description and matches the formal tone of the body intro.
-  const PROJECT_LINE_ITEM_NAMES = {
+  // Polished line item title per project. "& Restoration" is only
+  // appended when there's actual condition-based restoration work
+  // happening (soft wash or strip/sand prep) — for new wood with no
+  // prep we just say "Maintenance Stain" since calling it restoration
+  // would mis-describe the scope.
+  const isRestoration = (p.condition === 'soft_wash' || p.condition === 'strip_sand');
+  const PROJECT_LINE_ITEM_BASE = {
+    fence:   'Fence Maintenance Stain',
+    deck:    'Deck Maintenance Stain',
+    pergola: 'Pergola Maintenance Stain',
+    barn:    'Barn & Outbuilding Maintenance Stain',
+    ceiling: 'Ceiling Stain & Finishing'
+  };
+  const PROJECT_LINE_ITEM_RESTORATION = {
     fence:   'Fence Maintenance Stain & Restoration',
     deck:    'Deck Maintenance Stain & Restoration',
     pergola: 'Pergola Maintenance Stain & Restoration',
     barn:    'Barn & Outbuilding Maintenance Stain & Restoration',
-    ceiling: 'Ceiling Stain & Finishing'
+    // Ceiling rephrases rather than appending, since "& Finishing &
+    // Restoration" would chain awkwardly.
+    ceiling: 'Ceiling Restoration & Finishing'
   };
-  const projectName = PROJECT_LINE_ITEM_NAMES[p.type]
+  const titleMap = isRestoration ? PROJECT_LINE_ITEM_RESTORATION : PROJECT_LINE_ITEM_BASE;
+  const projectName = titleMap[p.type]
                    || (PROJ.name || (p.type || 'Project').replace(/^./, c => c.toUpperCase())) + ' Staining';
   const name = `${projectName}${total > 1 ? ` (#${idx + 1})` : ''}`;
   const lines = [];
