@@ -5995,26 +5995,32 @@ function buildJobberLineItem(p, idx, total) {
   const kv = (label, value) => `${label}: ${value}`;
 
   // --- BASICS (tier + product) ---
+  // Format: "Tier: Performance - Oil based"
+  // Hyphen separator + bare "Oil based" / "Water based" (the word
+  // "stain" is redundant since the next line names the specific stain).
   const tierLabel = TIER_LABELS[p.tier] || p.tier || '';
-  const prodLabel = PROD_LABELS[p.productType] || p.productType || '';
-  if (tierLabel || prodLabel) {
-    lines.push(kv('Tier', [tierLabel && `${tierLabel}`, prodLabel].filter(Boolean).join(' — ')));
+  const TIER_PRODUCT_DISPLAY = { oil: 'Oil based', water: 'Water based', hoa: 'HOA-specified' };
+  const prodDisplay = TIER_PRODUCT_DISPLAY[p.productType] || (PROD_LABELS[p.productType] || p.productType || '');
+  if (tierLabel || prodDisplay) {
+    lines.push(kv('Tier', [tierLabel, prodDisplay].filter(Boolean).join(' - ')));
   }
 
-  // --- WARRANTY LINE ---
-  // Per-line warranty/value tag so the customer sees what they're
-  // actually getting at this tier — not just a tier name. Drives home
-  // the "why does Showcase cost more" question before they have to ask.
-  const warrantyByTierProduct = {
-    'showcase-oil':   'EXPERT Limited Lifetime craftsmanship guarantee — Log & Timber Oil (5-yr manufacturer warranty)',
-    'showcase-water': 'EXPERT Limited Lifetime craftsmanship guarantee — 3-Step System',
-    'performance-oil':   'EXPERT Stain & Seal — 2-yr manufacturer warranty on color & sheen',
-    'performance-water': 'EXPERT semi-solid water-based — 3-yr manufacturer warranty',
-    'essential-oil':     'Single-coat oil sealer — value option (no warranty on color longevity)',
-    'essential-water':   'Single-coat water-based — value option (no warranty on color longevity)'
+  // --- STAIN PRODUCT LINE ---
+  // Names the actual stain product (and its transparency class) the
+  // customer is getting. Transparency is what drives the warranty
+  // (semi-transparent = 2-yr, semi-solid = 3-yr per EXPERT), so we
+  // include it here so the Warranty line at the bottom reads
+  // consistently.
+  const STAIN_PRODUCT_BY_TIER = {
+    'essential-oil':     'Single-coat oil sealer',
+    'essential-water':   'Single-coat water-based',
+    'performance-oil':   'EXPERT Stain & Seal (semi-transparent)',
+    'performance-water': 'EXPERT Water-Based Wood Stain (semi-solid)',
+    'showcase-oil':      'EXPERT Log & Timber Oil (semi-transparent)',
+    'showcase-water':    'EXPERT 3-Step System (semi-solid)'
   };
   const wKey = `${p.tier}-${p.productType}`;
-  if (warrantyByTierProduct[wKey]) lines.push(kv('Warranty', warrantyByTierProduct[wKey]));
+  if (STAIN_PRODUCT_BY_TIER[wKey]) lines.push(kv('Stain', STAIN_PRODUCT_BY_TIER[wKey]));
 
   // Color
   if (p.selectedColor) {
@@ -6185,6 +6191,27 @@ function buildJobberLineItem(p, idx, total) {
     if (psParts.length)  lines.push(`  - Prior coat: ${psParts.join(' — ')}`);
     if (ps.transparency) lines.push(`  - Transparency: ${ps.transparency}`);
     if (ps.colorNotes)   lines.push(`  - Color notes: ${ps.colorNotes}`);
+  }
+
+  // --- WARRANTY (bottom of description) ---
+  // Per EXPERT Stain & Seal Supply's product documentation:
+  //   - Semi-transparent stains: 2-year manufacturer warranty
+  //   - Semi-solid stains: 3-year manufacturer warranty
+  // Essential-tier single-coat sealers don't carry a color-longevity
+  // warranty (they're value tier — sealing only, no pigment system).
+  // HOA-specified products warranty per whatever product the HOA
+  // requires, so we skip the line in that case.
+  const WARRANTY_BY_TIER = {
+    'performance-oil':   '2-year manufacturer warranty on color & sheen (semi-transparent)',
+    'showcase-oil':      '2-year manufacturer warranty on color & sheen (semi-transparent)',
+    'performance-water': '3-year manufacturer warranty on color & sheen (semi-solid)',
+    'showcase-water':    '3-year manufacturer warranty on color & sheen (semi-solid)',
+    'essential-oil':     'No manufacturer warranty on color longevity (value tier — sealing only)',
+    'essential-water':   'No manufacturer warranty on color longevity (value tier — sealing only)'
+  };
+  if (WARRANTY_BY_TIER[wKey]) {
+    lines.push('');
+    lines.push(kv('Warranty', WARRANTY_BY_TIER[wKey]));
   }
 
   // Reference photo URLs are NOT embedded in the customer-facing
