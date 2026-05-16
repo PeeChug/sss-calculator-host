@@ -238,7 +238,11 @@ const PRICING = {
     hourlyLaborRate:           25,  // imputed DIY labor $/hr
     // Tooling cost per project type (brushes, rollers, masking, drop
     // cloths, ladder rental as relevant). One-time purchase amortized.
-    projectTools:        { fence: 80, deck: 215, pergola: 180, barn: 175, ceiling: 165 },
+    // Previous values were inflated — a homeowner can outfit a deck
+    // project with a couple decent brushes, 1-2 rollers + nap covers,
+    // 2 drop cloths and masking for well under $100. These numbers now
+    // match what you'd actually walk out of Home Depot with.
+    projectTools:        { fence: 40, deck: 110, pergola: 90, barn: 90, ceiling: 85 },
     // Square-feet-per-hour (or lnft-per-hour for fence) divisors for
     // estimating DIY labor time. Higher = faster work. Tuned to a
     // weekend-warrior pace, not a contractor pace.
