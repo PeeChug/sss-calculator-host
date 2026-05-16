@@ -126,7 +126,7 @@ const PRICING = {
   // confused everyone. The component rates (railing/stair/lattice)
   // still scale relative to the baseline flat rate via a derived
   // multiplier inside computeProjectTotal — that math is unchanged.
-  deck:  { tiers: { essential: 3.20, performance: 4.00, showcase: 5.20 }, rates: { flat: 4.00, railing: 6.00, stair: 25.00, lattice: 3.00 }, underneathMultiplier: 2, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
+  deck:  { tiers: { essential: 4.00, performance: 5.00, showcase: 6.50 }, rates: { flat: 5.00, railing: 7.50, stair: 31.25, lattice: 3.75 }, underneathMultiplier: 2, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
   pergola: { tiers: { essential: 4.40, performance: 5.50, showcase: 7.15 }, overheadAccessFlat: 200, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
   // Barn tier rates bumped so performance = $4.25/sq ft (same scaling
   // factor as the ceiling bump). Prep rates raised to match deck and
@@ -235,7 +235,7 @@ const PRICING = {
     // Square-feet-per-hour (or lnft-per-hour for fence) divisors for
     // estimating DIY labor time. Higher = faster work. Tuned to a
     // weekend-warrior pace, not a contractor pace.
-    projectTimeDivisor:  { fence: 16, deck: 24, pergola: 12, barn: 18, ceiling: 15 }
+    projectTimeDivisor:  { fence: 16, deck: 24, pergola: 22, barn: 18, ceiling: 15 }
   }
 };
 
@@ -4163,7 +4163,7 @@ function renderFinalBreakdown() {
     ${totals.bundleEligible ? `
     <div class="breakdown-section">
       <h4>Bundle Discount</h4>
-      <div class="breakdown-line discount"><span class="desc">Multi-project bundle<small>10% off — replaces per-project discounts</small></span><span class="val">−$${totals.bundleDiscount.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
+      <div class="breakdown-line discount"><span class="desc">Multi-project bundle<small>10% off — stacks on top of any per-project discounts</small></span><span class="val">−$${totals.bundleDiscount.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
     </div>` : ''}
 
     ${a.minimumApplied ? `<div class="breakdown-line minimum"><span class="desc">⚠️ Trip minimum applied<small>Calculated total was below $400 — minimum job charge applies</small></span><span class="val">$${PRICING.minimumJob}</span></div>` : ''}
@@ -4179,22 +4179,32 @@ function renderFinalBreakdown() {
       </div>
     ` : ''}
 
-    <!-- MATH WALK-THROUGH — explicit so the customer can see how the Grand Total was reached -->
+    <!-- MATH WALK-THROUGH — explicit so the customer can see how the Grand Total was reached.
+         Uses GROSS (pre-discount) project totals so the subsequent discount-line
+         subtractions actually add up to the Grand Total. Previous version showed
+         post-per-project-discount subtotals as "Quote subtotal" then subtracted
+         per-project discounts AGAIN below — visually double-counting and making
+         the displayed numbers not match the displayed total. -->
     ${(() => {
-      const activeSub = a.subtotal || 0;
-      const bundledSubs = state.bundledProjects.map(p => (p._cached && p._cached.subtotal) || 0);
-      const sumOfSubs = activeSub + bundledSubs.reduce((s, x) => s + x, 0);
+      // Gross = subtotal + per-project discount that was already applied.
+      // Sum of gross values - all discounts = finalTotal (math holds).
+      const activeGross = (a.subtotal || 0) + (a.discountAmount || 0);
+      const bundledGross = state.bundledProjects.map(p => {
+        const c = p._cached || {};
+        return (Number(c.subtotal) || 0) + (Number(c.discountAmount) || 0);
+      });
+      const sumOfGross = activeGross + bundledGross.reduce((s, x) => s + x, 0);
       const totalSavings = (totals.bundleDiscount || 0) + (totals.totalDiscountSavings || 0);
       // Only show the walk-through if there's bundling or any savings to explain
       if (state.bundledProjects.length === 0 && totalSavings === 0) return '';
       return `
         <div class="math-walk">
           <h4>How we got to the Grand Total</h4>
-          ${a.subtotal > 0 ? `<div class="math-walk-row"><span>${PROJECT_META[proj].icon} ${PROJECT_META[proj].name} (this project)</span><span>$${Math.round(activeSub).toLocaleString()}</span></div>` : ''}
+          ${a.subtotal > 0 ? `<div class="math-walk-row"><span>${PROJECT_META[proj].icon} ${PROJECT_META[proj].name} (this project)</span><span>$${Math.round(activeGross).toLocaleString()}</span></div>` : ''}
           ${state.bundledProjects.map((p, i) => `
-            <div class="math-walk-row"><span>${PROJECT_META[p.type].icon} ${PROJECT_META[p.type].name} (bundled)</span><span>$${Math.round(bundledSubs[i]).toLocaleString()}</span></div>
+            <div class="math-walk-row"><span>${PROJECT_META[p.type].icon} ${PROJECT_META[p.type].name} (bundled)</span><span>$${Math.round(bundledGross[i]).toLocaleString()}</span></div>
           `).join('')}
-          <div class="math-walk-row math-walk-subtotal"><span>Quote subtotal</span><span>$${Math.round(sumOfSubs).toLocaleString()}</span></div>
+          <div class="math-walk-row math-walk-subtotal"><span>Quote subtotal</span><span>$${Math.round(sumOfGross).toLocaleString()}</span></div>
           ${totals.totalDiscountSavings > 0 ? `<div class="math-walk-row math-walk-discount"><span>Stacked discounts</span><span>−$${Math.round(totals.totalDiscountSavings).toLocaleString()}</span></div>` : ''}
           ${totals.bundleDiscount > 0 ? `<div class="math-walk-row math-walk-discount"><span>Bundle discount (10%)</span><span>−$${Math.round(totals.bundleDiscount).toLocaleString()}</span></div>` : ''}
           ${totalSavings > 0 ? `<div class="math-walk-row math-walk-total-savings"><span>Total savings</span><span>−$${Math.round(totalSavings).toLocaleString()}</span></div>` : ''}
@@ -4548,9 +4558,15 @@ function getQuoteExpiryDate() {
 }
 
 function renderBundleOnlyBreakdown(totals) {
-  // Compute math-walk-through pieces (no active project means we just sum bundled subtotals)
-  const bundledSubs = state.bundledProjects.map(p => (p._cached && p._cached.subtotal) || 0);
-  const sumOfSubs = bundledSubs.reduce((s, x) => s + x, 0);
+  // Compute math-walk-through pieces. Use GROSS (pre-discount) project
+  // totals so the deductions below add up to the displayed Grand Total.
+  // sumOfSubs would otherwise be post-per-project-discount and the
+  // "Stacked discounts" line below would visually double-count.
+  const bundledGross = state.bundledProjects.map(p => {
+    const c = p._cached || {};
+    return (Number(c.subtotal) || 0) + (Number(c.discountAmount) || 0);
+  });
+  const sumOfGross = bundledGross.reduce((s, x) => s + x, 0);
   const totalSavings = (totals.bundleDiscount || 0) + (totals.totalDiscountSavings || 0);
 
   __doc.getElementById('breakdownMain').innerHTML = `
@@ -4570,9 +4586,9 @@ function renderBundleOnlyBreakdown(totals) {
       <div class="math-walk">
         <h4>How we got to the Grand Total</h4>
         ${state.bundledProjects.map((p, i) => `
-          <div class="math-walk-row"><span>${PROJECT_META[p.type].icon} ${PROJECT_META[p.type].name} (bundled)</span><span>$${Math.round(bundledSubs[i]).toLocaleString()}</span></div>
+          <div class="math-walk-row"><span>${PROJECT_META[p.type].icon} ${PROJECT_META[p.type].name} (bundled)</span><span>$${Math.round(bundledGross[i]).toLocaleString()}</span></div>
         `).join('')}
-        <div class="math-walk-row math-walk-subtotal"><span>Quote subtotal</span><span>$${Math.round(sumOfSubs).toLocaleString()}</span></div>
+        <div class="math-walk-row math-walk-subtotal"><span>Quote subtotal</span><span>$${Math.round(sumOfGross).toLocaleString()}</span></div>
         ${totals.totalDiscountSavings > 0 ? `<div class="math-walk-row math-walk-discount"><span>Stacked discounts</span><span>−$${Math.round(totals.totalDiscountSavings).toLocaleString()}</span></div>` : ''}
         ${totals.bundleDiscount > 0 ? `<div class="math-walk-row math-walk-discount"><span>Bundle discount (10%)</span><span>−$${Math.round(totals.bundleDiscount).toLocaleString()}</span></div>` : ''}
         ${totalSavings > 0 ? `<div class="math-walk-row math-walk-total-savings"><span>Total savings</span><span>−$${Math.round(totalSavings).toLocaleString()}</span></div>` : ''}
