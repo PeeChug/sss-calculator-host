@@ -5962,6 +5962,27 @@ function buildJobberLineItem(p, idx, total) {
   // width that would mangle on small screens / PDFs.
   const kv = (label, value) => `${label}: ${value}`;
 
+  // --- INTRODUCTION ---
+  // Per-project-type "why this work matters" preface. Sets the value
+  // case for the customer before they hit the dry tier/scope/color
+  // details below. Tone: matter-of-fact, region-specific (we're in the
+  // Southeast — UV + humidity are the actual antagonists here).
+  // Customer reads this once, understands what they're paying for,
+  // and then the structured data below confirms the specifics.
+  const PROJECT_INTROS = {
+    fence:   "Wood fences in the Southeast face year-round UV, summer humidity, and the constant wet/dry cycles that gray out cedar and pressure-treated pine within a couple seasons. A proper stain seals the grain against water intrusion (the #1 cause of rot at posts and end-grain), blocks UV that fades color and breaks down surface fibers, and adds 8-12 years of service life vs. an untreated fence. The work below is sized for your specific layout and condition.",
+    deck:    "Decks take the worst beating of any wood structure on a home — direct sun, foot traffic, water pooling between boards, and freeze/thaw cycles all compound into warping, splitting, and surface graying. A penetrating stain repels water before it soaks into the boards, blocks the UV that breaks down the natural wood fibers, and typically extends the deck's usable life by 5-8 years. Re-coating every 3-5 years (depending on tier) is dramatically cheaper than replacing boards or the entire deck frame.",
+    pergola: "Pergolas and other outdoor wood structures age fastest at the joints and end-grain, where water seeps in and stays. Staining seals those vulnerable spots, prevents the swelling that loosens hardware and opens joints, and keeps the wood looking intentional rather than weathered. Stained pergolas typically stay structurally sound 2-3x longer than untreated ones — and look the part the whole time.",
+    barn:    "Large vertical wood surfaces like barns and outbuildings face UV, wind-driven rain, and dust + pollen accumulation that accelerates surface degradation. Staining seals the grain, repels moisture at the end-grain (where most rot starts), and dramatically reduces the maintenance cycle — a properly stained barn typically needs recoating every 5-7 years rather than annual touch-ups on bare or paint-flaking wood. Protecting the siding now is far cheaper than replacing boards later.",
+    ceiling: "Indoor wood ceilings (tongue-and-groove, exposed beams, porch overhangs) deal with humidity swings, cooking residue if near a kitchen, and the natural movement of wood that opens hairline cracks over time. A quality stain seals against moisture, blocks staining from daily kitchen/smoke exposure, and unifies the natural color variation across boards from the mill. The result is a finished ceiling that reads as a design feature, not unfinished framing."
+  };
+  const intro = PROJECT_INTROS[p.type];
+  if (intro) {
+    lines.push('INTRODUCTION');
+    lines.push(intro);
+    lines.push('');
+  }
+
   // --- BASICS (tier + product) ---
   const tierLabel = TIER_LABELS[p.tier] || p.tier || '';
   const prodLabel = PROD_LABELS[p.productType] || p.productType || '';
