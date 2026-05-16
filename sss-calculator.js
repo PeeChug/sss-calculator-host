@@ -5948,24 +5948,24 @@ function buildJobberLineItem(p, idx, total) {
     farm:           'Farm-style'
   };
 
-  // Polished line item title per project. "& Restoration" is only
-  // appended when there's actual condition-based restoration work
-  // happening (soft wash or strip/sand prep) — for new wood with no
-  // prep we just say "Maintenance Stain" since calling it restoration
-  // would mis-describe the scope.
+  // Line item title per project. "& Restoration" is only appended
+  // when there's actual condition-based restoration work happening
+  // (soft wash or strip/sand prep) — for new wood with no prep, the
+  // title is just "X Staining" since calling it restoration would
+  // mis-describe the scope.
   const isRestoration = (p.condition === 'soft_wash' || p.condition === 'strip_sand');
   const PROJECT_LINE_ITEM_BASE = {
-    fence:   'Fence Maintenance Stain',
-    deck:    'Deck Maintenance Stain',
-    pergola: 'Pergola Maintenance Stain',
-    barn:    'Barn & Outbuilding Maintenance Stain',
+    fence:   'Fence Staining',
+    deck:    'Deck Staining',
+    pergola: 'Pergola Staining',
+    barn:    'Barn & Outbuilding Staining',
     ceiling: 'Ceiling Stain & Finishing'
   };
   const PROJECT_LINE_ITEM_RESTORATION = {
-    fence:   'Fence Maintenance Stain & Restoration',
-    deck:    'Deck Maintenance Stain & Restoration',
-    pergola: 'Pergola Maintenance Stain & Restoration',
-    barn:    'Barn & Outbuilding Maintenance Stain & Restoration',
+    fence:   'Fence Staining & Restoration',
+    deck:    'Deck Staining & Restoration',
+    pergola: 'Pergola Staining & Restoration',
+    barn:    'Barn & Outbuilding Staining & Restoration',
     // Ceiling rephrases rather than appending, since "& Finishing &
     // Restoration" would chain awkwardly.
     ceiling: 'Ceiling Restoration & Finishing'
@@ -5986,13 +5986,11 @@ function buildJobberLineItem(p, idx, total) {
   // width that would mangle on small screens / PDFs.
   const kv = (label, value) => `${label}: ${value}`;
 
-  // --- INTRODUCTION (description paragraph) ---
-  // Per-project-type opener that sets the value case before the customer
-  // reaches the structured tier / scope / color details below. The line
-  // item name (set above) serves as the implicit title for this paragraph,
-  // so we don't add an explicit "INTRODUCTION" header — the prose reads
-  // as a natural lead-in. Tone: measured, professional, framed around
-  // the cost of restoration vs. the cost of replacement.
+  // --- INTRODUCTION (returned separately, NOT pushed into description) ---
+  // Per-project-type opener used to populate Jobber's "Introduction"
+  // custom section at the top of the quote (above the line items).
+  // Lives outside the line item description so it doesn't repeat for
+  // every project on multi-project quotes.
   const PROJECT_INTROS = {
     fence:
       "Your fence is more than a property line — it shapes your home's curb appeal, defines outdoor space, and protects a meaningful investment in your property. Continuous exposure to direct sunlight, humidity, wind-driven rain, and seasonal moisture cycles gradually breaks down even the highest-quality cedar and pressure-treated lumber, leading to graying, splintering, and rot at the posts and end-grain where water tends to collect. Professionally cleaning, preparing, and staining your fence is one of the most effective ways to preserve its appearance, extend its structural life, and protect it from the elements — typically at a small fraction of the cost of a full tear-out and rebuild. Restoring and protecting an existing fence often represents a fraction of the investment required to replace it, making proactive maintenance a smart, cost-effective decision. Our process is designed to seal the grain against water intrusion, block the UV that fades color and breaks down surface fibers, and deliver a refined, uniform finish that holds up to the Southeast climate for years to come.",
@@ -6005,11 +6003,7 @@ function buildJobberLineItem(p, idx, total) {
     ceiling:
       "Your wood ceiling — whether tongue-and-groove, exposed-beam, or open-rafter — is a high-visibility design element that anchors the entire room beneath it. Indoor humidity swings, cooking and smoke exposure, and the natural shrinkage and expansion of wood gradually cause uneven aging, hairline cracking, and discoloration over time. Professionally cleaning, preparing, and staining your ceiling is one of the most effective ways to preserve its beauty, unify color across the boards, and protect the wood from future moisture and residue — often at a fraction of the cost of removing and replacing the material. Restoring and finishing an existing ceiling typically represents a small fraction of the investment required to replace it, making proactive maintenance a smart and cost-effective decision. Our process is designed to enhance the natural grain of the wood, even out surface tone, and deliver a finished result that reads as an intentional design feature for years to come."
   };
-  const intro = PROJECT_INTROS[p.type];
-  if (intro) {
-    lines.push(intro);
-    lines.push('');
-  }
+  const intro = PROJECT_INTROS[p.type] || '';
 
   // --- BASICS (tier + product) ---
   const tierLabel = TIER_LABELS[p.tier] || p.tier || '';
@@ -6215,6 +6209,7 @@ function buildJobberLineItem(p, idx, total) {
   return {
     name,
     description: lines.join('\n'),
+    intro,
     referencePhotoUrls: photos.map(ph => ph.url)
   };
 }
@@ -6308,6 +6303,7 @@ function buildCloudPayload() {
         preDiscountSubtotal: preDiscountSubtotal,
         _jobberName: jobberLine.name,
         _jobberDescription: jobberLine.description,
+        _jobberIntro: jobberLine.intro || '',
         _jobberReferencePhotoUrls: jobberLine.referencePhotoUrls || []
       };
     }),
