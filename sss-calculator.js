@@ -6942,6 +6942,10 @@ function renderDashboard() {
         <h3>No quotes yet</h3>
         <p>Click "Start New Quote" above to begin a quote. Your progress will auto-save as you go.</p>
       </div>`;
+    // Still call this — the bar lives outside dashContent and could be
+    // stuck visible from a previous bulk-mode session if every quote
+    // just got deleted. renderBulkActionBar handles the hide path.
+    renderBulkActionBar();
     return;
   }
 
@@ -6970,6 +6974,15 @@ function toggleBulkMode() {
     const lbl = btn.querySelector('.lbl');
     if (ico) ico.textContent = dashState.bulkMode ? '✕' : '☑️';
     if (lbl) lbl.textContent = dashState.bulkMode ? 'Exit' : 'Select';
+  }
+  // Hide the action bar IMMEDIATELY when exiting bulk mode — used to
+  // depend on renderDashboard's downstream call to renderBulkActionBar,
+  // but renderDashboard has multiple early-return paths (loading state,
+  // empty state) that skip it, leaving the bar stuck on-screen with
+  // stale "X selected" content even though bulk mode is off.
+  if (!dashState.bulkMode) {
+    const bar = __doc.getElementById('bulkActionBar');
+    if (bar) { bar.style.display = 'none'; bar.innerHTML = ''; }
   }
   renderDashboard();
 }
