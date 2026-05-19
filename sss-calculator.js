@@ -211,7 +211,7 @@ const PRICING = {
     ]
   },
   bundleDiscount: 0.10,
-  minimumJob: 400,
+  minimumJob: 500,
   // DIY comparison knobs — all the retail prices and rules-of-thumb
   // that feed the "How does DIY actually compare?" panel on Review.
   // Every value here is editable from Settings → DIY tab, so when
@@ -3911,9 +3911,16 @@ function computeAllTotals() {
     const totalDiscountable = (active.tierBase + active.addonsFlat + active.percentMod) + bundled.reduce((s, b) => s + (b.tierBase + b.addonsFlat + b.percentMod), 0);
     bundleDiscount = totalDiscountable * PRICING.bundleDiscount;
     finalTotal = totalRaw - bundleDiscount;
-    if (finalTotal < PRICING.minimumJob) finalTotal = PRICING.minimumJob;
   }
-  return { active, bundled, projectsCount, sumBeforeBundle, bundleEligible, bundleDiscount, finalTotal, totalDiscountSavings };
+  // Quote-level $500 job minimum. Floored AFTER bundle discount + after
+  // per-project discounts. Track that we hit it so the review page can
+  // surface a "minimum applied" banner near the Grand Total.
+  let minimumApplied = false;
+  if (finalTotal > 0 && finalTotal < PRICING.minimumJob) {
+    finalTotal = PRICING.minimumJob;
+    minimumApplied = true;
+  }
+  return { active, bundled, projectsCount, sumBeforeBundle, bundleEligible, bundleDiscount, finalTotal, totalDiscountSavings, minimumApplied };
 }
 
 let _lastDisplayedTotal = 0;
@@ -4194,7 +4201,7 @@ function renderFinalBreakdown() {
       <div class="breakdown-line discount"><span class="desc">Multi-project bundle<small>10% off — stacks on top of any per-project discounts</small></span><span class="val">−$${totals.bundleDiscount.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
     </div>` : ''}
 
-    ${a.minimumApplied ? `<div class="breakdown-line minimum"><span class="desc">⚠️ Trip minimum applied<small>Calculated total was below $400 — minimum job charge applies</small></span><span class="val">$${PRICING.minimumJob}</span></div>` : ''}
+    ${a.minimumApplied ? `<div class="breakdown-line minimum"><span class="desc">⚠️ Job minimum applied<small>Calculated project total was below our $${PRICING.minimumJob} job minimum — bumped up to the floor</small></span><span class="val">$${PRICING.minimumJob}</span></div>` : ''}
 
     <!-- Project Total — just this active project's price -->
     <div class="project-total"><span class="label">${state.bundledProjects.length > 0 ? 'This Project Subtotal' : 'Project Total'}</span><span class="amount">$${Math.round(a.subtotal).toLocaleString()}</span></div>
@@ -4253,6 +4260,12 @@ function renderFinalBreakdown() {
           : ''}
       </div>
     </div>
+    ${totals.minimumApplied ? `
+      <div class="alert warn" style="margin-top:12px;">
+        <span class="ico">⚠️</span>
+        <div><strong>$${PRICING.minimumJob} job minimum applied.</strong>Your calculated total came in under our $${PRICING.minimumJob} job minimum, so the quote has been bumped to the floor. This covers crew dispatch, materials handling, and the fixed costs of any visit regardless of size.</div>
+      </div>
+    ` : ''}
 
     <!-- Quote expiry & risk reversal — visible right under the price to reduce decision friction -->
     <div class="quote-expiry-banner" style="margin-top:16px;">
