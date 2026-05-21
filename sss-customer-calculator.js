@@ -3490,31 +3490,14 @@ function renderAddons() {
     <div class="addon-section">
       <h4>${PROJECT_META[proj].icon} ${PROJECT_META[proj].name} Add-ons</h4>
       <div class="addon-grid">${projAddons.map(a => addonRow(a, 'project')).join('')}</div>
-    </div>
-    <div class="addon-section">
-      <h4>🛠️ Custom Items <span style="display:flex;align-items:center;gap:8px;"><span class="employee-badge">Employee Only</span><button class="custom-add-btn" id="customAddBtn">+ Add Custom Item</button></span></h4>
-      <div id="customItemsList">${renderCustomItemsList()}</div>
-      <div class="custom-add-form" id="customAddForm" style="display:none;">
-        <div class="form-row">
-          <div><label>Description</label><input type="text" id="customAddName" placeholder="e.g. Off-list color match for cedar trim"></div>
-          <div><label>Price Type</label>
-            <select id="customAddPriceType">
-              <option value="flat">Flat (one-time $)</option>
-              <option value="per_unit">Per unit ($ × project unit)</option>
-              <option value="percent">Percent of base (%)</option>
-            </select>
-          </div>
-          <div><label>Amount</label><input type="number" min="0" step="0.01" id="customAddAmount" placeholder="0.00"></div>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <button class="btn-save" id="customAddSave">Save</button>
-            <button class="btn-cancel" id="customAddCancel">Cancel</button>
-          </div>
-        </div>
-        <p style="margin-top:8px;font-size:11px;color:var(--slate);">Custom items are visible only to the quoting employee internally; on the customer-facing PDF they appear as line items with the name and price you set here.</p>
-      </div>
     </div>`;
+  // Note: "🛠️ Custom Items" section is intentionally omitted from the
+  // customer build — it's an employee-only tool for adding off-list
+  // line items. The rep build still renders + uses it. Calculation,
+  // serialization, and rendering code further down still references
+  // `state.activeProject.customAddons` defensively, but in the
+  // customer flow nothing ever populates that array.
   attachAddonListeners();
-  attachCustomAddonListeners();
 }
 
 function renderCustomItemsList() {
