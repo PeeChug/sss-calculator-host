@@ -2546,7 +2546,7 @@ function closeMeasureTutorial() {
 const MEASURE_TIP_HEADER = `
   <div class="mt-tips">
     <div class="mt-tip"><span class="mt-tip-ico">🚶</span><span>Pace it off &mdash; your stride is about <strong>2.5 ft</strong>, so 20 steps ≈ 50 ft.</span></div>
-    <div class="mt-tip"><span class="mt-tip-ico">🛰️</span><span><a href="https://www.google.com/maps" target="_blank" rel="noopener">Open Google Maps</a>, find your property in satellite view, right-click and pick <strong>Measure distance</strong>.</span></div>
+    <div class="mt-tip"><span class="mt-tip-ico">📏</span><span>A 25 ft tape measure handles most projects. Borrow one from a neighbor or grab one at any hardware store.</span></div>
     <div class="mt-tip"><span class="mt-tip-ico">👍</span><span>Rough numbers are fine &mdash; we verify everything in person before any work starts.</span></div>
   </div>`;
 
@@ -2770,7 +2770,7 @@ const MEASURE_TUTORIAL = {
       <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
         <li>Walk along the base &mdash; count panels and multiply by panel width. Most panels are <strong>6 or 8 ft</strong> wide (check the gap between posts).</li>
         <li>Pace it out &mdash; 20 normal steps ≈ 50 ft.</li>
-        <li>Use Google Maps satellite view &mdash; right-click your starting fence corner, "Measure distance," then click each subsequent corner.</li>
+        <li>Use a tape measure or measuring wheel at one or two corners and estimate the rest.</li>
         <li><strong>Round to the nearest 5 ft.</strong> Over-estimating slightly is fine.</li>
       </ul>
       <p style="margin-bottom:14px;"><strong>Height:</strong></p>
