@@ -6863,7 +6863,7 @@ async function loadCustomerAbandonedDrafts() {
       // been re-pasted in Velo so /_functions/listCustomerDrafts is a
       // 404, (2) the CustomerDrafts Wix collection doesn't exist yet,
       // (3) auth token expired so the gate() returned 401.
-      console.warn('[SSS Drafts] listCustomerDrafts call failed — check (1) backend re-pasted, (2) CustomerDrafts collection exists in Wix, (3) rep signed in. Response:', res);
+      console.warn('[SSS Drafts] listCustomerDrafts call failed — check (1) backend re-pasted, (2) CustomerDrafts collection exists in Wix, (3) rep signed in. Response:', res, '— JSON:', JSON.stringify(res));
       panel.style.display = 'none';
       return;
     }
