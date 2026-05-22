@@ -1809,16 +1809,24 @@ async function __custPostDraft() {
 
     // Fire and forget — never await this from the calling code path.
     // Network errors get swallowed so a flaky connection doesn't
-    // affect the customer's flow. We DO log status to console so a
-    // dev opening DevTools can verify drafts are reaching the backend.
+    // affect the customer's flow. We log honest success/failure to
+    // the console so a dev opening DevTools can verify drafts are
+    // actually reaching the backend AND succeeding (the backend
+    // returns HTTP 200 with {ok:false,error:'...'} on failure, so a
+    // 2xx response is NOT proof of success — we have to inspect the
+    // body's `ok` field too).
     fetch('/_functions/saveCustomerDraft', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
-    }).then(r => {
+    }).then(async (r) => {
+      let body = null;
+      try { body = await r.json(); } catch (e) { body = null; }
       if (!r.ok) {
-        console.warn('[SSS Drafts] saveCustomerDraft returned HTTP ' + r.status + ' — backend may not be deployed yet, OR the CustomerDrafts collection may not exist in Wix.');
+        console.warn('[SSS Drafts] saveCustomerDraft returned HTTP ' + r.status + ' — backend may not be deployed yet, OR the CustomerDrafts collection may not exist in Wix. Body:', body);
+      } else if (!body || !body.ok) {
+        console.warn('[SSS Drafts] saveCustomerDraft returned HTTP 200 but body.ok=false — likely the CustomerDrafts Wix collection does not exist yet. Body:', body);
       } else {
         console.log('[SSS Drafts] draft snapshot saved (' + payload.reference + ', stage ' + payload.currentStage + ')');
       }
