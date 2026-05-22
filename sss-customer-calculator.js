@@ -115,6 +115,44 @@ const __sssBridge = (function () {
 // Expose smoke-test handle on window for debugging from the Wix page console.
 window.__sssBridgeTest = __sssBridge.test;
 
+// =============================================================
+// CUSTOMER BUILD ONLY — gate the inherited rep autosave bridge
+// =============================================================
+// The customer HTML is forked from the rep build and shares the
+// `__sssBridge.call('createQuote' / 'updateQuote' / 'setQuoteStatus' /
+// 'getStats' / etc.)` autosave path. When a rep is signed in in the
+// SAME BROWSER as the customer page (typical during dev/testing AND
+// any case where the rep also browses the public site), the bridge
+// calls would happily forward those rep-only writes to the live
+// /_functions endpoints — polluting the rep Drafts folder with
+// customer-test sessions. Block everything except the explicit
+// customer-public allowlist below.
+//
+// The customer's two actual data paths — submitCustomerEstimate and
+// saveCustomerDraft — both use direct fetch(), NOT this bridge, so
+// blocking the bridge entirely doesn't affect the public flow. The
+// inherited rep callers (autosave, finalize, etc.) just get back a
+// { ok: false } and silently move on.
+const __CUSTOMER_BRIDGE_ALLOWED = new Set([
+  // 'whoami' could go here if we ever want to know whether a rep
+  // happens to be signed in too — currently we don't care, so keep
+  // the allowlist empty for maximum safety.
+]);
+(function gateCustomerBridge() {
+  try {
+    const origCall = __sssBridge.call;
+    __sssBridge.call = async function (method, args) {
+      if (!__CUSTOMER_BRIDGE_ALLOWED.has(method)) {
+        // Silent no-op — the customer build doesn't use the rep
+        // bridge for ANYTHING. Anyone calling it is leftover rep-
+        // mode code path that we want to keep dormant.
+        return { ok: false, error: 'customer_mode' };
+      }
+      return origCall(method, args);
+    };
+  } catch (e) { /* defensive — bridge may not exist yet on init */ }
+})();
+
 /* ============================================================
    PRICING TABLES
    ============================================================ */
