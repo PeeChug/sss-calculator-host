@@ -1771,13 +1771,22 @@ async function __custPostDraft() {
 
     // Fire and forget — never await this from the calling code path.
     // Network errors get swallowed so a flaky connection doesn't
-    // affect the customer's flow.
+    // affect the customer's flow. We DO log status to console so a
+    // dev opening DevTools can verify drafts are reaching the backend.
     fetch('/_functions/saveCustomerDraft', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
-    }).catch(() => { /* silent */ });
+    }).then(r => {
+      if (!r.ok) {
+        console.warn('[SSS Drafts] saveCustomerDraft returned HTTP ' + r.status + ' — backend may not be deployed yet, OR the CustomerDrafts collection may not exist in Wix.');
+      } else {
+        console.log('[SSS Drafts] draft snapshot saved (' + payload.reference + ', stage ' + payload.currentStage + ')');
+      }
+    }).catch((e) => {
+      console.warn('[SSS Drafts] saveCustomerDraft network error:', e && e.message || e);
+    });
   } catch (e) {
     // Defensive — never let draft tracking break the calc.
     console.warn('[Customer] draft POST skipped:', e);

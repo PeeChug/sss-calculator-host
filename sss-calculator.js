@@ -6852,15 +6852,23 @@ async function loadCustomerAbandonedDrafts() {
   if (!panel) return;
   try {
     if (typeof __sssBridge === 'undefined' || !__sssBridge.call) {
+      console.warn('[SSS Drafts] bridge not ready; hiding abandoned-drafts folder');
       panel.style.display = 'none';
       return;
     }
     const res = await __sssBridge.call('listCustomerDrafts', { limit: 100 });
     if (!res || !res.ok) {
+      // Loud diagnostic so reps can see in DevTools why the folder is
+      // hidden. Common causes: (1) backend/customerSubmit.jsw hasn't
+      // been re-pasted in Velo so /_functions/listCustomerDrafts is a
+      // 404, (2) the CustomerDrafts Wix collection doesn't exist yet,
+      // (3) auth token expired so the gate() returned 401.
+      console.warn('[SSS Drafts] listCustomerDrafts call failed — check (1) backend re-pasted, (2) CustomerDrafts collection exists in Wix, (3) rep signed in. Response:', res);
       panel.style.display = 'none';
       return;
     }
     __custAbandonedCache = Array.isArray(res.items) ? res.items : [];
+    console.log('[SSS Drafts] listCustomerDrafts ok — ' + __custAbandonedCache.length + ' abandoned draft(s) returned');
     const countEl = __doc.getElementById('custAbandonedCount');
     if (countEl) countEl.textContent = String(__custAbandonedCache.length);
     panel.style.display = __custAbandonedCache.length === 0 ? 'none' : 'block';
