@@ -1723,11 +1723,15 @@ function __custSaveProgress() {
     // re-loaded if they refreshed the hero.
     const hasProgress = (state.activeProject && state.activeProject.type)
                      || (state.customer && (state.customer.name || state.customer.email));
-    if (!hasProgress) return;
+    if (!hasProgress) {
+      console.log('[CustResume] skip save — no progress yet (no project type, no name/email)');
+      return;
+    }
     // Also don't save if this quote was already submitted — the
     // already-submitted lock is the authoritative state for completed
     // quotes; don't pollute progress storage with finished work.
     if (typeof __custAlreadySubmittedThisQuote === 'function' && __custAlreadySubmittedThisQuote()) {
+      console.log('[CustResume] skip save — quote already submitted');
       return;
     }
     const snap = {
@@ -1743,7 +1747,10 @@ function __custSaveProgress() {
       notes:           state.notes
     };
     localStorage.setItem(CUST_PROGRESS_KEY, JSON.stringify(snap));
-  } catch (e) { /* localStorage full or blocked — silent */ }
+    console.log('[CustResume] saved snapshot — stage:', snap.currentStage, 'maxReached:', snap.maxStageReached, 'name:', snap.customer && snap.customer.name);
+  } catch (e) {
+    console.warn('[CustResume] save failed:', e);
+  }
 }
 
 function __custLoadProgress() {
@@ -1819,8 +1826,10 @@ function custResumeContinue() {
 function __custMaybeShowResumeBanner() {
   const snap = __custLoadProgress();
   const banner = __doc.getElementById('custResumeBanner');
-  if (!banner) return;
-  if (!snap) { banner.style.display = 'none'; return; }
+  console.log('[CustResume] banner check — snap?', !!snap, 'banner el?', !!banner);
+  if (!banner) { console.warn('[CustResume] banner element not found in shadow DOM'); return; }
+  if (!snap) { banner.style.display = 'none'; console.log('[CustResume] no snapshot in localStorage — hiding banner'); return; }
+  console.log('[CustResume] found snapshot:', { stage: snap.currentStage, maxReached: snap.maxStageReached, savedAt: new Date(snap.savedAt).toLocaleString(), name: snap.customer && snap.customer.name });
   // Skip the prompt if this exact quote was already submitted (the
   // sister localStorage lock covers that case authoritatively).
   if (typeof __custAlreadySubmittedThisQuote === 'function') {
@@ -9959,6 +9968,13 @@ if (typeof window !== 'undefined') {
   window.openCustHelpMenu             = openCustHelpMenu;
   window.custCopyPhoneNumber          = custCopyPhoneNumber;
   window.trackCustHelpAction          = trackCustHelpAction;
+  // Resume-banner internals — exposed so they can be invoked from the
+  // browser console for diagnosis ("why isn't my saved progress
+  // resuming?"). Safe to expose: they only touch our own localStorage key.
+  window.__custSaveProgress           = __custSaveProgress;
+  window.__custLoadProgress           = __custLoadProgress;
+  window.__custClearProgress          = __custClearProgress;
+  window.__custMaybeShowResumeBanner  = __custMaybeShowResumeBanner;
 }
   // Expose for inline onclick=/onchange= handlers in markup.
   Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, returnToDashboard, cancelNewQuote, refreshDashboardHard, pickCustSearchResult, clearPickedCustomer, convertJobberRequestToQuote, copyJobberErrorToClipboard, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, onFolderToggle, onDashSearchInput, openRowMenu, closeRowMenu, resumeCloudQuote, resumeLocalDraft, deleteLocalDraft, moveCloudQuote, duplicateCloudQuote, permanentlyDeleteCloud, duplicateCurrentForEdit, toggleBulkMode, toggleBulkRow, bulkClearSelection, bulkSetStatus, bulkPermanentlyDelete, openPricingAdmin, closePricingAdmin, switchPricingAdminTab, savePricingAdmin, resetPricingAdmin, removeReferencePhoto, signOutAndReload, openChangePinPrompt, closeRepMenu, adminCreateRep, adminResetRepPin, adminDeleteRep, adminRevokeDevice, adminRevokeAllDevices, toggleAdminDevicesShowAll, openProjectSwitchDialog, closeProjectSwitchDialog, confirmAddAnotherProject, confirmSwitchProject, openJobberPanel, closeJobberPanel, jobberConnect, jobberManualRefresh, jobberDisconnectConfirm, jobberTestConnection, pushFinishedQuoteToJobber, resendFinishedToJobber, resendViewedQuoteToJobber, resendCurrentQuoteFromSuccess, resendCurrentViewedToJobber, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, toggleEditPanel, applyCustomColor, removeCustomAddon, state, goToStage1FromIntro, goToIntroFromStage1, validateAndAdvanceFromStage1, customerSubmitEstimate, customerRequestCallback, customerStartOver, customerCallbackFromSuccess, toggleCustHelpMenu, openCustHelpMenu, custCopyPhoneNumber, trackCustHelpAction, custResumeContinue, custDiscardResume, toggleMobileExpand });
