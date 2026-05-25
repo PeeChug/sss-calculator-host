@@ -1986,7 +1986,7 @@ function __custMaybeShowResumeBanner() {
                                     : `${Math.floor(ageMin/1440)} day(s) ago`;
         const stageHint = d.maxStageReached ? ` &middot; Step ${d.maxStageReached} of 10` : '';
         const who = d.firstName ? `<strong>${d.firstName}</strong> (${d.maskedEmail})` : `${d.maskedEmail}`;
-        subEl.innerHTML = `Saved ${human}${stageHint}. Was that you, ${who}?`;
+        subEl.innerHTML = `Saved ${human}${stageHint} &middot; ${who}`;
       }
       banner.style.display = 'flex';
     })
