@@ -1880,43 +1880,117 @@ function custDiscardResume() {
   if (banner) banner.style.display = 'none';
 }
 function custResumeContinue() {
-  const ok = __custResumeFromSavedProgress();
+  // Try the local snap first (richest source). If that fails because
+  // local storage was wiped (Wix iframe / private mode), fall back to
+  // the server-side draft cached by __custMaybeShowResumeBanner.
+  let ok = __custResumeFromSavedProgress();
+  if (!ok && __custServerDraft && __custServerDraft.fullState) {
+    try {
+      const snap = JSON.parse(__custServerDraft.fullState);
+      if (snap && snap.customer) {
+        if (snap.quoteId)         state.quoteId         = snap.quoteId;
+        state.customer       = { ...state.customer, ...snap.customer };
+        if (snap.activeProject)   state.activeProject   = snap.activeProject;
+        if (Array.isArray(snap.bundledProjects)) state.bundledProjects = snap.bundledProjects;
+        if (snap.paymentMethod)   state.paymentMethod   = snap.paymentMethod;
+        if (typeof snap.notes === 'string') state.notes = snap.notes;
+        if (snap.maxStageReached) state.maxStageReached = snap.maxStageReached;
+        const set = (id, v) => { const el = __doc.getElementById(id); if (el && v) el.value = v; };
+        set('custName',    state.customer.name);
+        set('custPhone',   state.customer.phone);
+        set('custEmail',   state.customer.email);
+        set('custAddress', state.customer.address);
+        const bar = __doc.getElementById('custFloatingBar');
+        if (bar) bar.style.display = 'flex';
+        const targetStage = Math.max(1, snap.currentStage || snap.maxStageReached || 1);
+        showStage(targetStage);
+        if (typeof updateRunningTotal === 'function') updateRunningTotal();
+        // Re-save the rehydrated state to localStorage so future
+        // refreshes (when storage works) don't need the backend round-trip.
+        try { __custSaveProgress(); } catch (e) {}
+        console.log('[CustResume] hydrated from server draft, jumped to stage', targetStage);
+        ok = true;
+      }
+    } catch (e) {
+      console.warn('[CustResume] server-draft hydration failed:', e);
+    }
+  }
   if (!ok) {
     const banner = __doc.getElementById('custResumeBanner');
     if (banner) banner.style.display = 'none';
   }
 }
 
-// On-load check — if saved progress exists, surface the resume banner
-// on the hero. Called from the customer-init flow further down.
+// Stash for a server-side draft when localStorage didn't have anything.
+// custResumeContinue() reads this if no local snap exists.
+let __custServerDraft = null;
+
+// On-load check — if saved progress exists (locally OR on the server),
+// surface the resume banner on the hero. Called from the customer-init
+// flow further down. Tries local storage first (instant); if that
+// returns null, fires a backend lookup by IP and shows the banner
+// asynchronously when the response arrives.
 function __custMaybeShowResumeBanner() {
-  const snap = __custLoadProgress();
   const banner = __doc.getElementById('custResumeBanner');
-  console.log('[CustResume] banner check — snap?', !!snap, 'banner el?', !!banner);
+  console.log('[CustResume] banner check — banner el?', !!banner);
   if (!banner) { console.warn('[CustResume] banner element not found in shadow DOM'); return; }
-  if (!snap) { banner.style.display = 'none'; console.log('[CustResume] no snapshot in any storage channel (localStorage / sessionStorage / cookie) — hiding banner'); return; }
-  console.log('[CustResume] found snapshot via', snap._source + ':', { stage: snap.currentStage, maxReached: snap.maxStageReached, savedAt: new Date(snap.savedAt).toLocaleString(), name: snap.customer && snap.customer.name });
-  // Skip the prompt if this exact quote was already submitted (the
-  // sister localStorage lock covers that case authoritatively).
-  if (typeof __custAlreadySubmittedThisQuote === 'function') {
-    // Have to temporarily set state.quoteId to compare; do it carefully.
-    const prevId = state.quoteId;
-    state.quoteId = snap.quoteId;
-    const isDone = __custAlreadySubmittedThisQuote();
-    state.quoteId = prevId;
-    if (isDone) { __custClearProgress(); banner.style.display = 'none'; return; }
+
+  const snap = __custLoadProgress();
+  if (snap) {
+    console.log('[CustResume] found local snapshot via', snap._source + ':', { stage: snap.currentStage, maxReached: snap.maxStageReached, savedAt: new Date(snap.savedAt).toLocaleString(), name: snap.customer && snap.customer.name });
+    // Skip the prompt if this exact quote was already submitted (the
+    // sister localStorage lock covers that case authoritatively).
+    if (typeof __custAlreadySubmittedThisQuote === 'function') {
+      const prevId = state.quoteId;
+      state.quoteId = snap.quoteId;
+      const isDone = __custAlreadySubmittedThisQuote();
+      state.quoteId = prevId;
+      if (isDone) { __custClearProgress(); banner.style.display = 'none'; return; }
+    }
+    const subEl = __doc.getElementById('custResumeBannerSub');
+    if (subEl) {
+      const ageMin = Math.max(1, Math.floor((Date.now() - snap.savedAt) / 60000));
+      const human = ageMin < 60   ? `${ageMin} min ago`
+                  : ageMin < 1440 ? `${Math.floor(ageMin/60)} hr ago`
+                                  : `${Math.floor(ageMin/1440)} day(s) ago`;
+      const stageHint = snap.maxStageReached ? ` &middot; Step ${snap.maxStageReached} of 10` : '';
+      subEl.innerHTML = `Saved ${human}${stageHint}. Pick up where you left off?`;
+    }
+    banner.style.display = 'flex';
+    return;
   }
-  // Populate the banner's subline with a friendly "X days ago at step Y" hint.
-  const subEl = __doc.getElementById('custResumeBannerSub');
-  if (subEl) {
-    const ageMin = Math.max(1, Math.floor((Date.now() - snap.savedAt) / 60000));
-    const human = ageMin < 60   ? `${ageMin} min ago`
-                : ageMin < 1440 ? `${Math.floor(ageMin/60)} hr ago`
-                                : `${Math.floor(ageMin/1440)} day(s) ago`;
-    const stageHint = snap.maxStageReached ? ` &middot; Step ${snap.maxStageReached} of 10` : '';
-    subEl.innerHTML = `Saved ${human}${stageHint}. Pick up where you left off?`;
-  }
-  banner.style.display = 'flex';
+
+  // No local snap — try the backend. This handles Wix iframe contexts
+  // where localStorage/cookies don't persist across refresh. Identity
+  // is the requester's IP (hashed server-side). We mask the email back
+  // to the customer so a shared-IP visitor only sees "a***@gmail.com"
+  // and can decide whether it's actually theirs.
+  console.log('[CustResume] no local snapshot — querying backend by IP…');
+  banner.style.display = 'none';
+  fetch('/_functions/lookupCustomerDraft', { method: 'POST', credentials: 'include' })
+    .then(r => r.json())
+    .then(res => {
+      if (!res || !res.ok || !res.draft) {
+        console.log('[CustResume] backend lookup returned no draft for this IP');
+        return;
+      }
+      const d = res.draft;
+      console.log('[CustResume] backend lookup found draft:', { reference: d.reference, stage: d.currentStage, maxReached: d.maxStageReached, firstName: d.firstName, maskedEmail: d.maskedEmail, hasFullState: !!d.fullState });
+      __custServerDraft = d;
+      const subEl = __doc.getElementById('custResumeBannerSub');
+      if (subEl) {
+        const ageMin = d.updatedAt ? Math.max(1, Math.floor((Date.now() - new Date(d.updatedAt).getTime()) / 60000)) : 0;
+        const human = !ageMin       ? 'recently'
+                    : ageMin < 60   ? `${ageMin} min ago`
+                    : ageMin < 1440 ? `${Math.floor(ageMin/60)} hr ago`
+                                    : `${Math.floor(ageMin/1440)} day(s) ago`;
+        const stageHint = d.maxStageReached ? ` &middot; Step ${d.maxStageReached} of 10` : '';
+        const who = d.firstName ? `<strong>${d.firstName}</strong> (${d.maskedEmail})` : `${d.maskedEmail}`;
+        subEl.innerHTML = `Saved ${human}${stageHint}. Was that you, ${who}?`;
+      }
+      banner.style.display = 'flex';
+    })
+    .catch(e => { console.warn('[CustResume] backend lookup failed:', e); });
 }
 
 // =============================================================
@@ -1934,6 +2008,20 @@ function __custMaybeShowResumeBanner() {
 let __custLastDraftSig = '';
 
 function __custBuildDraftPayload() {
+  // Full state snapshot — same shape as the localStorage snap so the
+  // server-side resume can hydrate exactly like the client-side one.
+  // Sized to stay under typical Wix collection field limits (under
+  // 1MB after stringify is easily achievable for a single project).
+  const fullState = {
+    quoteId:         state.quoteId,
+    currentStage:    state.currentStage,
+    maxStageReached: state.maxStageReached,
+    customer:        state.customer,
+    activeProject:   state.activeProject,
+    bundledProjects: state.bundledProjects,
+    paymentMethod:   state.paymentMethod,
+    notes:           state.notes
+  };
   return {
     reference: state.quoteId,
     customer: {
@@ -1952,6 +2040,7 @@ function __custBuildDraftPayload() {
       try { return (typeof computeAllTotals === 'function' && computeAllTotals().final) || 0; }
       catch (e) { return 0; }
     })(),
+    fullState:        fullState,
     pageUrl:          (typeof location !== 'undefined' && location.href) || '',
     referrer:         (typeof document !== 'undefined' && document.referrer) || '',
     honeypot:         ''
