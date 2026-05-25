@@ -302,7 +302,13 @@ const PRICING = {
 // but the bundle line is rendered on the review page (not as a
 // discounts-page row) since the customer doesn't toggle it.
 const DISCOUNTS = [
-  { id: 'sw_referral',    label: 'Sherwin-Williams Referral',     sub: 'Referred by your Sherwin-Williams paint rep — 10% off this project, auto-applied for SW-referred customers.', rate: 0.10, autoCheck: () => true, locked: true,
+  // SW Edition: single auto-applied 10% Sherwin-Williams referral.
+  // `autoApply: true` is what triggers renderDiscounts() to force the
+  // row into state.activeProject.selectedDiscounts on every render,
+  // and `nonToggleable: true` makes the row visually locked-checked
+  // so the customer can't uncheck it. NOT using the `locked: true`
+  // flag (which is reserved for the bundle, handled in computeAllTotals).
+  { id: 'sw_referral',    label: 'Sherwin-Williams Referral',     sub: 'Referred by your Sherwin-Williams paint rep — 10% off this project, auto-applied for SW-referred customers.', rate: 0.10, autoApply: true, nonToggleable: true,
     img: 'https://images.unsplash.com/photo-1562184552-997c461abbe6?w=400&q=80&auto=format&fit=crop' }
 ];
 
@@ -755,7 +761,14 @@ function makeBlankProject() {
     woodAge: null,                // 'new' | 'weathered' | 'aged' — captured on Step 3, gates Step 4 options
     selectedColor: null,
     addons: {}, serviceAddons: {},
-    selectedDiscounts: [],        // array of discount IDs — all stack on top of bundle
+    // Pre-seed any DISCOUNTS entries flagged `autoApply: true` so the
+    // discount applies to the running total from the moment a project
+    // is created — not only after the customer reaches Step 9.
+    // SW edition uses this for the SW Referral 10%.
+    selectedDiscounts: (function () {
+      try { return DISCOUNTS.filter(d => d.autoApply).map(d => d.id); }
+      catch (e) { return []; }
+    })(),
     customAddons: [],             // employee-added custom line items
     hoa: { brand: '', transparency: '', productName: '', color: '', notes: '' },
     previousStain: { wasStained: false, previousProductType: '', brand: '', transparency: '', productName: '', colorNotes: '' },
@@ -4489,7 +4502,16 @@ function findAddonDef(id) {
    STAGE 9: DISCOUNTS — separated, single-select (radio)
    ============================================================ */
 function renderDiscounts() {
-  const sels = state.activeProject.selectedDiscounts || [];
+  // Force every `autoApply: true` discount into selectedDiscounts before
+  // computing the sum. SW edition uses this for the SW Referral so the
+  // 10% applies the moment the customer hits Step 9, no tap needed.
+  state.activeProject.selectedDiscounts = state.activeProject.selectedDiscounts || [];
+  DISCOUNTS.forEach(d => {
+    if (d.autoApply && state.activeProject.selectedDiscounts.indexOf(d.id) === -1) {
+      state.activeProject.selectedDiscounts.push(d.id);
+    }
+  });
+  const sels = state.activeProject.selectedDiscounts;
   const sum = totalDiscountRate();
   const bundleAuto = state.bundledProjects.length >= 1 && !!state.activeProject.type;
   const html = `
@@ -4531,6 +4553,11 @@ function renderDiscounts() {
   __doc.querySelectorAll('#discountList .radio-row').forEach(row => {
     row.addEventListener('click', () => {
       const id = row.dataset.discount;
+      // nonToggleable discounts (e.g. SW Referral auto-applied for all
+      // SW-referred customers) ignore clicks so the customer can't
+      // accidentally uncheck them.
+      const def = DISCOUNTS.find(x => x.id === id);
+      if (def && def.nonToggleable) return;
       const group = row.dataset.discountGroup;
       const sels = state.activeProject.selectedDiscounts = state.activeProject.selectedDiscounts || [];
       const idx = sels.indexOf(id);
