@@ -4143,17 +4143,15 @@ function renderAddons() {
         </div>
       `).join('')}</div>
     </div>
-    ${stainSection}
-    <div class="addon-section">
-      <h4>${PROJECT_META[proj].icon} ${PROJECT_META[proj].name} Add-ons</h4>
-      <div class="addon-grid">${projAddons.map(a => addonRow(a, 'project')).join('')}</div>
-    </div>`;
-  // Note: "🛠️ Custom Items" section is intentionally omitted from the
-  // customer build — it's an employee-only tool for adding off-list
-  // line items. The rep build still renders + uses it. Calculation,
-  // serialization, and rendering code further down still references
-  // `state.activeProject.customAddons` defensively, but in the
-  // customer flow nothing ever populates that array.
+    ${stainSection}`;
+  // Note: project-specific add-ons (post caps, picket replacement, gate
+  // adjust, deck board replacement, etc.) and the "🛠️ Custom Items"
+  // section are intentionally omitted from the customer build — they're
+  // employee-only tools that a customer can't accurately self-assess.
+  // Anything in those categories is captured on the in-person walkthrough.
+  // Pricing math further down still references `state.activeProject.addons`
+  // and `.customAddons` defensively, but in the customer flow nothing
+  // ever populates those arrays.
   attachAddonListeners();
 }
 
