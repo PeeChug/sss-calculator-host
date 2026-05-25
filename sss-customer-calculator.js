@@ -7217,6 +7217,11 @@ function awaitSaveSettled() { return __saveSettledPromise; }
 
 async function cloudSaveDraft(attempt = 0) {
   if (typeof __sssBridge === 'undefined' || !__sssBridge.call) return;
+  // Customer build never writes to the rep-only cloud collection — the
+  // bridge silently rejects with {ok:false, error:'customer_mode'} for
+  // every method anyway, which used to flood the console with retries.
+  // Short-circuit here so customer sessions stay quiet.
+  if (typeof IS_CUSTOMER_BUILD !== 'undefined' && IS_CUSTOMER_BUILD) return;
   // Coalesce concurrent saves: one in flight + one queued.
   if (__cloudSaveInFlight) { __cloudSavePending = true; markSaveStart(); return; }
   const payload = buildCloudPayload();
@@ -7295,6 +7300,10 @@ function flushPendingSaves() {
 }
 
 function scheduleAutoSave() {
+  // Customer build: skip the rep-only cloud autosave entirely. The
+  // customer-facing draft channel (__custPostDraft → /_functions/
+  // saveCustomerDraft) handles persistence and runs from showStage().
+  if (typeof IS_CUSTOMER_BUILD !== 'undefined' && IS_CUSTOMER_BUILD) return;
   clearTimeout(autoSaveTimer);
   autoSaveTimer = setTimeout(autoSaveDraft, 1500); // 1.5s debounce
 }
