@@ -161,11 +161,12 @@ const __CUSTOMER_BRIDGE_ALLOWED = new Set([
    PRICING TABLES
    ============================================================ */
 const PRICING = {
-  // SW edition fence pricing — reduced ~9.2% across all tiers from
-  // the rep-build rates (9.20 / 11.20 / 15.20) so the standard/charleston
-  // showcase lands at $13.80/ln ft. Performance and Essential get the
-  // same proportional reduction (10.17 and 8.35).
-  fence: { tiers: { essential: 8.35, performance: 10.17, showcase: 13.80 }, styleMultipliers: { privacy: 1.0, charleston: 1.0, shadowbox: 1.25, bob: 1.25, charleston_bob: 1.25, farm: 0.85 }, oneSidedFactor: 0.65, prep: { no_wash: 0, soft_wash: 2.80, strip_sand: 4.80 }, unit: 'ln ft' },
+  // SW edition pricing: Essential and Performance match the rep build
+  // baseline. ONLY the Showcase tier is reduced (~9.2%) across every
+  // project type so that fence Showcase lands at $13.80/ln ft on
+  // standard/charleston style. The same ~9.2% reduction is applied
+  // proportionally to deck, pergola, barn, and ceiling showcase rates.
+  fence: { tiers: { essential: 9.20, performance: 11.20, showcase: 13.80 }, styleMultipliers: { privacy: 1.0, charleston: 1.0, shadowbox: 1.25, bob: 1.25, charleston_bob: 1.25, farm: 0.85 }, oneSidedFactor: 0.65, prep: { no_wash: 0, soft_wash: 2.80, strip_sand: 4.80 }, unit: 'ln ft' },
   // Deck tier rates are now expressed as actual $/sq ft (the FLAT
   // rate at each tier), matching every other project type. Used to be
   // a multiplier (0.8 / 1.0 / 1.3) applied to a separate baseline
@@ -173,14 +174,14 @@ const PRICING = {
   // confused everyone. The component rates (railing/stair/lattice)
   // still scale relative to the baseline flat rate via a derived
   // multiplier inside computeProjectTotal — that math is unchanged.
-  deck:  { tiers: { essential: 4.00, performance: 5.00, showcase: 6.50 }, rates: { flat: 5.00, railing: 7.50, stair: 31.25, lattice: 3.75 }, underneathMultiplier: 2, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
-  pergola: { tiers: { essential: 4.40, performance: 5.50, showcase: 7.15 }, overheadAccessFlat: 200, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
+  deck:  { tiers: { essential: 4.00, performance: 5.00, showcase: 5.90 }, rates: { flat: 5.00, railing: 7.50, stair: 31.25, lattice: 3.75 }, underneathMultiplier: 2, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
+  pergola: { tiers: { essential: 4.40, performance: 5.50, showcase: 6.49 }, overheadAccessFlat: 200, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
   // Barn tier rates bumped so performance = $4.25/sq ft (same scaling
   // factor as the ceiling bump). Prep rates raised to match deck and
   // pergola — barn prep was previously lighter, but the actual labor
   // is the same.
-  barn:    { tiers: { essential: 3.40, performance: 4.25, showcase: 5.55 }, heightPremium: 1.30, liftRentalPerDay: 400, trimRate: 1.50, cupolaFlat: 200, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
-  ceiling: { tiers: { essential: 3.40, performance: 4.25, showcase: 5.55 }, tngPremium: 0.50, beamRate: 8.00, fixtureRemoval: 50, fanRemoval: 100, furnitureProtFlat: 100, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
+  barn:    { tiers: { essential: 3.40, performance: 4.25, showcase: 5.04 }, heightPremium: 1.30, liftRentalPerDay: 400, trimRate: 1.50, cupolaFlat: 200, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
+  ceiling: { tiers: { essential: 3.40, performance: 4.25, showcase: 5.04 }, tngPremium: 0.50, beamRate: 8.00, fixtureRemoval: 50, fanRemoval: 100, furnitureProtFlat: 100, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
   stainUpgrades: [
     { id: 'citronella',  name: 'Natural insect-defense oil additive', restr: 'Oil only', product: 'oil',
       priceType: 'per_unit',
@@ -536,50 +537,22 @@ const HOA_TIER_META = {
   }
 };
 
-// SW Edition: fence projects use SW Woodscapes oil-based products
-// (the SuperDeck family is positioned as a deck/dock product line —
-// Woodscapes is what SW reps recommend for vertical fence surfaces).
-// Decks, pergolas, ceilings, and barns continue to use SuperDeck.
-const FENCE_OIL_TIER_META = {
-  explain: "Sherwin-Williams Woodscapes oil-based stains — pigmented penetrating finishes built for vertical fence surfaces. Available in semi-transparent and solid formulations.",
-  essential: {
-    product: 'SW Woodscapes Oil-Based Semi-Transparent',
-    tagline: "Pigmented penetrating oil for fences — entry-level Woodscapes",
-    life: '~2 years',
-    details: 'Sherwin-Williams Woodscapes Oil-Based Semi-Transparent — a penetrating oil with light pigment that lets the wood grain show through. Protects against moisture and UV without forming a heavy film. Coverage ~150–200 sq ft per gallon on smooth fence boards.',
-    pros: ['Lowest oil-based cost on fences', 'Wood grain stays visible', 'Penetrating (not film-forming) — no peeling risk', 'Quick application turnaround', 'Easy to refresh down the road'],
-    cons: ['Light pigment = less UV defense than performance tier', 'Shorter recoat cycle (~2 years)', 'Stock semi-transparent colors only'],
-    bestFor: 'Customers who want to keep the natural fence look with basic protection — privacy fences in shaded yards'
-  },
-  performance: {
-    product: 'SW Woodscapes Oil-Based Solid (1 coat)',
-    tagline: 'Most-recommended fence oil — solid color, single coat',
-    life: '3–5 years',
-    details: 'Sherwin-Williams Woodscapes Oil-Based Solid in a single coat — full-pigment opaque finish that hides the grain and gives strong UV/moisture defense. Coverage ~150 sq ft per gallon. Custom-tintable to 100+ SW colors.',
-    pros: ['Best value Woodscapes oil — most popular for fences', '100+ SW custom tint colors available', 'Strong UV defense from full-pigment loading', 'Single-coat application keeps project time short', '30-day touch-up included'],
-    cons: ['Hides wood grain (opaque finish)', 'Longer dry time than water-based'],
-    bestFor: 'Most homeowners — privacy fences, shadowbox, board-on-board, anywhere you want a clean uniform color'
-  },
-  showcase: {
-    product: 'SW Woodscapes Oil-Based Solid (2 coats, full prep)',
-    tagline: 'Premium two-coat Woodscapes — longest-lasting fence finish',
-    life: '5–7 years',
-    details: 'Two full coats of SW Woodscapes Oil-Based Solid with full surface prep. Maximum film build and pigment loading — strongest UV resistance, longest recoat cycle in our fence lineup. Custom-tintable to 100+ SW colors.',
-    pros: ['Longest recoat cycle on fences (5–7 years)', 'Two-coat film build for maximum durability', '100+ SW custom tint colors available', 'Free 30-day touch-up visit', 'Strong moisture and UV defense'],
-    cons: ['Highest up-front cost', 'Hides wood grain (opaque finish)', '+1 day of project time for second coat dry'],
-    bestFor: 'Full-sun fences, premium homes, customers who want maximum life between recoats'
-  }
-};
-
 function getTierMeta(productType, tier, projectType) {
   if (productType === 'hoa') return HOA_TIER_META[tier] || HOA_TIER_META.performance;
-  // SW edition: fence + oil pulls from the Woodscapes ladder, not the
-  // SuperDeck one. Decks, pergolas, barns, and ceilings still use the
-  // SuperDeck-branded TIER_META.oil entries.
-  if (productType === 'oil' && projectType === 'fence' && FENCE_OIL_TIER_META[tier]) {
-    return FENCE_OIL_TIER_META[tier];
-  }
   return TIER_META[productType] && TIER_META[productType][tier];
+}
+
+// SW Edition: keep the SuperDeck product lineup (Exotic Timber Oil etc.)
+// but drop the "SuperDeck" brand prefix when the project ISN'T a deck or
+// ceiling. The SuperDeck name positions the product as deck-focused, so
+// referencing it on a fence or pergola feels off — we strip it on those
+// project types but leave it intact when the customer is actually
+// staining a deck or wooden ceiling.
+function tierProductLabel(tm, projectType) {
+  if (!tm) return '';
+  const name = tm.product || '';
+  if (projectType === 'deck' || projectType === 'ceiling') return name;
+  return name.replace(/^SuperDeck\s+/i, '');
 }
 
 /* ============================================================
@@ -4070,49 +4043,31 @@ function renderTierCards() {
     const secondaryLine = showTotalAsHeadline
       ? `≈ $${costPerYear.toLocaleString()}/yr amortized`
       : `≈ $${Math.round(totalPrice).toLocaleString()} total · ≈ $${costPerYear.toLocaleString()}/yr amortized`;
-    // What's Included — real value-adds per tier. SW edition splits the
-    // product line by project type: fences get the Woodscapes ladder,
-    // everything else (decks/pergolas/barns/ceilings) gets SuperDeck.
+    // What's Included — real value-adds per tier. SW edition keeps the
+    // same SuperDeck product lineup across every project but drops the
+    // "SuperDeck" prefix on non-deck/ceiling projects (handled by
+    // `keepSuperDeck`).
     let included;
-    const isFenceOil = (product === 'oil' && proj === 'fence');
+    const keepSuperDeck = (proj === 'deck' || proj === 'ceiling');
+    const sdPrefix = keepSuperDeck ? 'Sherwin-Williams SuperDeck ' : 'Sherwin-Williams ';
     if (product === 'oil' && t === 'essential') {
-      included = isFenceOil ? [
-        '✓ <strong>Sherwin-Williams Woodscapes Oil-Based Semi-Transparent</strong>',
-        '✓ Pigmented penetrating oil — wood grain stays visible',
-        '✓ Siding &amp; hardware protection during application',
-        '✓ Full job-site cleanup after we leave',
-        '✓ Fully insured &amp; licensed in South Carolina'
-      ] : [
-        '✓ Sherwin-Williams SuperDeck Oil-Based Transparent',
+      included = [
+        `✓ ${sdPrefix}Oil-Based Transparent`,
         '✓ Siding &amp; hardware protection during application',
         '✓ Full job-site cleanup after we leave',
         '✓ Fully insured &amp; licensed in South Carolina'
       ];
     } else if (product === 'oil' && t === 'performance') {
-      included = isFenceOil ? [
-        '✓ <strong>Sherwin-Williams Woodscapes Oil-Based Solid (1 coat)</strong>',
-        '✓ Full-pigment opaque finish — strong UV defense',
-        '✓ Custom-tintable to 100+ Sherwin-Williams colors',
-        '✓ Siding &amp; hardware protection during application',
-        '✓ Free 30-day touch-up visit if you spot any miss',
-        '✓ Fully insured &amp; licensed work'
-      ] : [
-        '✓ <strong>Sherwin-Williams SuperDeck Exotic Timber Oil</strong> — tri-oil blend (tung + linseed + alkyd)',
+      included = [
+        `✓ <strong>${sdPrefix}Exotic Timber Oil</strong> — tri-oil blend (tung + linseed + alkyd)`,
         '✓ UV-resistant trans-oxide pigments + water-repellent + mildew-inhibiting',
         '✓ Siding &amp; hardware protection during application',
         '✓ Free 30-day touch-up visit if you spot any miss',
         '✓ Fully insured &amp; licensed work'
       ];
     } else if (product === 'oil' && t === 'showcase') {
-      included = isFenceOil ? [
-        '✓ <strong>Sherwin-Williams Woodscapes Oil-Based Solid (2 coats)</strong> — longest-lasting fence finish',
-        '✓ Full-prep + two-coat film build for maximum durability (5–7 yr recoat cycle)',
-        '✓ Custom-tintable to 100+ Sherwin-Williams colors',
-        '✓ Siding &amp; hardware protection during application',
-        '✓ Free 30-day touch-up visit',
-        '✓ Fully insured &amp; licensed work'
-      ] : [
-        '✓ <strong>Sherwin-Williams SuperDeck Oil-Based Semi-Solid</strong> — longest-lasting deck oil in our lineup',
+      included = [
+        `✓ <strong>${sdPrefix}Oil-Based Semi-Solid</strong> — longest-lasting oil in our lineup`,
         '✓ Maximum pigment load for strongest UV protection (4–6 yr recoat cycle)',
         '✓ Custom-tintable to 100+ Sherwin-Williams colors',
         '✓ Siding &amp; hardware protection during application',
@@ -4152,7 +4107,7 @@ function renderTierCards() {
       <button class="tier-card ${isReco ? 'recommended' : ''} ${isSelected ? 'selected' : ''}" data-tier="${t}" data-mobile-collapse="true">
         ${isReco ? '<div class="reco-flag">Recommended</div>' : ''}
         <div class="tier-name">${t}</div>
-        <div class="tier-product">${tm.product}</div>
+        <div class="tier-product">${tierProductLabel(tm, proj)}</div>
         <div class="tier-tagline">${tm.tagline}</div>
         <div class="tier-price">${headlinePrice}</div>
         <div class="tier-cost-per-year">${secondaryLine}</div>
@@ -5130,7 +5085,7 @@ function renderFinalBreakdown() {
 
       <div class="breakdown-section">
         <h4>Tier Base</h4>
-        <div class="breakdown-line"><span class="desc">${tierMeta.product}<small>Expected life: ${tierMeta.life}</small></span><span class="val">$${a.tierBase.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
+        <div class="breakdown-line"><span class="desc">${tierProductLabel(tierMeta, proj)}<small>Expected life: ${tierMeta.life}</small></span><span class="val">$${a.tierBase.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
       </div>
 
       <div class="breakdown-section">
@@ -5748,7 +5703,7 @@ function renderEditPanel() {
         const tm = getTierMeta(product, t, state.activeProject.type);
         return `
           <div class="mini-tier-row ${state.activeProject.tier === t ? 'active' : ''}" onclick="setTier('${t}')">
-            <span class="label">${t.charAt(0).toUpperCase() + t.slice(1)}<br><small style="font-size:11px;color:var(--slate);font-weight:400;">${tm.product}</small></span>
+            <span class="label">${t.charAt(0).toUpperCase() + t.slice(1)}<br><small style="font-size:11px;color:var(--slate);font-weight:400;">${tierProductLabel(tm, state.activeProject.type)}</small></span>
             <span class="price">$${Math.round(sample[t]).toLocaleString()}</span>
           </div>`;
       }).join('');
@@ -6021,7 +5976,7 @@ function generatePDF() {
     y += 14;
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
     doc.setTextColor(90, 99, 120);
-    doc.text(tier.product + ' · Expected life: ' + tier.life, M, y); y += 13;
+    doc.text(tierProductLabel(tier, p.type) + ' · Expected life: ' + tier.life, M, y); y += 13;
 
     if (p.productType === 'hoa') {
       doc.text(`HOA Color: ${p.hoa.brand} — ${p.hoa.color}${p.hoa.productName ? ' (' + p.hoa.productName + ')' : ''}`, M, y); y += 11;
@@ -6552,7 +6507,7 @@ function buildTrackerRows() {
     // Tier
     if (ap.tier && !isHoa()) {
       const tm = getTierMeta(ap.productType, ap.tier, ap.type);
-      if (tm) rows.push({ section: 'Project', label: 'Tier', value: ap.tier.charAt(0).toUpperCase() + ap.tier.slice(1) + ' — ' + tm.product, stage: 6 });
+      if (tm) rows.push({ section: 'Project', label: 'Tier', value: ap.tier.charAt(0).toUpperCase() + ap.tier.slice(1) + ' — ' + tierProductLabel(tm, ap.type), stage: 6 });
     } else if (isHoa()) {
       rows.push({ section: 'Project', label: 'Tier', value: 'HOA-Specified (locked)', stage: 6 });
     }
