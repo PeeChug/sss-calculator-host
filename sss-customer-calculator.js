@@ -157,7 +157,7 @@ const __CUSTOMER_BRIDGE_ALLOWED = new Set([
    PRICING TABLES
    ============================================================ */
 const PRICING = {
-  fence: { tiers: { essential: 9.20, performance: 11.20, showcase: 15.20 }, styleMultipliers: { privacy: 1.0, charleston: 1.0, shadowbox: 1.25, bob: 1.25, charleston_bob: 1.25, farm: 0.85 }, oneSidedFactor: 0.65, prep: { no_wash: 0, soft_wash: 2.80, strip_sand: 4.80 }, unit: 'ln ft' },
+  fence: { tiers: { essential: 9.20, performance: 11.20, showcase: 15.20 }, styleMultipliers: { privacy: 1.0, charleston: 1.0, shadowbox: 1.25, bob: 1.25, charleston_bob: 1.25, farm: 0.85 }, oneSidedFactor: 0.65, prep: { no_wash: 0, soft_wash: 1.60, strip_sand: 4.80 }, unit: 'ln ft' },
   // Deck tier rates are now expressed as actual $/sq ft (the FLAT
   // rate at each tier), matching every other project type. Used to be
   // a multiplier (0.8 / 1.0 / 1.3) applied to a separate baseline
@@ -165,14 +165,14 @@ const PRICING = {
   // confused everyone. The component rates (railing/stair/lattice)
   // still scale relative to the baseline flat rate via a derived
   // multiplier inside computeProjectTotal — that math is unchanged.
-  deck:  { tiers: { essential: 4.00, performance: 5.00, showcase: 6.50 }, rates: { flat: 5.00, railing: 7.50, stair: 31.25, lattice: 3.75 }, underneathMultiplier: 2, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
-  pergola: { tiers: { essential: 4.40, performance: 5.50, showcase: 7.15 }, overheadAccessFlat: 200, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
+  deck:  { tiers: { essential: 4.00, performance: 5.00, showcase: 6.50 }, rates: { flat: 5.00, railing: 7.50, stair: 31.25, lattice: 3.75 }, underneathMultiplier: 2, prep: { no_wash: 0, soft_wash: 0.72, strip_sand: 2.85 }, unit: 'sq ft' },
+  pergola: { tiers: { essential: 4.40, performance: 5.50, showcase: 7.15 }, overheadAccessFlat: 200, prep: { no_wash: 0, soft_wash: 0.72, strip_sand: 2.85 }, unit: 'sq ft' },
   // Barn tier rates bumped so performance = $4.25/sq ft (same scaling
   // factor as the ceiling bump). Prep rates raised to match deck and
   // pergola — barn prep was previously lighter, but the actual labor
   // is the same.
-  barn:    { tiers: { essential: 3.40, performance: 4.25, showcase: 5.55 }, heightPremium: 1.30, liftRentalPerDay: 400, trimRate: 1.50, cupolaFlat: 200, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
-  ceiling: { tiers: { essential: 3.40, performance: 4.25, showcase: 5.55 }, tngPremium: 0.50, beamRate: 8.00, fixtureRemoval: 50, fanRemoval: 100, furnitureProtFlat: 100, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
+  barn:    { tiers: { essential: 3.40, performance: 4.25, showcase: 5.55 }, heightPremium: 1.30, liftRentalPerDay: 400, trimRate: 1.50, cupolaFlat: 200, prep: { no_wash: 0, soft_wash: 0.72, strip_sand: 2.85 }, unit: 'sq ft' },
+  ceiling: { tiers: { essential: 3.40, performance: 4.25, showcase: 5.55 }, tngPremium: 0.50, beamRate: 8.00, fixtureRemoval: 50, fanRemoval: 100, furnitureProtFlat: 100, prep: { no_wash: 0, soft_wash: 0.72, strip_sand: 2.85 }, unit: 'sq ft' },
   stainUpgrades: [
     { id: 'citronella',  name: 'EXPERT Natural Defense additive', restr: 'Oil only', product: 'oil',
       priceType: 'per_unit',
@@ -2759,11 +2759,11 @@ function refreshStage2Selection() {
    STAGE 3: MEASUREMENTS
    ============================================================ */
 const MEASURE_TIPS = {
-  fence:   { ico: '📏', title: 'How we measure fences', body: 'Linear feet is measured base to base of posts (not panel to panel). Height is base of pickets to top, rounded to the nearest half-foot. Pricing assumes both sides stained — the standard for privacy fences — unless you toggle "one side only" below.' },
-  deck:    { ico: '📏', title: 'What we count on a deck', body: 'Flat surface (sq ft) covers the top boards only. Railings are itemized in linear feet — a 40-ft perimeter railing counts as 40 ln ft regardless of how many rails it has. Stairs are counted individually by tread (not risers).' },
-  pergola: { ico: '📏', title: 'Why pergola surface area is bigger than it looks', body: 'Total surface includes the top and bottom of every beam, all four sides of the posts, plus rafters and any decorative elements — not just the footprint. A 12×12 pergola is usually 180–220 sq ft of actual stainable surface, not 144.' },
-  barn:    { ico: '📏', title: 'How we measure barn siding', body: 'Siding sq ft is calculated wall by wall (length × height for each wall). We don\'t subtract for normal-sized windows and doors. For walls above 12 ft, a height premium applies and a lift rental may be needed — typically quoted together.' },
-  ceiling: { ico: '📏', title: 'What\'s included in a ceiling job', body: 'Beyond the sq ft of the ceiling itself, interior jobs include moving furniture, masking floors and walls, and covering/masking light fixtures and ceiling fans (we don\'t remove them — we cover them to protect from overspray). Tongue-and-groove and beam two-toning add complexity but a richer final look.' }
+  fence:   { ico: '📏', title: 'Measuring a fence', body: 'Total length in linear feet, height from ground to top of the pickets. Tap "Not sure how to measure?" below for quick tips.' },
+  deck:    { ico: '📏', title: 'Measuring a deck', body: 'Flat sq ft is the top boards only. Railings are linear feet. Count stairs individually. Tap "Not sure how to measure?" for examples.' },
+  pergola: { ico: '📏', title: 'Measuring a pergola', body: 'Just give us the footprint (length × width). We do the math — pergolas have about 1.5× more surface than the footprint.' },
+  barn:    { ico: '📏', title: 'Measuring barn siding', body: 'Add up length × height for each wall. Don\'t subtract for normal windows or doors.' },
+  ceiling: { ico: '📏', title: 'Measuring a wooden ceiling', body: 'Length × width of the ceiling. We cover fixtures and fans in place — no need to remove them.' }
 };
 
 function renderMeasurements() {
@@ -3202,102 +3202,49 @@ const MEASURE_SVG = {
 
 const MEASURE_TUTORIAL = {
   fence: {
-    title: 'How to estimate fence measurements',
+    title: 'How to measure a fence',
     body: MEASURE_TIP_HEADER + MEASURE_SVG.fence + `
-      <p style="margin-bottom:14px;"><strong>Linear feet (how long the fence is):</strong></p>
-      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
-        <li>Walk along the base &mdash; count panels and multiply by panel width. Most panels are <strong>6 or 8 ft</strong> wide (check the gap between posts).</li>
-        <li>Pace it out &mdash; 20 normal steps ≈ 50 ft.</li>
-        <li>Use a tape measure or measuring wheel at one or two corners and estimate the rest.</li>
-        <li><strong>Round to the nearest 5 ft.</strong> Over-estimating slightly is fine.</li>
-      </ul>
-      <p style="margin-bottom:14px;"><strong>Height:</strong></p>
-      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
-        <li>Most residential privacy fences are <strong>6 ft</strong>.</li>
-        <li>Front-yard / decorative / pool fences are usually <strong>4 ft</strong>.</li>
-        <li>Measure from the ground to the top of the pickets (not the post caps).</li>
-      </ul>
-      <p style="margin-bottom:8px;"><strong>Fence style:</strong></p>
-      <ul style="padding-left:20px;line-height:1.7;">
-        <li><strong>Privacy</strong> &mdash; solid panels, no gaps. Most common.</li>
-        <li><strong>Shadowbox</strong> &mdash; boards alternate front/back (looks the same from either side).</li>
-        <li><strong>Board-on-board</strong> &mdash; overlapping pickets, no gaps from either side.</li>
-        <li><strong>Charleston</strong> &mdash; decorative cut into the picket tops.</li>
-        <li><strong>Farm fence</strong> &mdash; horizontal rails with big gaps (3-rail or split-rail).</li>
+      <ul style="margin-bottom:14px;padding-left:20px;line-height:1.6;">
+        <li><strong>Length:</strong> walk along the base. 20 normal steps ≈ 50 ft. Round to the nearest 5 ft.</li>
+        <li><strong>Height:</strong> ground to the top of the pickets. Most privacy fences are 6 ft.</li>
+        <li><strong>Style:</strong> Privacy is solid panels. Shadowbox / board-on-board look the same from both sides.</li>
       </ul>` + MEASURE_TIP_FOOTER
   },
   deck: {
-    title: 'How to estimate deck measurements',
+    title: 'How to measure a deck',
     body: MEASURE_TIP_HEADER + MEASURE_SVG.deck + `
-      <p style="margin-bottom:14px;"><strong>Flat surface (square feet):</strong></p>
-      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
-        <li><strong>Length × width</strong> of the deck floor. Don't subtract for stairs or built-ins.</li>
-        <li>Typical sizes: 12×12 = 144 sq ft &middot; 10×16 = 160 &middot; 14×20 = 280 &middot; 16×24 = 384.</li>
-        <li>L-shaped / multi-level: break it into rectangles, calculate each, add together.</li>
-      </ul>
-      <p style="margin-bottom:14px;"><strong>Railing (linear feet):</strong></p>
-      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
-        <li>Total length around the deck's handrail. Skip any side flush against the house.</li>
-        <li>A 12×12 deck with railing on 3 sides ≈ 36 ln ft.</li>
-      </ul>
-      <p style="margin-bottom:14px;"><strong>Stairs:</strong></p>
-      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
-        <li>Count individual <strong>treads</strong> (the part you step on) &mdash; not risers, not the landing.</li>
-        <li>3 ft drop ≈ 4 stairs &middot; 6 ft drop ≈ 8 stairs.</li>
-      </ul>
-      <p style="margin-bottom:14px;"><strong>Underneath / joists:</strong></p>
-      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
-        <li>Only check this if you want the visible underside of the deck stained (e.g., second-story decks where the patio below sees it).</li>
-      </ul>
-      <p style="margin-bottom:8px;"><strong>Lattice / privacy walls:</strong></p>
-      <ul style="padding-left:20px;line-height:1.7;">
-        <li>Decorative lattice between deck posts. Measure each panel's sq ft.</li>
+      <ul style="margin-bottom:14px;padding-left:20px;line-height:1.6;">
+        <li><strong>Flat surface:</strong> length × width of the deck floor (top boards only). 12×12 = 144 sq ft, 14×20 = 280 sq ft.</li>
+        <li><strong>Railing:</strong> total length of the handrail. Skip any side against the house.</li>
+        <li><strong>Stairs:</strong> count the treads — the steps you walk on, not the risers.</li>
       </ul>` + MEASURE_TIP_FOOTER
   },
   pergola: {
-    title: 'How to estimate pergola measurements',
+    title: 'How to measure a pergola',
     body: MEASURE_TIP_HEADER + MEASURE_SVG.pergola + `
-      <p style="margin-bottom:14px;">Just measure the <strong>footprint</strong> (length × width of the area under the pergola). We calculate the actual stainable surface from there &mdash; pergolas always have more wood to coat than the footprint suggests because we stain the top + bottom of every beam + all four sides of the posts.</p>
-      <p style="margin-bottom:14px;"><strong>Quick estimates by footprint:</strong></p>
-      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
-        <li><strong>10×10</strong> ≈ 150–180 sq ft of stainable surface</li>
-        <li><strong>12×12</strong> ≈ 180–220 sq ft</li>
-        <li><strong>14×16</strong> ≈ 280–350 sq ft</li>
-        <li><strong>16×24</strong> ≈ 400–500 sq ft</li>
-      </ul>
-      <p style="margin-bottom:8px;">Don't worry about counting beams &mdash; just give us the footprint.</p>` + MEASURE_TIP_FOOTER
+      <p style="margin-bottom:12px;">Just give us the <strong>footprint</strong> (length × width). We do the math from there.</p>
+      <ul style="margin-bottom:14px;padding-left:20px;line-height:1.6;">
+        <li>10×10 ≈ 150–180 sq ft of stainable surface</li>
+        <li>12×12 ≈ 180–220 sq ft</li>
+        <li>14×16 ≈ 280–350 sq ft</li>
+      </ul>` + MEASURE_TIP_FOOTER
   },
   barn: {
-    title: 'How to estimate barn siding',
+    title: 'How to measure barn siding',
     body: MEASURE_TIP_HEADER + MEASURE_SVG.barn + `
-      <p style="margin-bottom:14px;"><strong>Siding sq ft (per wall):</strong></p>
-      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
-        <li>For each wall: <strong>wall length × wall height</strong>. Add the walls together for total sq ft.</li>
-        <li>Don't subtract for normal windows or doors &mdash; the trim around them needs staining anyway.</li>
-        <li>Typical 24×36 barn with 12 ft walls ≈ 1,440 sq ft total.</li>
-      </ul>
-      <p style="margin-bottom:8px;"><strong>Tall walls / 2-story:</strong></p>
-      <ul style="padding-left:20px;line-height:1.7;">
-        <li>Toggle "Walls above 12 ft" &mdash; a 30% height premium applies for the extra labor.</li>
-        <li>A lift rental is usually required above ~16 ft, billed at $400/day.</li>
+      <ul style="margin-bottom:14px;padding-left:20px;line-height:1.6;">
+        <li>For each wall: <strong>length × height</strong>. Add all the walls together.</li>
+        <li>Don't subtract for normal windows or doors.</li>
+        <li>Walls above 12 ft or tall barns: toggle "Walls above 12 ft" — a height premium applies.</li>
       </ul>` + MEASURE_TIP_FOOTER
   },
   ceiling: {
-    title: 'How to estimate a wooden ceiling',
+    title: 'How to measure a wooden ceiling',
     body: MEASURE_TIP_HEADER + MEASURE_SVG.ceiling + `
-      <p style="margin-bottom:14px;"><strong>Ceiling area (square feet):</strong></p>
-      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
-        <li><strong>Length × width</strong> of the ceiling area you want stained.</li>
-        <li>Typical porch ceiling: 12×8 = 96 sq ft &middot; Typical T&G kitchen: 200–300 sq ft.</li>
-      </ul>
-      <p style="margin-bottom:14px;"><strong>Beam two-tone (linear feet):</strong></p>
-      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
-        <li>Only count beams if you want them stained a <em>different</em> color than the planks.</li>
-        <li>12×12 ceiling with three crossing beams ≈ 36 ln ft of beam.</li>
-      </ul>
-      <p style="margin-bottom:8px;"><strong>Fixtures &amp; fans:</strong></p>
-      <ul style="padding-left:20px;line-height:1.7;">
-        <li>Count what we'll cover &amp; mask (we wrap them rather than removing). Typical porch: 1 fan + 2 lights.</li>
+      <ul style="margin-bottom:14px;padding-left:20px;line-height:1.6;">
+        <li><strong>Ceiling area:</strong> length × width of the ceiling you want stained.</li>
+        <li><strong>Beams:</strong> only count beams if you want them a different color than the planks.</li>
+        <li><strong>Fixtures &amp; fans:</strong> we cover and mask them in place — no need to remove them.</li>
       </ul>` + MEASURE_TIP_FOOTER
   }
 };
@@ -4076,8 +4023,12 @@ function renderTierCards() {
         <div class="tier-tagline">${tm.tagline}</div>
         <div class="tier-price">${headlinePrice}</div>
         <div class="tier-cost-per-year">${secondaryLine}</div>
+        <!-- tier-life is OUTSIDE .cust-mc so the expected-years
+             pill is always visible on mobile (cust-mc collapses on
+             phones). Pros/cons/included still live inside the
+             collapse since they're heavier content. -->
+        <div class="tier-life">⏱ ${tm.life}${detailsHtml}</div>
         <div class="cust-mc">
-          <div class="tier-life">⏱ ${tm.life}${detailsHtml}</div>
           <ul class="tier-pros">${prosHtml}</ul>
           ${tm.cons.length ? `<ul class="tier-cons">${tm.cons.map(c => `<li>${c}</li>`).join('')}</ul>` : ''}
           <div class="whats-included">
@@ -4651,7 +4602,7 @@ function computePrepCost() {
   // truck time, setup) that don't scale linearly with footage. The
   // floor protects us from quoting $80 for a 40-lnft fence wash when
   // the chemistry alone costs more than that.
-  const PREP_MIN = (cond === 'soft_wash')  ? 200
+  const PREP_MIN = (cond === 'soft_wash')  ? 250
                  : (cond === 'strip_sand') ? 400
                  : 0;
   if (raw > 0 && PREP_MIN > 0 && raw < PREP_MIN) return PREP_MIN;
