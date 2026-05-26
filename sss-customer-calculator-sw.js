@@ -194,9 +194,6 @@ const PRICING = {
       minCharge: 70,
       img: 'https://stainandsealsupply.com/cdn/shop/files/stain-and-seal-supply-expert-natural-defense-1_1024x.jpg?v=1752858115',
       desc: 'Blend of citronella, cedarwood, cinnamon, geraniol, and lemongrass essential oils. Mixed at the can. Deters carpenter bees, wasps, termites, and 12+ outdoor pests without harming the wood finish.' },
-    { id: 'two_tone',    name: 'Two-tone application (boards vs. rails)', priceType: 'percent', rate: 0.40,
-      img: 'https://static.wixstatic.com/media/6616da_591f17ae70b64c7995bb55ada0093914~mv2.png',
-      desc: 'Different stain color on rails/posts vs. boards. Adds significant labor for masking, separate cure times, and two full application passes.' },
     { id: 'custom_color',name: 'Custom color match (you provide a sample or code)', priceType: 'flat', rate: 0,
       img: 'https://static.wixstatic.com/media/6616da_a36a623288334b47bcc281830a52fa1f~mv2.jpg',
       desc: 'Bring a paint chip, a photo, or a Sherwin-Williams color code. We use the SW color-match tool directly for tintable products. For stock-color oil tiers we match to the nearest stock swatch.' }
