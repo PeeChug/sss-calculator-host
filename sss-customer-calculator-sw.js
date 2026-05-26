@@ -850,25 +850,39 @@ __doc.getElementById('quoteNum').textContent = state.quoteId;
   // independently). Skipped on desktop where the gallery is a static grid.
   try { startHeroMarquees(); } catch (e) { console.warn('[Customer] hero marquee init failed:', e); }
 
-  // Hide the sticky bottom stage-nav while an input/textarea is
-  // focused. Without this the sticky bar fights with the iOS keyboard
+  // Hide the sticky/fixed bottom stage-nav while an input/textarea is
+  // focused. Without this the bar fights with the iOS/Android keyboard
   // (gets pushed up with the layout viewport). focusin/focusout bubble
   // through the shadow DOM so a single delegated listener works.
+  //
+  // BUG ON ANDROID we're fixing: focusin/focusout pairs can de-sync if
+  // the browser auto-focuses a hidden field (autofill of the honeypot,
+  // form-restore) — the class then stays applied and the nav never
+  // appears. The honeypot is explicitly skipped, plus a "verify what's
+  // actually focused via document.activeElement" sweep runs on each
+  // event to recover from any de-sync.
   try {
     const app = __doc.querySelector('.app');
     if (app) {
-      __doc.addEventListener('focusin', function (e) {
-        const t = e.target;
-        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) {
-          app.classList.add('cust-input-focused');
-        }
+      const isRealInput = function (t) {
+        if (!t) return false;
+        if (t.id === 'custWebsiteHoneypot') return false;
+        if (t.type === 'hidden') return false;
+        return t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT';
+      };
+      const syncFocusClass = function () {
+        const ae = (__doc.activeElement) || document.activeElement;
+        app.classList.toggle('cust-input-focused', isRealInput(ae));
+      };
+      __doc.addEventListener('focusin',  syncFocusClass);
+      __doc.addEventListener('focusout', function () { setTimeout(syncFocusClass, 0); });
+      __doc.addEventListener('touchstart', function (e) {
+        if (!isRealInput(e.target)) setTimeout(syncFocusClass, 0);
+      }, { passive: true });
+      __doc.addEventListener('click', function (e) {
+        if (!isRealInput(e.target)) setTimeout(syncFocusClass, 0);
       });
-      __doc.addEventListener('focusout', function (e) {
-        const t = e.target;
-        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) {
-          app.classList.remove('cust-input-focused');
-        }
-      });
+      window.__custSyncFocusClass = syncFocusClass;
     }
   } catch (e) { /* defensive — focus tracking is a nice-to-have, not critical */ }
 })();
@@ -2176,6 +2190,15 @@ function showStage(n) {
   if (target) target.classList.add('visible');
   state.currentStage = n;
   if (n > state.maxStageReached) state.maxStageReached = n;
+
+  // Force the fixed bottom Back/Next bar to appear the moment a new
+  // stage renders. We sync immediately + again after the next animation
+  // frame so it survives any stale focus state Android may have left
+  // behind from a previous stage's input.
+  if (typeof window.__custSyncFocusClass === 'function') {
+    try { window.__custSyncFocusClass(); } catch (e) {}
+    try { requestAnimationFrame(window.__custSyncFocusClass); } catch (e) {}
+  }
 
   // Persist progress on every stage transition so a refresh / close
   // doesn't lose what they've entered. Stages 1+ only (intro = 0).
