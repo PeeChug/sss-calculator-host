@@ -801,7 +801,16 @@ __doc.getElementById('quoteNum').textContent = state.quoteId;
         if (!t) return false;
         if (t.id === 'custWebsiteHoneypot') return false; // hidden anti-bot field
         if (t.type === 'hidden') return false;
-        return t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT';
+        if (t.tagName !== 'INPUT' && t.tagName !== 'TEXTAREA' && t.tagName !== 'SELECT') return false;
+        // Belt-and-suspenders: if the "focused" input is inside a stage
+        // that ISN'T currently visible (Android autofill keeps focus on
+        // the previous step's input across transitions), treat it as
+        // not focused so the new step's nav bar appears.
+        try {
+          const stage = t.closest && t.closest('.stage');
+          if (stage && !stage.classList.contains('visible')) return false;
+        } catch (e) {}
+        return true;
       };
       const syncFocusClass = function () {
         // Use the shadow root's activeElement (shadow DOM has its own
@@ -2127,6 +2136,21 @@ async function __custPostDraft() {
 function showStage(n) {
   if (n === 7 && shouldSkipColorStage()) state.activeProject.selectedColor = null;
 
+  // Blur whatever's currently focused BEFORE rendering the new stage.
+  // Android autofill on Step 1 keeps focus on the autofilled input even
+  // after the user taps Continue — and after the stage swap the focused
+  // input is now inside the (display:none) old stage, but `document
+  // .activeElement` still points at it. The sticky-nav hide logic sees
+  // a real input "focused" and keeps the bar hidden on Step 2. Blurring
+  // here resets focus to the body so the new stage starts clean and
+  // the keyboard collapses on transitions out of input-heavy steps.
+  try {
+    const ae = __doc.activeElement;
+    if (ae && typeof ae.blur === 'function' && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT')) {
+      ae.blur();
+    }
+  } catch (e) {}
+
   __doc.querySelectorAll('.stage').forEach(s => s.classList.remove('visible'));
   const target = __doc.getElementById('stage-' + n);
   if (target) target.classList.add('visible');
@@ -2136,8 +2160,7 @@ function showStage(n) {
   // Force the fixed bottom Back/Next bar to appear the moment a new
   // stage renders. We sync immediately + again after the next animation
   // frame so it survives any stale focus state Android may have left
-  // behind from a previous stage's input. Without this, the bar can
-  // stay hidden on Step 1 right after the customer enters the form.
+  // behind from a previous stage's input.
   if (typeof window.__custSyncFocusClass === 'function') {
     try { window.__custSyncFocusClass(); } catch (e) {}
     try { requestAnimationFrame(window.__custSyncFocusClass); } catch (e) {}
