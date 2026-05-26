@@ -10141,6 +10141,36 @@ if (typeof window !== 'undefined') {
 
   }
 
+  // Wix wraps the custom element in a #comp-XXX div with a fixed
+  // pixel height set by the editor. When the actual content is
+  // shorter (e.g. hero + collapsed FAQ ~900px), the wrapper still
+  // holds its assigned height, leaving a tall empty zone above the
+  // page footer. shrinkParentToContent walks up from the host,
+  // finds parents whose computed height materially exceeds the
+  // actual content height, and overrides their inline height +
+  // min-height to hug the content. Runs on initial mount and
+  // re-runs whenever the shadow content resizes (FAQ open/close,
+  // stage change, etc.) via ResizeObserver.
+  function shrinkParentToContent(host) {
+    try {
+      const appEl = host.shadowRoot && host.shadowRoot.querySelector('.app');
+      const contentHeight = appEl ? appEl.getBoundingClientRect().height : host.getBoundingClientRect().height;
+      if (!contentHeight) return;
+      let p = host.parentElement;
+      let hops = 0;
+      while (p && p !== document.body && hops < 8) {
+        const cs = getComputedStyle(p);
+        const ph = p.getBoundingClientRect().height;
+        if (ph > contentHeight + 50 && (p.style.height || p.style.minHeight || (cs.minHeight && cs.minHeight !== '0px'))) {
+          p.style.setProperty('height', 'auto', 'important');
+          p.style.setProperty('min-height', '0', 'important');
+        }
+        p = p.parentElement;
+        hops++;
+      }
+    } catch (e) { /* never block init */ }
+  }
+
   class SSSCustomerCalculator extends HTMLElement {
     connectedCallback() {
       if (this._initialized) return;
@@ -10151,6 +10181,18 @@ if (typeof window !== 'undefined') {
       loadJsPDF().finally(() => {
         try { initCalculator.call(self, self._shadow, self); }
         catch (e) { console.error('[SSS Customer Calculator] init failed:', e); }
+        try {
+          const run = () => shrinkParentToContent(self);
+          run();
+          if (typeof ResizeObserver !== 'undefined') {
+            const appEl = self._shadow.querySelector('.app');
+            if (appEl) {
+              const ro = new ResizeObserver(() => requestAnimationFrame(run));
+              ro.observe(appEl);
+            }
+          }
+          window.addEventListener('resize', () => requestAnimationFrame(run));
+        } catch (e) {}
       });
     }
   }
