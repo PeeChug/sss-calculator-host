@@ -327,6 +327,20 @@ const STAIN_TRANSPARENCIES = [
    COLOR LIBRARIES — REAL IMAGES FROM EXPERT'S WEBSITE
    ============================================================ */
 const COLORS = {
+  // Exotic Timber Oil — Essential oil tier (4 stock tri-oil colors).
+  exotic_timber_oil: {
+    line: 'Exotic Timber Oil',
+    note: 'Tri-oil blend (tung + linseed + alkyd) with UV-resistant pigments. Hex swatches are approximations — show a physical sample before locking in.',
+    grouped: true,
+    groups: [
+      { label: 'Exotic Timber Oil tones', colors: [
+        { name: 'Natural',       code: '', hex: '#c0a070' },
+        { name: 'Cedar',         code: '', hex: '#a87044' },
+        { name: 'Redwood',       code: '', hex: '#8e3a22' },
+        { name: 'Red Mahogany',  code: '', hex: '#6a2a1c' }
+      ]}
+    ]
+  },
   // EXPERT Stain & Seal — Performance oil tier
   // 18 colors (Whiskey not in catalog, Clear excluded as it's Essential tier)
   expert_stain_seal: {
@@ -469,7 +483,7 @@ const COLORS = {
 function getColorLibrary(productType, tier) {
   if (productType === 'hoa') return null; // HOA picks own color in stage 5
   if (productType === 'oil') {
-    if (tier === 'essential') return null;
+    if (tier === 'essential') return 'exotic_timber_oil';   // now a pigmented tri-oil
     if (tier === 'performance') return 'expert_stain_seal';
     if (tier === 'showcase') return 'expert_log_timber';
   }
@@ -601,31 +615,34 @@ const TIER_META = {
   oil: {
     explain: "Oil-based stains penetrate deep into wood, bring out grain, and last longer in harsh sun. Slower dry, stronger smell.",
     essential: {
-      product: 'EXPERT Clear Sealer',
-      tagline: "Structural protection without altering the wood's appearance",
-      life: '~2 years',
-      details: 'EXPERT Clear Sealer — a clear oil-based penetrating sealer. Goes invisible into the wood, no pigment. Lets the wood weather and grey naturally while preventing warping, cupping, and twisting from moisture cycling. Not warranty-eligible by the manufacturer (clear sealants are excluded from EXPERT warranty coverage).',
-      pros: ['Allows the wood to grey naturally over time — preserves the weathered look', 'Protects against warping, twisting, cupping, and moisture damage', 'Lowest oil-based cost', 'Highlights natural grain', 'Easy to refresh — no color matching required'],
-      cons: ['No pigment, so no UV color protection — the wood will continue to grey', 'No color customization possible', 'Not covered by EXPERT manufacturer warranty'],
-      bestFor: 'Cedar, redwood, teak — customers who want the natural look and feel of weathered wood, with the structural integrity intact'
+      product: 'Exotic Timber Oil',
+      badge: 'Budget Friendly',
+      tagline: 'Budget-friendly penetrating tri-oil',
+      life: '2–3 years',
+      details: 'Exotic Timber Oil — a tri-oil blend (tung, linseed, and alkyd) that penetrates deeply and brings out the wood grain. UV-resistant pigments protect the color without a heavy film. Our budget-friendly oil that still delivers a real pigmented penetrating finish — especially good on freshly cleaned or restored wood.',
+      pros: ['Lowest oil-based cost', 'Tri-oil blend penetrates deeply', 'Enhances natural wood grain', 'UV-resistant pigments', 'Water-repellent + mildew-inhibiting'],
+      cons: ['Fewer stock colors than Stain & Seal', 'Shorter recoat cycle than the premium tiers'],
+      bestFor: 'Budget-conscious customers who still want a real pigmented penetrating oil — great after a wash or restoration'
     },
     performance: {
       product: 'EXPERT Stain & Seal',
-      tagline: 'Our most-recommended oil job',
+      badge: 'Most Color Options',
+      tagline: 'Widest color selection — 18 options',
       life: '3–4 years',
       details: 'EXPERT Stain & Seal — a deep-penetrating semi-transparent or semi-solid oil-based stain with real pigment for UV protection. EXPERT\'s recoat schedule is every 24 months on horizontal surfaces, every 36 months on vertical. 2-year manufacturer warranty. Coverage ~125–150 sq ft per gallon. Available in 18 colors.',
-      pros: ['Best value oil-based — most popular', 'Deep penetration into wood pores', 'Strong UV protection from real pigment', '2-year manufacturer warranty', '30-day touch-up included', '18 color options (transparent + semi-solid)'],
+      pros: ['Widest color selection — 18 options', 'Deep penetration into wood pores', 'Strong UV protection from real pigment', '2-year manufacturer warranty', '30-day touch-up included', 'Transparent + semi-solid finishes'],
       cons: ['Stronger odor during application', 'Longer dry time (oil)'],
-      bestFor: 'Most homeowners with full-sun exposure — decks, fences, pergolas'
+      bestFor: 'Customers who want the broadest range of colors with strong UV protection'
     },
     showcase: {
       product: 'EXPERT Log & Timber Oil',
-      tagline: 'Premium oil for timber — longest manufacturer-backed warranty in our lineup',
+      badge: 'Longest-Lasting',
+      tagline: 'Premium oil — longest manufacturer-backed warranty in our lineup',
       life: '4–5 years',
       details: 'EXPERT Log & Timber Oil — a semi-transparent premium oil designed for log homes and exposed timbers. Applies in temperatures from 10°F to 110°F. Natural carpenter-bee deterrence. 3-year manufacturer warranty (longest in the EXPERT line). Eligible for the EXPERT Limited Lifetime guarantee via the 3-Step System on qualifying new wood.',
-      pros: ['3-year manufacturer warranty', 'Eligible for the EXPERT Limited Lifetime guarantee via 3-Step System', 'Natural insect defense (carpenter bees, wasps)', 'Application range 10°F to 110°F', '30-day touch-up included', 'Best for log siding & exposed timbers'],
-      cons: ['Highest up-front cost', 'Semi-transparent only — limited color range (8 colors)'],
-      bestFor: 'Log cabins, exposed-beam homes, mountain properties, high-elevation customers'
+      pros: ['Longest-lasting — 3-year manufacturer warranty', 'Eligible for the EXPERT Limited Lifetime guarantee via 3-Step System', 'Natural insect defense (carpenter bees, wasps)', 'Application range 10°F to 110°F', '30-day touch-up included'],
+      cons: ['Highest up-front cost', 'Semi-transparent only — 8 colors'],
+      bestFor: 'Customers who want the longest-lasting finish and the strongest warranty'
     }
   }
 };
@@ -1695,7 +1712,11 @@ function cancelNewQuote() {
    ============================================================ */
 function isHoa() { return state.activeProject.productType === 'hoa'; }
 function isClearSealer() {
-  return state.activeProject.productType === 'oil' && state.activeProject.tier === 'essential';
+  // No tier is a clear (no-pigment) sealer anymore — the essential oil
+  // tier is now the pigmented Exotic Timber Oil, which DOES get a color
+  // picker. Kept as a function (returns false) so the legacy callers
+  // that branch on it simply take the normal pigmented path.
+  return false;
 }
 function shouldSkipColorStage() {
   return isClearSealer() || isHoa();
@@ -3951,11 +3972,16 @@ function renderTierCards() {
   // Oil:    Essential ~2y, Performance ~3.5y, Showcase ~4.5y
   const lifespanYears = product === 'water'
     ? { essential: 2, performance: 4.5, showcase: 6 }
-    : { essential: 2, performance: 3.5, showcase: 4.5 };
+    : { essential: 2.5, performance: 3.5, showcase: 4.5 };
 
   __doc.getElementById('tierCards').innerHTML = ['essential', 'performance', 'showcase'].map(t => {
     const tm = meta[t];
     const isReco = (t === 'performance');
+    // Oil tiers carry their own feature badge (Budget Friendly / Most
+    // Color Options / Longest-Lasting). Water tiers fall back to the
+    // single "Recommended" flag on performance. The gold border stays
+    // on performance either way as the visual anchor.
+    const badgeText = tm.badge || (isReco ? 'Recommended' : '');
     const isSelected = (state.activeProject.tier === t);
     const totalPrice = sample[t];
     const unit = tierUnitPrice(proj, t);
@@ -3982,11 +4008,11 @@ function renderTierCards() {
     // Limited Lifetime guarantee available with the EXPERT 3-Step System (clean / brighten / stain & seal).
     let included;
     if (product === 'oil' && t === 'essential') {
-      // Clear sealer — no color, no warranty against color failure
       included = [
+        '✓ <strong>Exotic Timber Oil</strong> — tri-oil blend (tung + linseed + alkyd)',
+        '✓ UV-resistant pigments + water-repellent + mildew-inhibiting',
         '✓ Siding &amp; hardware protection during application',
         '✓ Full job-site cleanup after we leave',
-        '✓ EXPERT 3-Step System prep included',
         '✓ Fully insured &amp; licensed in South Carolina'
       ];
     } else if (product === 'oil' && t === 'performance') {
@@ -4037,7 +4063,7 @@ function renderTierCards() {
     }
     return `
       <button class="tier-card ${isReco ? 'recommended' : ''} ${isSelected ? 'selected' : ''}" data-tier="${t}" data-mobile-collapse="true">
-        ${isReco ? '<div class="reco-flag">Recommended</div>' : ''}
+        ${badgeText ? `<div class="reco-flag">${badgeText}</div>` : ''}
         <div class="tier-name">${t}</div>
         <div class="tier-product">${tm.product}</div>
         <div class="tier-tagline">${tm.tagline}</div>
@@ -6855,7 +6881,7 @@ function buildJobberLineItem(p, idx, total) {
   // include it here so the Warranty line at the bottom reads
   // consistently.
   const STAIN_PRODUCT_BY_TIER = {
-    'essential-oil':     'Oil-based transparent sealer',
+    'essential-oil':     'Exotic Timber Oil (tri-oil)',
     'essential-water':   'ProMar Exterior Solid Color Acrylic Latex Stain',
     'performance-oil':   'EXPERT Stain & Seal (semi-transparent)',
     'performance-water': 'SW Woodscapes Solid Color Exterior Stain',
@@ -7049,8 +7075,8 @@ function buildJobberLineItem(p, idx, total) {
     'showcase-oil':      '2-year manufacturer warranty on color & sheen (semi-transparent)',
     'performance-water': '3-year manufacturer warranty on color & sheen (semi-solid)',
     'showcase-water':    '3-year manufacturer warranty on color & sheen (semi-solid)',
-    'essential-oil':     'No manufacturer warranty on color longevity (value tier — sealing only)',
-    'essential-water':   'No manufacturer warranty on color longevity (value tier — sealing only)'
+    'essential-oil':     'Budget tier — pigmented tri-oil, no extended manufacturer color warranty',
+    'essential-water':   'Budget tier — solid color, no extended manufacturer color warranty'
   };
   if (WARRANTY_BY_TIER[wKey]) {
     lines.push('');

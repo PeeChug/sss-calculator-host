@@ -166,7 +166,7 @@ const PRICING = {
   // project type so that fence Showcase lands at $13.80/ln ft on
   // standard/charleston style. The same ~9.2% reduction is applied
   // proportionally to deck, pergola, barn, and ceiling showcase rates.
-  fence: { tiers: { essential: 9.20, performance: 11.20, showcase: 13.80 }, styleMultipliers: { privacy: 1.0, charleston: 1.0, shadowbox: 1.25, bob: 1.25, charleston_bob: 1.25, farm: 0.85 }, oneSidedFactor: 0.65, prep: { no_wash: 0, soft_wash: 1.60, strip_sand: 4.80 }, unit: 'ln ft' },
+  fence: { tiers: { essential: 9.20, performance: 11.20, showcase: 15.50 }, styleMultipliers: { privacy: 1.0, charleston: 1.0, shadowbox: 1.25, bob: 1.25, charleston_bob: 1.25, farm: 0.85 }, oneSidedFactor: 0.65, prep: { no_wash: 0, soft_wash: 1.60, strip_sand: 4.80 }, unit: 'ln ft' },
   // Deck tier rates are now expressed as actual $/sq ft (the FLAT
   // rate at each tier), matching every other project type. Used to be
   // a multiplier (0.8 / 1.0 / 1.3) applied to a separate baseline
@@ -174,14 +174,14 @@ const PRICING = {
   // confused everyone. The component rates (railing/stair/lattice)
   // still scale relative to the baseline flat rate via a derived
   // multiplier inside computeProjectTotal — that math is unchanged.
-  deck:  { tiers: { essential: 4.00, performance: 5.00, showcase: 5.90 }, rates: { flat: 5.00, railing: 7.50, stair: 31.25, lattice: 3.75 }, underneathMultiplier: 2, prep: { no_wash: 0, soft_wash: 0.72, strip_sand: 2.85 }, unit: 'sq ft' },
-  pergola: { tiers: { essential: 4.40, performance: 5.50, showcase: 6.49 }, overheadAccessFlat: 200, prep: { no_wash: 0, soft_wash: 0.72, strip_sand: 2.85 }, unit: 'sq ft' },
+  deck:  { tiers: { essential: 4.00, performance: 5.00, showcase: 6.63 }, rates: { flat: 5.00, railing: 7.50, stair: 31.25, lattice: 3.75 }, underneathMultiplier: 2, prep: { no_wash: 0, soft_wash: 0.72, strip_sand: 2.85 }, unit: 'sq ft' },
+  pergola: { tiers: { essential: 4.40, performance: 5.50, showcase: 7.29 }, overheadAccessFlat: 200, prep: { no_wash: 0, soft_wash: 0.72, strip_sand: 2.85 }, unit: 'sq ft' },
   // Barn tier rates bumped so performance = $4.25/sq ft (same scaling
   // factor as the ceiling bump). Prep rates raised to match deck and
   // pergola — barn prep was previously lighter, but the actual labor
   // is the same.
-  barn:    { tiers: { essential: 3.40, performance: 4.25, showcase: 5.04 }, heightPremium: 1.30, liftRentalPerDay: 400, trimRate: 1.50, cupolaFlat: 200, prep: { no_wash: 0, soft_wash: 0.72, strip_sand: 2.85 }, unit: 'sq ft' },
-  ceiling: { tiers: { essential: 3.40, performance: 4.25, showcase: 5.04 }, tngPremium: 0.50, beamRate: 8.00, fixtureRemoval: 50, fanRemoval: 100, furnitureProtFlat: 100, prep: { no_wash: 0, soft_wash: 0.72, strip_sand: 2.85 }, unit: 'sq ft' },
+  barn:    { tiers: { essential: 3.40, performance: 4.25, showcase: 5.66 }, heightPremium: 1.30, liftRentalPerDay: 400, trimRate: 1.50, cupolaFlat: 200, prep: { no_wash: 0, soft_wash: 0.72, strip_sand: 2.85 }, unit: 'sq ft' },
+  ceiling: { tiers: { essential: 3.40, performance: 4.25, showcase: 5.66 }, tngPremium: 0.50, beamRate: 8.00, fixtureRemoval: 50, fanRemoval: 100, furnitureProtFlat: 100, prep: { no_wash: 0, soft_wash: 0.72, strip_sand: 2.85 }, unit: 'sq ft' },
   stainUpgrades: [
     { id: 'citronella',  name: 'Natural insect-defense oil additive', restr: 'Oil only', product: 'oil',
       priceType: 'per_unit',
@@ -510,12 +510,12 @@ function getColorLibrary(productType, tier) {
   if (productType === 'hoa') return null; // HOA picks own color in stage 5
   if (productType === 'oil') {
     // SW oil ladder:
-    //   essential   → SuperDeck Oil-Based Transparent (5 natural-wood colors)
-    //   performance → SuperDeck Exotic Timber Oil (4 stock tri-oil colors)
-    //   showcase    → SuperDeck Oil-Based Semi-Solid (100+ SW custom tints)
-    if (tier === 'essential')   return 'sw_superdeck_transparent';
-    if (tier === 'performance') return 'sw_exotic_timber_oil';
-    if (tier === 'showcase')    return 'sw_superdeck_water'; // semi-solid uses the full SW color machine
+    //   essential   → SuperDeck Exotic Timber Oil (4 stock tri-oil colors)
+    //   performance → SuperDeck Oil-Based Semi-Solid (100+ SW custom tints)
+    //   showcase    → SuperDeck Solid Color (100+ SW custom tints)
+    if (tier === 'essential')   return 'sw_exotic_timber_oil';
+    if (tier === 'performance') return 'sw_superdeck_water';
+    if (tier === 'showcase')    return 'sw_superdeck_water';
   }
   return 'sw_superdeck_water';
 }
@@ -582,7 +582,7 @@ const PRODUCT_FAMILY_META = {
     icon: '🛢️',
     heading: 'Oil-Based',
     img: 'https://static.wixstatic.com/media/6616da_5cead61260e74114831ef77b95c9d217~mv2.jpg',
-    summary: 'Sherwin-Williams SuperDeck oil-based stains — Transparent, Exotic Timber Oil, and Semi-Solid. Penetrates deep into wood pores. Best for southern climates with intense UV.',
+    summary: 'Sherwin-Williams oil-based stains — Exotic Timber Oil, Semi-Solid, and Solid Color. Penetrates deep into wood pores. Best for southern climates with intense UV.',
     pros: [
       'Penetrates deep — protects wood from the inside out',
       'Available in transparent, semi-transparent, AND semi-solid (lets grain show through)',
@@ -658,31 +658,31 @@ const TIER_META = {
   oil: {
     explain: "Sherwin-Williams oil-based stains penetrate deep into wood, bring out grain, and last longer in harsh sun. Slower dry, stronger smell, longer-lasting finish.",
     essential: {
-      product: 'SuperDeck Oil-Based Transparent (Natural)',
-      tagline: "Penetrating sealer that protects without changing the wood's color",
-      life: '~1–2 years',
-      details: 'Sherwin-Williams SuperDeck Exterior Oil-Based Transparent stain — a penetrating oil that protects the wood from moisture and UV damage with the lightest possible pigment load. Lets the wood weather toward a natural patina while preventing warping, cupping, and twisting from moisture cycling.',
-      pros: ['Lowest up-front oil-based cost', 'Highlights natural grain', 'Allows the wood to grey gradually over time', 'Quick application, no color matching needed', 'Easy to refresh down the road'],
-      cons: ['Minimal pigment, so less UV color protection than mid/top tiers', 'Shorter recoat cycle (~1–2 years)', 'Limited color range — natural wood tones only'],
-      bestFor: 'Customers who like the natural look of weathered wood with basic structural protection'
+      product: 'SuperDeck Exotic Timber Oil',
+      tagline: "Tri-oil blend — best after a wash or restoration",
+      life: '2–3 years',
+      details: 'SuperDeck Exotic Timber Oil — a tri-oil blend (tung, linseed, and alkyd) designed by Sherwin-Williams for dense hardwoods like ipe, teak, and mahogany, and equally great on cedar and pressure-treated pine. Trans-oxide pigments add UV protection without hiding the grain. Water-repellent and mold/mildew-inhibiting agents built in. Soaks in beautifully on freshly cleaned or restored wood.',
+      pros: ['Lowest oil-based cost', 'Tri-oil formula penetrates deeply', 'Enhances natural grain with rich color clarity', 'UV-resistant trans-oxide pigments', 'Water-repellent + mold/mildew resistant', '30-day touch-up included'],
+      cons: ['Semi-transparent only — 4 stock colors (Natural, Cedar, Redwood, Red Mahogany)', 'Shorter recoat cycle than the premium tiers'],
+      bestFor: 'Most homeowners — especially freshly cleaned or restored wood where a penetrating oil sinks in best'
     },
     performance: {
-      product: 'SuperDeck Exotic Timber Oil',
-      tagline: "Sherwin-Williams' tri-oil blend — our most-recommended oil job",
-      life: '2–3 years',
-      details: 'SuperDeck Exotic Timber Oil — a tri-oil blend (tung, linseed, and alkyd) designed by Sherwin-Williams for dense hardwoods like ipe, teak, and mahogany, and equally great on cedar and pressure-treated pine. Trans-oxide pigments add UV protection without hiding the grain. Water-repellent and mold/mildew-inhibiting agents built in.',
-      pros: ['Tri-oil formula penetrates deeply for long-lasting durability', 'Enhances natural grain with rich color clarity', 'UV-resistant trans-oxide pigments help minimize fading and graying', 'Water-repellent and mold/mildew resistant', '30-day touch-up included', 'Works on all exterior woods including dense exotic species'],
-      cons: ['Longer dry time than the Essential tier', 'Semi-transparent only — 4 stock colors (Natural, Cedar, Redwood, Red Mahogany)'],
-      bestFor: 'Most homeowners with full-sun exposure — decks, fences, pergolas, and exotic hardwoods'
-    },
-    showcase: {
       product: 'SuperDeck Oil-Based Semi-Solid Wood Stain',
-      tagline: 'Premium Sherwin-Williams semi-solid — longest-lasting oil in our lineup',
+      tagline: 'Most pigment, most color options',
       life: '4–6 years',
       details: 'SuperDeck Oil-Based Semi-Solid is the most pigmented penetrating oil Sherwin-Williams makes. Heavier pigment load means much stronger UV defense and a longer recoat cycle — without becoming a film coating that can peel. Coverage roughly 250–350 sq ft per gallon. SW can custom-tint to 100+ colors.',
-      pros: ['Longest recoat cycle in the SW oil-based lineup (4–6 years on fences)', 'Maximum pigment load = strongest UV protection', 'Penetrates rather than films — no peeling like full solid stains', '100+ SW custom tint colors available', '30-day touch-up included', 'Mildew-inhibiting agents built in'],
-      cons: ['Highest up-front cost', 'Hides more of the wood grain than Performance tier'],
-      bestFor: 'Full-sun decks and fences, high-end homes, customers who want the longest-lasting oil finish'
+      pros: ['100+ SW custom tint colors — widest selection', 'Maximum pigment load = strongest UV protection', 'Long recoat cycle (4–6 years on fences)', 'Penetrates rather than films — no peeling like full solid stains', '30-day touch-up included', 'Mildew-inhibiting agents built in'],
+      cons: ['Hides more of the wood grain than the Exotic Timber Oil', 'Longer dry time than water-based'],
+      bestFor: 'Customers who want the widest color range with strong, long-lasting UV protection'
+    },
+    showcase: {
+      product: 'SuperDeck Solid Color Stain (Acrylic-Alkyd)',
+      tagline: 'Maximum durability — longest manufacturer warranty',
+      life: '7+ years',
+      details: 'Sherwin-Williams SuperDeck Solid Color Acrylic-Alkyd Stain — SW\'s most durable exterior wood coating, carrying up to a 15-year manufacturer warranty on fences with proper prep. Full opaque solid color with the heaviest film build and pigment loading in the lineup.',
+      pros: ['Longest manufacturer warranty (up to 15 years on fences)', 'Maximum durability + film build', '100+ SW custom colors available', '30-day touch-up included', 'Strongest moisture + UV defense'],
+      cons: ['Highest up-front cost', 'Solid opaque finish — hides the wood grain'],
+      bestFor: 'Customers who want the most durable, longest-warranty finish available'
     }
   }
 };
@@ -4008,11 +4008,20 @@ function renderTierCards() {
   // Oil:    Essential ~2y, Performance ~3.5y, Showcase ~4.5y
   const lifespanYears = product === 'water'
     ? { essential: 2, performance: 4.5, showcase: 6 }
-    : { essential: 2, performance: 3.5, showcase: 4.5 };
+    : { essential: 2.5, performance: 5, showcase: 7 };
+
+  // SW oil recommendation: the Exotic Timber Oil (essential) is the
+  // recommended product after a cleaning or restoration — the freshly
+  // opened wood drinks in a penetrating tri-oil best. For new wood
+  // (no wash) we point customers at the heavier-pigment Semi-Solid
+  // (performance) for more up-front UV protection.
+  const recoTier = (product === 'oil')
+    ? ((state.activeProject.condition === 'soft_wash' || state.activeProject.condition === 'strip_sand') ? 'essential' : 'performance')
+    : 'performance';
 
   __doc.getElementById('tierCards').innerHTML = ['essential', 'performance', 'showcase'].map(t => {
     const tm = getTierMeta(product, t, proj);
-    const isReco = (t === 'performance');
+    const isReco = (t === recoTier);
     const isSelected = (state.activeProject.tier === t);
     const totalPrice = sample[t];
     const unit = tierUnitPrice(proj, t);
@@ -4043,23 +4052,25 @@ function renderTierCards() {
     const sdPrefix = keepSuperDeck ? 'Sherwin-Williams SuperDeck ' : 'Sherwin-Williams ';
     if (product === 'oil' && t === 'essential') {
       included = [
-        `✓ ${sdPrefix}Oil-Based Transparent`,
+        `✓ <strong>${sdPrefix}Exotic Timber Oil</strong> — tri-oil blend (tung + linseed + alkyd)`,
+        '✓ UV-resistant trans-oxide pigments + water-repellent + mildew-inhibiting',
         '✓ Siding &amp; hardware protection during application',
         '✓ Full job-site cleanup after we leave',
         '✓ Fully insured &amp; licensed in South Carolina'
       ];
     } else if (product === 'oil' && t === 'performance') {
       included = [
-        `✓ <strong>${sdPrefix}Exotic Timber Oil</strong> — tri-oil blend (tung + linseed + alkyd)`,
-        '✓ UV-resistant trans-oxide pigments + water-repellent + mildew-inhibiting',
+        `✓ <strong>${sdPrefix}Oil-Based Semi-Solid Wood Stain</strong>`,
+        '✓ Maximum pigment load for strongest UV protection (4–6 yr recoat cycle)',
+        '✓ Custom-tintable to 100+ Sherwin-Williams colors',
         '✓ Siding &amp; hardware protection during application',
         '✓ Free 30-day touch-up visit if you spot any miss',
         '✓ Fully insured &amp; licensed work'
       ];
     } else if (product === 'oil' && t === 'showcase') {
       included = [
-        `✓ <strong>${sdPrefix}Oil-Based Semi-Solid</strong> — longest-lasting oil in our lineup`,
-        '✓ Maximum pigment load for strongest UV protection (4–6 yr recoat cycle)',
+        `✓ <strong>${sdPrefix}Solid Color Stain (Acrylic-Alkyd)</strong> — maximum durability`,
+        '✓ Longest manufacturer warranty (up to 15 years on fences)',
         '✓ Custom-tintable to 100+ Sherwin-Williams colors',
         '✓ Siding &amp; hardware protection during application',
         '✓ Free 30-day touch-up visit',
@@ -6928,11 +6939,11 @@ function buildJobberLineItem(p, idx, total) {
   // include it here so the Warranty line at the bottom reads
   // consistently.
   const STAIN_PRODUCT_BY_TIER = {
-    'essential-oil':     'SuperDeck Oil-Based Transparent',
+    'essential-oil':     'SuperDeck Exotic Timber Oil',
     'essential-water':   'ProMar Exterior Solid Color Acrylic Latex Stain',
-    'performance-oil':   'SuperDeck Exotic Timber Oil',
+    'performance-oil':   'SuperDeck Oil-Based Semi-Solid Wood Stain',
     'performance-water': 'SW Woodscapes Solid Color Exterior Stain',
-    'showcase-oil':      'SuperDeck Oil-Based Semi-Solid',
+    'showcase-oil':      'SuperDeck Solid Color Stain (Acrylic-Alkyd)',
     'showcase-water':    'SW Woodscapes Rain Refresh'
   };
   const wKey = `${p.tier}-${p.productType}`;
@@ -7118,12 +7129,12 @@ function buildJobberLineItem(p, idx, total) {
   // HOA-specified products warranty per whatever product the HOA
   // requires, so we skip the line in that case.
   const WARRANTY_BY_TIER = {
-    'performance-oil':   '2-year manufacturer warranty on color & sheen (semi-transparent)',
-    'showcase-oil':      '2-year manufacturer warranty on color & sheen (semi-transparent)',
+    'performance-oil':   'Sherwin-Williams manufacturer warranty (semi-solid)',
+    'showcase-oil':      'Up to 15-year manufacturer warranty on fences (solid acrylic-alkyd)',
     'performance-water': '3-year manufacturer warranty on color & sheen (semi-solid)',
-    'showcase-water':    '3-year manufacturer warranty on color & sheen (semi-solid)',
-    'essential-oil':     'No manufacturer warranty on color longevity (value tier — sealing only)',
-    'essential-water':   'No manufacturer warranty on color longevity (value tier — sealing only)'
+    'showcase-water':    '10-year limited manufacturer warranty (Rain Refresh)',
+    'essential-oil':     'Budget tier — pigmented tri-oil, no extended manufacturer color warranty',
+    'essential-water':   'Budget tier — solid color, no extended manufacturer color warranty'
   };
   if (WARRANTY_BY_TIER[wKey]) {
     lines.push('');
