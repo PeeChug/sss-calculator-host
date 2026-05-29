@@ -3486,8 +3486,17 @@ function applyCustomColor() {
 function renderAddons() {
   const proj = state.activeProject.type;
   const product = state.activeProject.productType;
+  // The EXPERT Natural Defense citronella additive is hidden on the
+  // Timber Oil (oil-essential) tier — you don't mix an EXPERT additive
+  // into the Timber Oil. Drop it from state too so it can't linger as a
+  // phantom charge after a tier switch.
+  if (state.activeProject.tier === 'essential' && state.activeProject.addons) {
+    delete state.activeProject.addons.citronella;
+  }
   // Only show stain upgrades compatible with the selected product (HOA hides stain upgrades)
-  const stainUpgrades = isHoa() ? [] : PRICING.stainUpgrades.filter(a => !a.product || a.product === product);
+  const stainUpgrades = isHoa() ? [] : PRICING.stainUpgrades.filter(a =>
+    (!a.product || a.product === product) &&
+    !(a.id === 'citronella' && state.activeProject.tier === 'essential'));
   const projAddons = PRICING.projectAddons[proj] || [];
   const serviceAddons = PRICING.serviceAddons;
   const customAddons = state.activeProject.customAddons || [];
@@ -4867,7 +4876,9 @@ function renderEditPanel() {
           </div>`;
       }).join('');
 
-  const stainUpgrades = PRICING.stainUpgrades.filter(a => !a.product || a.product === product);
+  const stainUpgrades = PRICING.stainUpgrades.filter(a =>
+    (!a.product || a.product === product) &&
+    !(a.id === 'citronella' && state.activeProject.tier === 'essential'));
   const projAddons = PRICING.projectAddons[proj] || [];
 
   const renderMini = (a, group) => {
