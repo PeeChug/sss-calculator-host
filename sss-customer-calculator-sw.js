@@ -660,7 +660,7 @@ const TIER_META = {
     essential: {
       product: 'SuperDeck Exotic Timber Oil',
       tagline: "Tri-oil blend — best after a wash or restoration",
-      life: '2–3 years',
+      life: '3–4 years',
       details: 'SuperDeck Exotic Timber Oil — a tri-oil blend (tung, linseed, and alkyd) designed by Sherwin-Williams for dense hardwoods like ipe, teak, and mahogany, and equally great on cedar and pressure-treated pine. Trans-oxide pigments add UV protection without hiding the grain. Water-repellent and mold/mildew-inhibiting agents built in. Soaks in beautifully on freshly cleaned or restored wood.',
       pros: ['Lowest oil-based cost', 'Tri-oil formula penetrates deeply', 'Enhances natural grain with rich color clarity', 'UV-resistant trans-oxide pigments', 'Water-repellent + mold/mildew resistant', '30-day touch-up included'],
       cons: ['Semi-transparent only — 4 stock colors (Natural, Cedar, Redwood, Red Mahogany)', 'Shorter recoat cycle than the premium tiers'],
