@@ -356,14 +356,14 @@ const COLORS = {
   // Tri-oil blend designed for dense hardwoods + general exterior wood.
   sw_exotic_timber_oil: {
     line: 'SuperDeck Exotic Timber Oil',
-    note: "Sherwin-Williams tri-oil blend (tung + linseed + alkyd) with UV-resistant trans-oxide pigments. Hex swatches are approximations — show the rep a physical sample before locking in.",
+    note: "Sherwin-Williams tri-oil blend (tung + linseed + alkyd) with UV-resistant trans-oxide pigments. Final look varies with your wood species, age, and lighting.",
     grouped: true,
     groups: [
       { label: 'Exotic Timber Oil tones', colors: [
-        { name: 'Natural',       code: 'SW', hex: '#c0a070' },
-        { name: 'Cedar',         code: 'SW', hex: '#a87044' },
-        { name: 'Redwood',       code: 'SW', hex: '#8e3a22' },
-        { name: 'Red Mahogany',  code: 'SW', hex: '#6a2a1c' }
+        { name: 'Natural',      img: 'https://cdn.jsdelivr.net/gh/PeeChug/sss-calculator-host@796b76e609a24b6a5506891e1b0f9ae6903a280d/colors/timber-natural.jpg' },
+        { name: 'Cedar',        img: 'https://cdn.jsdelivr.net/gh/PeeChug/sss-calculator-host@796b76e609a24b6a5506891e1b0f9ae6903a280d/colors/timber-cedar.jpg' },
+        { name: 'Redwood',      img: 'https://cdn.jsdelivr.net/gh/PeeChug/sss-calculator-host@796b76e609a24b6a5506891e1b0f9ae6903a280d/colors/timber-redwood.jpg' },
+        { name: 'Red Mahogany', img: 'https://cdn.jsdelivr.net/gh/PeeChug/sss-calculator-host@796b76e609a24b6a5506891e1b0f9ae6903a280d/colors/timber-red-mahogany.jpg' }
       ]}
     ]
   },

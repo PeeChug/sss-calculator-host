@@ -294,14 +294,14 @@ const COLORS = {
   // Exotic Timber Oil — Essential oil tier (4 stock tri-oil colors).
   exotic_timber_oil: {
     line: 'Exotic Timber Oil',
-    note: 'Tri-oil blend (tung + linseed + alkyd) with UV-resistant pigments. Hex swatches are approximations — show a physical sample before locking in.',
+    note: 'Tri-oil blend (tung + linseed + alkyd) with UV-resistant pigments. Final look varies with your wood species, age, and lighting.',
     grouped: true,
     groups: [
       { label: 'Exotic Timber Oil tones', colors: [
-        { name: 'Natural',       code: '', hex: '#c0a070' },
-        { name: 'Cedar',         code: '', hex: '#a87044' },
-        { name: 'Redwood',       code: '', hex: '#8e3a22' },
-        { name: 'Red Mahogany',  code: '', hex: '#6a2a1c' }
+        { name: 'Natural',      img: 'https://cdn.jsdelivr.net/gh/PeeChug/sss-calculator-host@796b76e609a24b6a5506891e1b0f9ae6903a280d/colors/timber-natural.jpg' },
+        { name: 'Cedar',        img: 'https://cdn.jsdelivr.net/gh/PeeChug/sss-calculator-host@796b76e609a24b6a5506891e1b0f9ae6903a280d/colors/timber-cedar.jpg' },
+        { name: 'Redwood',      img: 'https://cdn.jsdelivr.net/gh/PeeChug/sss-calculator-host@796b76e609a24b6a5506891e1b0f9ae6903a280d/colors/timber-redwood.jpg' },
+        { name: 'Red Mahogany', img: 'https://cdn.jsdelivr.net/gh/PeeChug/sss-calculator-host@796b76e609a24b6a5506891e1b0f9ae6903a280d/colors/timber-red-mahogany.jpg' }
       ]}
     ]
   },
