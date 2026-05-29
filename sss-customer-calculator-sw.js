@@ -661,8 +661,8 @@ const TIER_META = {
       product: 'SuperDeck Exotic Timber Oil',
       tagline: "Tri-oil blend — best after a wash or restoration",
       life: '3–4 years',
-      details: 'SuperDeck Exotic Timber Oil — a tri-oil blend (tung, linseed, and alkyd) designed by Sherwin-Williams for dense hardwoods like ipe, teak, and mahogany, and equally great on cedar and pressure-treated pine. Trans-oxide pigments add UV protection without hiding the grain. Water-repellent and mold/mildew-inhibiting agents built in. Soaks in beautifully on freshly cleaned or restored wood.',
-      pros: ['Lowest oil-based cost', 'Tri-oil formula penetrates deeply', 'Enhances natural grain with rich color clarity', 'UV-resistant trans-oxide pigments', 'Water-repellent + mold/mildew resistant', '30-day touch-up included'],
+      details: 'SuperDeck Exotic Timber Oil — a tri-oil blend (tung, linseed, and alkyd) designed by Sherwin-Williams for dense hardwoods like ipe, teak, and mahogany, and equally great on cedar and pressure-treated pine. Trans-oxide pigments add UV protection without hiding the grain. The tung and linseed oils inhibit mold and mildew, and built-in water repellency sheds moisture. One coat covers ~250–350 sq ft per gallon and applies in temperatures from 40–95°F. Soaks in beautifully on freshly cleaned or restored wood.',
+      pros: ['Lowest oil-based cost', 'Tri-oil formula (tung + linseed) penetrates deeply', 'UV-resistant trans-oxide pigments — grain shows through', 'Mold & mildew inhibiting + water-repellent', 'One coat, ~250–350 sq ft per gallon', '30-day touch-up included'],
       cons: ['Semi-transparent only — 4 stock colors (Natural, Cedar, Redwood, Red Mahogany)', 'Shorter recoat cycle than the premium tiers'],
       bestFor: 'Most homeowners — especially freshly cleaned or restored wood where a penetrating oil sinks in best'
     },

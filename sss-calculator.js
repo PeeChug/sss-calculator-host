@@ -584,8 +584,8 @@ const TIER_META = {
       badgeClass: 'flag-green',
       tagline: 'Budget-friendly penetrating tri-oil',
       life: '3–4 years',
-      details: 'Exotic Timber Oil — a tri-oil blend (tung, linseed, and alkyd) that penetrates deeply and brings out the wood grain. UV-resistant pigments protect the color without a heavy film. Our budget-friendly oil that still delivers a real pigmented penetrating finish — especially good on freshly cleaned or restored wood.',
-      pros: ['Lowest oil-based cost', 'Tri-oil blend penetrates deeply', 'Enhances natural wood grain', 'UV-resistant pigments', 'Water-repellent + mildew-inhibiting'],
+      details: 'Exotic Timber Oil — a penetrating tri-oil blend (tung, linseed, and alkyd) formulated for dense exotic hardwoods and equally great on cedar, pine, and pressure-treated wood. Trans-oxide pigments give UV protection while letting the grain show through. The tung and linseed oils inhibit mold and mildew, and built-in water repellency sheds moisture. One coat covers ~250–350 sq ft per gallon and applies in temperatures from 40–95°F. Especially good on freshly cleaned or restored wood.',
+      pros: ['Lowest oil-based cost', 'Tri-oil blend (tung + linseed) penetrates deeply', 'UV-resistant pigments — grain shows through', 'Mold & mildew inhibiting + water-repellent', 'One coat, ~250–350 sq ft per gallon'],
       cons: ['Fewer stock colors than Stain & Seal', 'Shorter recoat cycle than the premium tiers'],
       bestFor: 'Budget-conscious customers who still want a real pigmented penetrating oil — great after a wash or restoration'
     },
@@ -595,8 +595,8 @@ const TIER_META = {
       badgeClass: 'flag-blue',
       tagline: 'Widest color selection — 18 options',
       life: '3–4 years',
-      details: 'EXPERT Stain & Seal — a deep-penetrating semi-transparent or semi-solid oil-based stain with real pigment for UV protection. EXPERT\'s recoat schedule is every 24 months on horizontal surfaces, every 36 months on vertical. 2-year manufacturer warranty. Coverage ~125–150 sq ft per gallon. Available in 18 colors.',
-      pros: ['Widest color selection — 18 options', 'Deep penetration into wood pores', 'Strong UV protection from real pigment', '2-year manufacturer warranty', '30-day touch-up included', 'Transparent + semi-solid finishes'],
+      details: 'EXPERT Stain & Seal — a deep-penetrating semi-transparent or semi-solid oil-based stain with real pigment for UV protection. EXPERT\'s recoat schedule is every 24 months on horizontal surfaces, every 36 months on vertical. 2–3 year manufacturer warranty (semi-transparent to semi-solid). Coverage ~125–150 sq ft per gallon. Available in 18 colors.',
+      pros: ['Widest color selection — 18 options', 'Deep penetration into wood pores', 'Strong UV protection from real pigment', '2–3 year manufacturer warranty', '30-day touch-up included', 'Transparent + semi-solid finishes'],
       cons: ['Stronger odor during application', 'Longer dry time (oil)'],
       bestFor: 'Customers who want the broadest range of colors with strong UV protection'
     },
@@ -3211,7 +3211,7 @@ function renderTierCards() {
       ];
     } else if (product === 'oil' && t === 'performance') {
       included = [
-        '✓ <strong>EXPERT manufacturer warranty</strong> — 2 yrs on semi-trans, 3 yrs on semi-solid',
+        '✓ <strong>2–3 year EXPERT manufacturer warranty</strong> (semi-transparent to semi-solid)',
         '✓ Siding &amp; hardware protection during application',
         '✓ Free 30-day touch-up visit if you spot any miss',
         '✓ EXPERT 3-Step System (qualifies for Limited Lifetime guarantee)',
@@ -6248,7 +6248,7 @@ function buildJobberLineItem(p, idx, total) {
   // HOA-specified products warranty per whatever product the HOA
   // requires, so we skip the line in that case.
   const WARRANTY_BY_TIER = {
-    'performance-oil':   '2-year manufacturer warranty on color & sheen (semi-transparent)',
+    'performance-oil':   '2–3 year manufacturer warranty on color & sheen (semi-transparent to semi-solid)',
     'showcase-oil':      '2-year manufacturer warranty on color & sheen (semi-transparent)',
     'performance-water': '3-year manufacturer warranty on color & sheen (semi-solid)',
     'showcase-water':    '3-year manufacturer warranty on color & sheen (semi-solid)',
