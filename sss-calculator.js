@@ -549,20 +549,20 @@ const TIER_META = {
   water: {
     explain: "Water-based stains dry fast, clean up with water, and have lower odor. Best for fences, decks, and most exterior wood.",
     essential: {
-      product: 'SW Woodscapes (1 coat)',
+      product: 'ProMar Exterior Solid Color Acrylic Latex Stain',
       tagline: 'Budget-friendly basic protection',
       life: '~2 years',
-      details: 'A single coat of SW Woodscapes Solid water-based stain. Quick 1-day application, soap-and-water cleanup. Lighter film build than 2-coat Performance, so it weathers faster.',
-      pros: ['Lowest up-front cost', 'Quick 1-day application', 'Full solid color coverage', 'Easy water cleanup'],
-      cons: ['Will need refreshing within 2 years', 'Less water-bead protection', 'Lighter UV defense'],
+      details: 'Sherwin-Williams ProMar Exterior Solid Color Acrylic Latex Stain — a contractor-grade water-based solid color stain. Soap-and-water cleanup, low VOC, dries fast for same-day turnaround in good weather.',
+      pros: ['Lowest up-front water-based cost', 'Quick application turnaround', 'Full solid color coverage', 'Easy water cleanup', 'Low VOC'],
+      cons: ['Will need refreshing sooner than Performance tier', 'Lighter UV defense than Woodscapes'],
       bestFor: 'Rental properties, fences in shade, budget-tight customers'
     },
     performance: {
-      product: 'SW Woodscapes (2 coats)',
+      product: 'SW Woodscapes Solid Color Exterior Stain',
       tagline: 'Our most-recommended water-based job',
       life: '4–5 years',
-      details: 'Two full coats of SW Woodscapes Solid stain. Coverage rate ~150 sq ft per gallon. Includes a free 30-day touch-up visit. Re-coats easily down the road.',
-      pros: ['Best value water-based — most popular', 'Even color, no streaks', 'Strong UV fade resistance', '30-day touch-up visit included', 'Full coat depth for proper film thickness'],
+      details: 'Sherwin-Williams Woodscapes Solid Color Exterior Stain — a premium water-based solid color stain with stronger UV resistance and richer film build than ProMar. Coverage ~150 sq ft per gallon. Includes a free 30-day touch-up visit.',
+      pros: ['Best value water-based — most popular', 'Even color, no streaks', 'Strong UV fade resistance', '30-day touch-up visit included'],
       cons: ['Less self-cleaning behavior than Showcase Rain Refresh'],
       bestFor: 'Most homeowners — full-sun decks, privacy fences, family homes'
     },
@@ -3228,21 +3228,21 @@ function renderTierCards() {
       ];
     } else if (product === 'water' && t === 'essential') {
       included = [
+        '✓ <strong>ProMar Exterior Solid Color Acrylic Latex Stain</strong>',
         '✓ Siding &amp; hardware protection during application',
         '✓ Full job-site cleanup',
-        '✓ Single-coat SW Woodscapes Solid application',
         '✓ Fully insured &amp; licensed work'
       ];
     } else if (product === 'water' && t === 'performance') {
       included = [
-        '✓ Two full coats of SW Woodscapes Solid for proper film build',
+        '✓ <strong>SW Woodscapes Solid Color Exterior Stain</strong>',
         '✓ Siding &amp; hardware protection during application',
         '✓ Free 30-day touch-up visit',
         '✓ Fully insured &amp; licensed work'
       ];
     } else if (product === 'water' && t === 'showcase') {
       included = [
-        '✓ Two coats of <strong>SW Woodscapes Rain Refresh</strong> with Self-Cleaning Technology',
+        '✓ <strong>SW Woodscapes Rain Refresh</strong> with Self-Cleaning Technology',
         '✓ <strong>10-year limited manufacturer warranty</strong> (per Sherwin-Williams)',
         '✓ Siding &amp; hardware protection during application',
         '✓ Free 30-day touch-up visit',
