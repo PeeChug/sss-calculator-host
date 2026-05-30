@@ -5279,17 +5279,17 @@ function computeDIYComparison(proTotal) {
   // ("SW List Price" / "EXPERT List Price") and a product-page link the
   // tag opens in a new tab.
   const STAIN_LIST = {
-    'water-essential':   { perGal: 94.49,  tag: 'SW List Price',     url: 'https://www.sherwin-williams.com/homeowners/products/promar-exterior-solid-color-acrylic-latex-stain-pl-9520553' },
-    'water-performance': { perGal: 84.99,  tag: 'SW List Price',     url: 'https://www.sherwin-williams.com/homeowners/products/woodscapes-acrylic-solid-color-exterior-house-stain-pl-9519726' },
-    'water-showcase':    { perGal: 106.49, tag: 'SW List Price',     url: 'https://www.sherwin-williams.com/homeowners/products/woodscapes-rain-refresh-exterior-house-stain-with-selfcleaning-technology' },
-    'oil-essential':     { perGal: 96.99,  tag: 'SW List Price',     url: 'https://www.sherwin-williams.com/homeowners/products/superdeck-exotic-timber-oil' },
-    'oil-performance':   { perGal: 64.00,  tag: 'EXPERT List Price', url: 'https://stainandsealsupply.com/products/semi-transparent-wood-stain-sealer' },
-    'oil-showcase':      { perGal: 119.99, tag: 'EXPERT List Price', url: 'https://stainandsealsupply.com/products/semi-transparent-expert-log-timber-oil' }
+    'water-essential':   { name: 'ProMar Exterior Solid Color',     perGal: 94.49,  tag: 'SW List Price',     url: 'https://www.sherwin-williams.com/homeowners/products/promar-exterior-solid-color-acrylic-latex-stain-pl-9520553' },
+    'water-performance': { name: 'SW Woodscapes Solid Color',       perGal: 84.99,  tag: 'SW List Price',     url: 'https://www.sherwin-williams.com/homeowners/products/woodscapes-acrylic-solid-color-exterior-house-stain-pl-9519726' },
+    'water-showcase':    { name: 'SW Woodscapes Rain Refresh',      perGal: 106.49, tag: 'SW List Price',     url: 'https://www.sherwin-williams.com/homeowners/products/woodscapes-rain-refresh-exterior-house-stain-with-selfcleaning-technology' },
+    'oil-essential':     { name: 'Exotic Timber Oil',               perGal: 96.99,  tag: 'SW List Price',     url: 'https://www.sherwin-williams.com/homeowners/products/superdeck-exotic-timber-oil' },
+    'oil-performance':   { name: 'EXPERT Stain & Seal',             perGal: 64.00,  tag: 'EXPERT List Price', url: 'https://stainandsealsupply.com/products/semi-transparent-wood-stain-sealer' },
+    'oil-showcase':      { name: 'EXPERT Log & Timber Oil',         perGal: 119.99, tag: 'EXPERT List Price', url: 'https://stainandsealsupply.com/products/semi-transparent-expert-log-timber-oil' }
   };
   function stainListFor(p) {
     const e = STAIN_LIST[`${p.productType}-${p.tier}`];
     if (e) return e;
-    return { perGal: pailCostFor(p) / 5, tag: '', url: '' };
+    return { name: 'Stain', perGal: pailCostFor(p) / 5, tag: '', url: '' };
   }
   // Accumulate stain cost by distinct product so the aggregate DIY row
   // can show one line per product (handles multi-project quotes that
@@ -5367,8 +5367,8 @@ function computeDIYComparison(proTotal) {
     const sl = stainListFor(p);
     const gallonsForProj = pails * 5;
     const stainCostForProj = gallonsForProj * sl.perGal;
-    const slKey = `${sl.perGal}|${sl.tag}|${sl.url}`;
-    stainBreakdown[slKey] = stainBreakdown[slKey] || { gallons: 0, perGal: sl.perGal, tag: sl.tag, url: sl.url, cost: 0 };
+    const slKey = `${sl.name}|${sl.perGal}|${sl.tag}|${sl.url}`;
+    stainBreakdown[slKey] = stainBreakdown[slKey] || { name: sl.name, gallons: 0, perGal: sl.perGal, tag: sl.tag, url: sl.url, cost: 0 };
     stainBreakdown[slKey].gallons += gallonsForProj;
     stainBreakdown[slKey].cost    += stainCostForProj;
     // Citronella adds cost only when the customer would actually buy the
@@ -5496,7 +5496,7 @@ function computeDIYComparison(proTotal) {
     const tagHtml = b.tag
       ? ` <a class="diy-tag" href="${b.url}" target="_blank" rel="noopener" title="View ${b.tag} on the manufacturer site">${b.tag} ↗</a>`
       : '';
-    return `<div class="diy-row"><span>Stain (${b.gallons} gal × $${b.perGal}/gal)${tagHtml}</span><span>$${Math.round(b.cost).toLocaleString()}</span></div>`;
+    return `<div class="diy-row"><span><strong>${b.name || 'Stain'}</strong> (${b.gallons} gal × $${b.perGal}/gal)${tagHtml}</span><span>$${Math.round(b.cost).toLocaleString()}</span></div>`;
   };
   const stainRowsHtml = stainKeys.length
     ? stainKeys.map(k => stainRow(stainBreakdown[k])).join('')
