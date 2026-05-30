@@ -4450,8 +4450,8 @@ function computeDIYComparison(proTotal) {
     'water-essential':   { perGal: 94.49,  tag: 'SW List Price',     url: 'https://www.sherwin-williams.com/homeowners/products/promar-exterior-solid-color-acrylic-latex-stain-pl-9520553' },
     'water-performance': { perGal: 84.99,  tag: 'SW List Price',     url: 'https://www.sherwin-williams.com/homeowners/products/woodscapes-acrylic-solid-color-exterior-house-stain-pl-9519726' },
     'water-showcase':    { perGal: 106.49, tag: 'SW List Price',     url: 'https://www.sherwin-williams.com/homeowners/products/woodscapes-rain-refresh-exterior-house-stain-with-selfcleaning-technology' },
-    'oil-essential':     { perGal: 96.99,  tag: 'SW List Price',     url: 'https://www.sherwin-williams.com/homeowners/products/superdeck-exotic-hardwood-stain-pl-9523905' },
-    'oil-performance':   { perGal: 50.00,  tag: 'EXPERT List Price', url: 'https://stainandsealsupply.com/products/semi-transparent-wood-stain-sealer' },
+    'oil-essential':     { perGal: 96.99,  tag: 'SW List Price',     url: 'https://www.sherwin-williams.com/homeowners/products/superdeck-exotic-timber-oil' },
+    'oil-performance':   { perGal: 64.00,  tag: 'EXPERT List Price', url: 'https://stainandsealsupply.com/products/semi-transparent-wood-stain-sealer' },
     'oil-showcase':      { perGal: 119.99, tag: 'EXPERT List Price', url: 'https://stainandsealsupply.com/products/semi-transparent-expert-log-timber-oil' }
   };
   function stainListFor(p) {

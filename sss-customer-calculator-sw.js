@@ -5338,7 +5338,7 @@ function computeDIYComparison(proTotal) {
     'water-essential':   { perGal: 94.49,  tag: 'SW List Price', url: 'https://www.sherwin-williams.com/homeowners/products/promar-exterior-solid-color-acrylic-latex-stain-pl-9520553' },
     'water-performance': { perGal: 84.99,  tag: 'SW List Price', url: 'https://www.sherwin-williams.com/homeowners/products/woodscapes-acrylic-solid-color-exterior-house-stain-pl-9519726' },
     'water-showcase':    { perGal: 106.49, tag: 'SW List Price', url: 'https://www.sherwin-williams.com/homeowners/products/woodscapes-rain-refresh-exterior-house-stain-with-selfcleaning-technology' },
-    'oil-essential':     { perGal: 96.99,  tag: 'SW List Price', url: 'https://www.sherwin-williams.com/homeowners/products/superdeck-exotic-hardwood-stain-pl-9523905' },
+    'oil-essential':     { perGal: 96.99,  tag: 'SW List Price', url: 'https://www.sherwin-williams.com/homeowners/products/superdeck-exotic-timber-oil' },
     'oil-performance':   { perGal: 81.39,  tag: 'SW List Price', url: 'https://www.sherwin-williams.com/homeowners/products/superdeck-oilbased-semisolid-wood-stain' },
     'oil-showcase':      { perGal: 81.49,  tag: 'SW List Price', url: 'https://www.sherwin-williams.com/homeowners/products/superdeck-9600-series-acrylicalkyd-solid-color-stain' }
   };
