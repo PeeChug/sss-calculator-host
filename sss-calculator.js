@@ -7033,9 +7033,46 @@ function buildSubmissionDetailsHtml(it) {
     : '';
 
   const tagsRow = [modeTag, draftTag, jobberStatus].filter(Boolean).join(' ');
-  const emptyMsg = (it._isDraft && !it._hasFullState)
-    ? 'This draft was saved before detailed selection capture (or was too large to store). Only the summary above is available — reach out using the contact info.'
-    : 'No project data on this submission.';
+
+  // Lead summary — always shown for drafts, built purely from the
+  // summary fields the dashboard already has (no fullState needed). So
+  // even a draft that never captured detailed selections still shows
+  // the project type, how far they got, and the running estimate.
+  let leadSummaryHtml = '';
+  if (it._isDraft) {
+    const STAGE_NAMES = {
+      1: 'Customer info', 2: 'Project type', 3: 'Measurements', 4: 'Surface condition',
+      5: 'Product (water vs oil)', 6: 'Tier / package', 7: 'Color', 8: 'Add-ons',
+      9: 'Discounts', 10: 'Review & submit'
+    };
+    const stg = Number(it._stageReached) || 0;
+    const sumLines = [];
+    if (it._activeProjectType) sumLines.push('Project: ' + (PROJECT_LABELS[it._activeProjectType] || it._activeProjectType));
+    if (it._bundledCount)      sumLines.push('Additional bundled projects: ' + it._bundledCount);
+    if (stg)                   sumLines.push('Got to: Stage ' + stg + ' of 10' + (STAGE_NAMES[stg] ? ' — ' + STAGE_NAMES[stg] : ''));
+    const rt = Number(it.runningTotal) || 0;
+    if (rt > 0)                sumLines.push('Running estimate: ' + fmtMoney(rt));
+    if (dateStr)               sumLines.push('Last active: ' + dateStr + (ago ? ' (' + ago + ')' : ''));
+    if (sumLines.length) {
+      leadSummaryHtml = `
+        <div class="cust-details-proj">
+          <div class="cust-details-proj-head"><span class="cust-details-proj-title">Lead summary</span></div>
+          <pre class="cust-details-desc">${escapeHtml(sumLines.join('\n'))}</pre>
+        </div>`;
+    }
+  }
+
+  // Detailed per-project breakdown when we have it; otherwise a short,
+  // non-apologetic note (the lead summary above already carries the
+  // useful info).
+  let detailBlock;
+  if (projHtml) {
+    detailBlock = projHtml;
+  } else if (it._isDraft) {
+    detailBlock = `<div class="folder-empty" style="text-align:left;">Stage-by-stage selections weren't captured for this draft. The summary above is what we have — call or email to pick up where they left off.</div>`;
+  } else {
+    detailBlock = `<div class="folder-empty">No project data on this submission.</div>`;
+  }
 
   return `
     <div class="cust-details-head">
@@ -7048,7 +7085,8 @@ function buildSubmissionDetailsHtml(it) {
         ${totalHtml}
       </div>
     </div>
-    ${projHtml || `<div class="folder-empty">${emptyMsg}</div>`}
+    ${leadSummaryHtml}
+    ${detailBlock}
     ${notesHtml}`;
 }
 
@@ -7089,6 +7127,8 @@ function openDraftDetails(reference) {
     notes:        (fs && fs.notes) || '',
     _isDraft:     true,
     _stageReached: it.maxStageReached || it.currentStage || 0,
+    _activeProjectType: it.activeProjectType || (fs && fs.activeProject && fs.activeProject.type) || '',
+    _bundledCount: Number(it.bundledCount) || 0,
     _hasFullState: !!fs
   };
   const titleEl = __doc.getElementById('custDetailsTitle');
