@@ -157,7 +157,7 @@ const __CUSTOMER_BRIDGE_ALLOWED = new Set([
    PRICING TABLES
    ============================================================ */
 const PRICING = {
-  fence: { tiers: { essential: 9.20, performance: 11.20, showcase: 13.80 }, styleMultipliers: { privacy: 1.0, charleston: 1.0, shadowbox: 1.25, bob: 1.25, charleston_bob: 1.25, farm: 0.85 }, oneSidedFactor: 0.65, prep: { no_wash: 0, soft_wash: 1.60, strip_sand: 4.80 }, unit: 'ln ft' },
+  fence: { tiers: { essential: 9.20, performance: 11.20, showcase: 13.80 }, styleMultipliers: { privacy: 1.0, charleston: 1.0, shadowbox: 1.25, bob: 1.25, charleston_bob: 1.25, farm: 0.85 }, oneSidedFactor: 0.65, prep: { no_wash: 0, soft_wash: 2.00, soft_wash_complex: 3.00, strip_sand: 4.80 }, unit: 'ln ft' },
   // Deck tier rates are now expressed as actual $/sq ft (the FLAT
   // rate at each tier), matching every other project type. Used to be
   // a multiplier (0.8 / 1.0 / 1.3) applied to a separate baseline
@@ -165,14 +165,14 @@ const PRICING = {
   // confused everyone. The component rates (railing/stair/lattice)
   // still scale relative to the baseline flat rate via a derived
   // multiplier inside computeProjectTotal — that math is unchanged.
-  deck:  { tiers: { essential: 4.00, performance: 5.00, showcase: 6.50 }, rates: { flat: 5.00, railing: 7.50, stair: 31.25, lattice: 3.75 }, underneathMultiplier: 2, prep: { no_wash: 0, soft_wash: 0.72, strip_sand: 2.85 }, unit: 'sq ft' },
-  pergola: { tiers: { essential: 4.40, performance: 5.50, showcase: 7.15 }, overheadAccessFlat: 200, prep: { no_wash: 0, soft_wash: 0.72, strip_sand: 2.85 }, unit: 'sq ft' },
+  deck:  { tiers: { essential: 4.00, performance: 5.00, showcase: 6.50 }, rates: { flat: 5.00, railing: 7.50, stair: 31.25, lattice: 3.75 }, underneathMultiplier: 2, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
+  pergola: { tiers: { essential: 4.40, performance: 5.50, showcase: 7.15 }, overheadAccessFlat: 200, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
   // Barn tier rates bumped so performance = $4.25/sq ft (same scaling
   // factor as the ceiling bump). Prep rates raised to match deck and
   // pergola — barn prep was previously lighter, but the actual labor
   // is the same.
-  barn:    { tiers: { essential: 3.40, performance: 4.25, showcase: 5.55 }, heightPremium: 1.30, liftRentalPerDay: 400, trimRate: 1.50, cupolaFlat: 200, prep: { no_wash: 0, soft_wash: 0.72, strip_sand: 2.85 }, unit: 'sq ft' },
-  ceiling: { tiers: { essential: 3.40, performance: 4.25, showcase: 5.55 }, tngPremium: 0.50, beamRate: 8.00, fixtureRemoval: 50, fanRemoval: 100, furnitureProtFlat: 100, prep: { no_wash: 0, soft_wash: 0.72, strip_sand: 2.85 }, unit: 'sq ft' },
+  barn:    { tiers: { essential: 3.40, performance: 4.25, showcase: 5.55 }, heightPremium: 1.30, liftRentalPerDay: 400, trimRate: 1.50, cupolaFlat: 200, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
+  ceiling: { tiers: { essential: 3.40, performance: 4.25, showcase: 5.55 }, tngPremium: 0.50, beamRate: 8.00, fixtureRemoval: 50, fanRemoval: 100, furnitureProtFlat: 100, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
   stainUpgrades: [
     { id: 'citronella',  name: 'EXPERT Natural Defense additive', restr: 'Oil only', product: 'oil',
       priceType: 'per_unit',
@@ -3725,7 +3725,7 @@ function renderConditionCards() {
 
   __doc.getElementById('conditionCards').innerHTML = order.map(key => {
     const cond = CONDITION_META[key];
-    const rate = prep[key];
+    const rate = prepUnitRate(proj, key);
     // Decks have multiple component rates; show TOTAL prep cost for decks, $/unit for everything else
     const isDeck = (proj === 'deck');
     const totalPrep = rate * prepBase;
@@ -4665,12 +4665,29 @@ function computeTierBaseRaw() {
   return 0;
 }
 
+// Complex fence builds (shadowbox / board-on-board / charleston BOB) have
+// roughly double the surface area and far more crevices, so their soft-wash
+// costs more per linear foot than simple privacy / charleston / farm panels.
+const FENCE_COMPLEX_STYLES = ['shadowbox', 'bob', 'charleston_bob'];
+
+// Per-unit prep (wash) rate. For fence soft-wash this is style-aware:
+// simple panels use prep.soft_wash, complex builds use prep.soft_wash_complex.
+function prepUnitRate(proj, cond) {
+  if (!PRICING[proj] || !PRICING[proj].prep) return 0;
+  let rate = PRICING[proj].prep[cond] || 0;
+  if (proj === 'fence' && cond === 'soft_wash') {
+    const style = (state.activeProject.measurements && state.activeProject.measurements.style) || 'privacy';
+    if (FENCE_COMPLEX_STYLES.includes(style)) rate = PRICING.fence.prep.soft_wash_complex || rate;
+  }
+  return rate;
+}
+
 function computePrepCost() {
   const proj = state.activeProject.type;
   // Guard: no project selected (e.g. right after collapseActiveProject resets active to blank)
   if (!proj || !PRICING[proj] || !PRICING[proj].prep) return 0;
   const cond = state.activeProject.condition;
-  const raw = (PRICING[proj].prep[cond] || 0) * computePrepBase();
+  const raw = prepUnitRate(proj, cond) * computePrepBase();
   // Prep minimums — small jobs still incur fixed costs (chemistry,
   // truck time, setup) that don't scale linearly with footage. The
   // floor protects us from quoting $80 for a 40-lnft fence wash when
