@@ -6983,9 +6983,22 @@ function buildSubmissionDetailsHtml(it) {
   const modeTag = it.submitMode === 'callback'
     ? '<span class="cust-subs-card-tag callback">Callback request</span>'
     : '';
-  const jobberStatus = it.jobberOk
+  const draftTag = it._isDraft
+    ? `<span class="cust-subs-card-tag" style="background:#fbeccc;color:#8a6515;">Abandoned draft · Stage ${it._stageReached || '?'}/10</span>`
+    : '';
+  const jobberStatus = it._isDraft ? '' : (it.jobberOk
     ? '<span class="cust-subs-card-tag" style="background:#e3f3e8;color:#1f7a44;">Pushed to Jobber</span>'
-    : (it.jobberError ? '<span class="cust-subs-card-tag failed">Jobber push failed</span>' : '');
+    : (it.jobberError ? '<span class="cust-subs-card-tag failed">Jobber push failed</span>' : ''));
+
+  // Total line: finished submissions show the final total; abandoned
+  // drafts show the in-progress running total (clearly labeled).
+  let totalHtml = '';
+  if (it._isDraft) {
+    const rt = Number(it.runningTotal) || 0;
+    if (rt > 0) totalHtml = `<span class="cust-details-total">${fmtMoney(rt)} <small style="font-weight:500;color:var(--slate);">in-progress</small></span>`;
+  } else if (it.finalTotal > 0) {
+    totalHtml = `<span class="cust-details-total">Total ${fmtMoney(it.finalTotal)}</span>`;
+  }
 
   const contactBits = [
     c.email   ? `✉ ${escapeHtml(c.email)}` : '',
@@ -7019,18 +7032,23 @@ function buildSubmissionDetailsHtml(it) {
     ? `<div class="cust-details-notes"><strong>Customer notes:</strong> ${escapeHtml(it.notes)}</div>`
     : '';
 
+  const tagsRow = [modeTag, draftTag, jobberStatus].filter(Boolean).join(' ');
+  const emptyMsg = (it._isDraft && !it._hasFullState)
+    ? 'This draft was saved before detailed selection capture (or was too large to store). Only the summary above is available — reach out using the contact info.'
+    : 'No project data on this submission.';
+
   return `
     <div class="cust-details-head">
       <div class="cust-details-name">${escapeHtml(c.name || '(unnamed customer)')}</div>
-      ${(modeTag || jobberStatus) ? `<div class="cust-details-tags">${[modeTag, jobberStatus].filter(Boolean).join(' ')}</div>` : ''}
+      ${tagsRow ? `<div class="cust-details-tags">${tagsRow}</div>` : ''}
       ${contactBits ? `<div class="cust-details-contact">${contactBits}</div>` : ''}
       <div class="cust-details-meta">
         ${it.reference ? `<span class="quote-id-mono">${escapeHtml(it.reference)}</span>` : ''}
         ${dateStr ? `<span>${escapeHtml(dateStr)}${ago ? ' · ' + escapeHtml(ago) : ''}</span>` : ''}
-        ${it.finalTotal > 0 ? `<span class="cust-details-total">Total ${fmtMoney(it.finalTotal)}</span>` : ''}
+        ${totalHtml}
       </div>
     </div>
-    ${projHtml || '<div class="folder-empty">No project data on this submission.</div>'}
+    ${projHtml || `<div class="folder-empty">${emptyMsg}</div>`}
     ${notesHtml}`;
 }
 
@@ -7043,6 +7061,40 @@ function openSubmissionDetails(rowId) {
   const bodyEl  = __doc.getElementById('custDetailsBody');
   if (titleEl) titleEl.textContent = ((it.customer && it.customer.name) || 'Submission') + ' — what they selected';
   if (bodyEl)  bodyEl.innerHTML = buildSubmissionDetailsHtml(it);
+  const dlg = __doc.getElementById('custDetailsDialog');
+  if (dlg) { try { if (!dlg.open) dlg.showModal(); } catch (e) { dlg.setAttribute('open', ''); } }
+}
+
+// Abandoned-draft variant. These rows aren't submissions — they carry a
+// serialized `fullState` resume blob (active + bundled projects) instead
+// of a finished `projects` array. We parse it, normalize into the shape
+// buildSubmissionDetailsHtml expects, and reuse the same modal. Older
+// drafts (saved before fullState capture, or too large) gracefully fall
+// back to the summary-only view.
+function openDraftDetails(reference) {
+  if (!reference) return;
+  const it = (__custAbandonedCache || []).find(x => x && x.reference === reference);
+  if (!it) { alert('Could not find that draft — try refreshing the dashboard.'); return; }
+  let fs = null;
+  try { fs = it.fullState ? JSON.parse(it.fullState) : null; } catch (e) { fs = null; }
+  const projects = fs
+    ? [fs.activeProject].concat(Array.isArray(fs.bundledProjects) ? fs.bundledProjects : []).filter(p => p && p.type)
+    : [];
+  const normalized = {
+    customer:     it.customer || (fs && fs.customer) || {},
+    projects:     projects,
+    reference:    it.reference,
+    createdAt:    it.updatedAt || it.createdAt,
+    runningTotal: Number(it.runningTotal) || 0,
+    notes:        (fs && fs.notes) || '',
+    _isDraft:     true,
+    _stageReached: it.maxStageReached || it.currentStage || 0,
+    _hasFullState: !!fs
+  };
+  const titleEl = __doc.getElementById('custDetailsTitle');
+  const bodyEl  = __doc.getElementById('custDetailsBody');
+  if (titleEl) titleEl.textContent = ((normalized.customer && normalized.customer.name) || 'Draft') + ' — what they selected so far';
+  if (bodyEl)  bodyEl.innerHTML = buildSubmissionDetailsHtml(normalized);
   const dlg = __doc.getElementById('custDetailsDialog');
   if (dlg) { try { if (!dlg.open) dlg.showModal(); } catch (e) { dlg.setAttribute('open', ''); } }
 }
@@ -7208,6 +7260,7 @@ function renderCustomerAbandonedDrafts() {
             ${totalLine}
           </div>
           <div class="cust-subs-card-actions">
+            <button type="button" class="btn btn-secondary" onclick="openDraftDetails('${escapeHtml(it.reference)}')" title="See what this customer selected before they left">📋 Details</button>
             ${c.phone ? `<a class="btn btn-secondary" href="tel:${escapeHtml(String(c.phone).replace(/[^0-9+]/g, ''))}">📞 Call</a>` : ''}
             ${c.email ? `<a class="btn btn-secondary" href="mailto:${escapeHtml(c.email)}?subject=${encodeURIComponent('Your Superior Stain Solutions estimate (' + (it.reference || '') + ')')}">✉ Email</a>` : ''}
             <button type="button" class="btn-dismiss" onclick="dismissAbandonedDraft('${escapeHtml(it.reference)}')" title="Remove this draft from the dashboard">Dismiss</button>
@@ -9464,7 +9517,7 @@ renderDashboard();
   }, { capture: true });
 })();
   // Expose for inline onclick=/onchange= handlers in markup.
-  Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, returnToDashboard, cancelNewQuote, refreshDashboardHard, pickCustSearchResult, clearPickedCustomer, convertJobberRequestToQuote, copyJobberErrorToClipboard, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, onFolderToggle, onDashSearchInput, openRowMenu, closeRowMenu, resumeCloudQuote, resumeLocalDraft, deleteLocalDraft, moveCloudQuote, duplicateCloudQuote, permanentlyDeleteCloud, duplicateCurrentForEdit, onCustSubsToggle, onCustDraftsToggle, onCustAbandonedToggle, loadCustomerSubmissions, renderCustomerSubmissions, renderCustomerDrafts, loadCustomerAbandonedDrafts, renderCustomerAbandonedDrafts, dismissAbandonedDraft, dismissCustomerSubmission, openSubmissionDetails, closeSubmissionDetails, openCustCalcAnalytics, closeCustCalcAnalytics, loadCustCalcAnalytics, renderCustCalcAnalytics, toggleBulkMode, toggleBulkRow, bulkClearSelection, bulkSetStatus, bulkPermanentlyDelete, openPricingAdmin, closePricingAdmin, switchPricingAdminTab, savePricingAdmin, resetPricingAdmin, removeReferencePhoto, signOutAndReload, openChangePinPrompt, closeRepMenu, adminCreateRep, adminResetRepPin, adminDeleteRep, adminRevokeDevice, adminRevokeAllDevices, toggleAdminDevicesShowAll, openProjectSwitchDialog, closeProjectSwitchDialog, confirmAddAnotherProject, confirmSwitchProject, openJobberPanel, closeJobberPanel, jobberConnect, jobberManualRefresh, jobberDisconnectConfirm, jobberTestConnection, pushFinishedQuoteToJobber, resendFinishedToJobber, resendViewedQuoteToJobber, resendCurrentQuoteFromSuccess, resendCurrentViewedToJobber, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, toggleEditPanel, applyCustomColor, removeCustomAddon, state });
+  Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, returnToDashboard, cancelNewQuote, refreshDashboardHard, pickCustSearchResult, clearPickedCustomer, convertJobberRequestToQuote, copyJobberErrorToClipboard, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, onFolderToggle, onDashSearchInput, openRowMenu, closeRowMenu, resumeCloudQuote, resumeLocalDraft, deleteLocalDraft, moveCloudQuote, duplicateCloudQuote, permanentlyDeleteCloud, duplicateCurrentForEdit, onCustSubsToggle, onCustDraftsToggle, onCustAbandonedToggle, loadCustomerSubmissions, renderCustomerSubmissions, renderCustomerDrafts, loadCustomerAbandonedDrafts, renderCustomerAbandonedDrafts, dismissAbandonedDraft, dismissCustomerSubmission, openSubmissionDetails, openDraftDetails, closeSubmissionDetails, openCustCalcAnalytics, closeCustCalcAnalytics, loadCustCalcAnalytics, renderCustCalcAnalytics, toggleBulkMode, toggleBulkRow, bulkClearSelection, bulkSetStatus, bulkPermanentlyDelete, openPricingAdmin, closePricingAdmin, switchPricingAdminTab, savePricingAdmin, resetPricingAdmin, removeReferencePhoto, signOutAndReload, openChangePinPrompt, closeRepMenu, adminCreateRep, adminResetRepPin, adminDeleteRep, adminRevokeDevice, adminRevokeAllDevices, toggleAdminDevicesShowAll, openProjectSwitchDialog, closeProjectSwitchDialog, confirmAddAnotherProject, confirmSwitchProject, openJobberPanel, closeJobberPanel, jobberConnect, jobberManualRefresh, jobberDisconnectConfirm, jobberTestConnection, pushFinishedQuoteToJobber, resendFinishedToJobber, resendViewedQuoteToJobber, resendCurrentQuoteFromSuccess, resendCurrentViewedToJobber, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, toggleEditPanel, applyCustomColor, removeCustomAddon, state });
 
   }
 
