@@ -4595,10 +4595,12 @@ function renderDiscounts() {
 /* ============================================================
    PRICING ENGINE
    ============================================================ */
-// Product-family multiplier applied to the raw tier base. Water-based jobs
-// and HOA-specified jobs cost ~5% more in materials + labor than oil; oil
-// jobs stay at the baseline tier rates.
-const PRODUCT_PRICE_MULT = { water: 1.05, hoa: 1.05, oil: 1.0 };
+// Product-family multiplier applied to the raw tier base. Tier pricing is
+// product-agnostic: the per-unit rate shown on each tier card must equal the
+// effective rate baked into the quote total, no matter which product family
+// (water / oil / HOA) is selected. Keep all multipliers at 1.0 so switching
+// product type never changes the price for the same tier + footage.
+const PRODUCT_PRICE_MULT = { water: 1.0, hoa: 1.0, oil: 1.0 };
 
 function computeTierBase() {
   const raw = computeTierBaseRaw();
