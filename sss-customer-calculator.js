@@ -5345,9 +5345,17 @@ function computeDIYComparison(proTotal) {
     const isOneCoat = (p.productType === 'water' && p.tier === 'essential');
     let pails = 0;
     let scope = 0;
+    let fenceGallons = null;
     if (p.type === 'fence') {
       const linearft = m.linearft || 0;
-      pails = isOneCoat ? Math.ceil(linearft / 100) : Math.ceil(linearft / 50);
+      // Per-style gallon usage for fences — applies to EVERY stain on a
+      // fence, independent of coats/product. Privacy & Charleston use
+      // 1 gal per 10 ft; farm rail 0.6 gal per 10 ft; shadowbox,
+      // board-on-board, and Charleston board-on-board 1.3 gal per 10 ft.
+      const FENCE_GAL_PER_10FT = { privacy: 1.0, charleston: 1.0, farm: 0.6, shadowbox: 1.3, bob: 1.3, charleston_bob: 1.3 };
+      const per10 = (FENCE_GAL_PER_10FT[m.style] != null) ? FENCE_GAL_PER_10FT[m.style] : 1.0;
+      fenceGallons = Math.max(1, Math.ceil(linearft * per10 / 10));
+      pails = Math.ceil(fenceGallons / 5);
       scope = linearft;
     } else if (p.type === 'deck') {
       const flatSq = (m.flat || 0) * (m.underneath ? 2 : 1) + (m.lattice || 0);
@@ -5362,10 +5370,11 @@ function computeDIYComparison(proTotal) {
     const baseHours = Math.max(4, Math.ceil(scope / (PROJECT_TIME_DIVISOR[p.type] || 30)));
     const toolsCost = PROJECT_TOOLS[p.type] || 150;
     const pailCost = pailCostFor(p);
-    // Every stain is now priced per GALLON at its manufacturer list
-    // price. Gallons needed = the pail estimate × 5 (each pail = 5 gal).
+    // Stain priced per GALLON at its manufacturer list price. Fences use
+    // the per-style gallon estimate above; other projects use the pail
+    // estimate × 5 (each pail = 5 gal).
     const sl = stainListFor(p);
-    const gallonsForProj = pails * 5;
+    const gallonsForProj = (fenceGallons != null) ? fenceGallons : pails * 5;
     const stainCostForProj = gallonsForProj * sl.perGal;
     const slKey = `${sl.name}|${sl.perGal}|${sl.tag}|${sl.url}`;
     stainBreakdown[slKey] = stainBreakdown[slKey] || { name: sl.name, gallons: 0, perGal: sl.perGal, tag: sl.tag, url: sl.url, cost: 0 };
