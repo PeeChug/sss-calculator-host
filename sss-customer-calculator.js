@@ -4268,9 +4268,19 @@ function renderPrevStainContext() {
     </div>`;
 }
 
+// Fence height premium: 6 ft (and under) = no change. Every foot over 6
+// adds 20% to the fence staining cost, so 8 ft = +40%. Linear between
+// whole feet (e.g. 7 ft = +20%, 7.5 ft = +30%). Applied to the per-foot
+// staining rate so it shows in BOTH the headline $/ln ft and the total.
+function fenceHeightMultiplier(height) {
+  const h = Number(height) || 0;
+  if (h <= 6) return 1;
+  return 1 + 0.20 * (h - 6);
+}
+
 function tierUnitPrice(proj, tier) {
   // Returns the headline per-unit rate for a tier (most representative number)
-  if (proj === 'fence')   return { rate: PRICING.fence.tiers[tier], unit: 'ln ft' };
+  if (proj === 'fence')   return { rate: PRICING.fence.tiers[tier] * fenceHeightMultiplier(state.activeProject.measurements && state.activeProject.measurements.height), unit: 'ln ft' };
   if (proj === 'deck')    return { rate: PRICING.deck.tiers[tier], unit: 'sq ft' };
   if (proj === 'pergola') return { rate: PRICING.pergola.tiers[tier], unit: 'sq ft' };
   if (proj === 'barn')    return { rate: PRICING.barn.tiers[tier], unit: 'sq ft' };
@@ -4675,7 +4685,7 @@ function computeTierBaseRaw() {
   const m = state.activeProject.measurements;
   if (proj === 'fence') {
     const totalLnFt = m.linearft || 0;
-    const perFootRate = PRICING.fence.tiers[tier] * PRICING.fence.styleMultipliers[m.style || 'privacy'];
+    const perFootRate = PRICING.fence.tiers[tier] * PRICING.fence.styleMultipliers[m.style || 'privacy'] * fenceHeightMultiplier(m.height);
     if (!m.oneSided) return totalLnFt * perFootRate;
     // One-side-only is enabled. If `oneSidedLnFt` is specified, only that
     // portion is priced as one-sided; the remainder is priced normally.
