@@ -783,7 +783,7 @@ __doc.getElementById('quoteNum').textContent = state.quoteId;
 //
 // >>> SET SSS_SW_PAGE_PATH to your SW calculator page (e.g. '/sw' or a
 //     full https URL). Leave it '' to keep the redirect OFF (safe). <<<
-var SSS_SW_PAGE_PATH = '';
+var SSS_SW_PAGE_PATH = '/customer-calculator-sw';
 var SSS_REF_KEY      = 'sss_ref';
 var SSS_REF_TTL_MS   = 30 * 24 * 60 * 60 * 1000;   // 30 days
 
