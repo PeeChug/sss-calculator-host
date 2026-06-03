@@ -157,7 +157,7 @@ const __CUSTOMER_BRIDGE_ALLOWED = new Set([
    PRICING TABLES
    ============================================================ */
 const PRICING = {
-  fence: { tiers: { essential: 9.20, performance: 11.20, showcase: 13.80 }, tiersByProduct: { water: { essential: 10.60, performance: 11.20, showcase: 13.80 } }, styleMultipliers: { privacy: 1.0, charleston: 1.0, shadowbox: 1.25, bob: 1.25, charleston_bob: 1.25, farm: 0.85 }, oneSidedFactor: 0.65, prep: { no_wash: 0, soft_wash: 2.00, soft_wash_complex: 3.00, strip_sand: 4.80 }, unit: 'ln ft' },
+  fence: { tiers: { essential: 9.20, performance: 11.20, showcase: 13.80 }, tiersByProduct: { water: { essential: 10.60, performance: 12.20, showcase: 13.80 } }, styleMultipliers: { privacy: 1.0, charleston: 1.0, shadowbox: 1.25, bob: 1.25, charleston_bob: 1.25, farm: 0.85 }, oneSidedFactor: 0.65, prep: { no_wash: 0, soft_wash: 2.00, soft_wash_complex: 3.00, strip_sand: 4.80 }, unit: 'ln ft' },
   // Deck tier rates are now expressed as actual $/sq ft (the FLAT
   // rate at each tier), matching every other project type. Used to be
   // a multiplier (0.8 / 1.0 / 1.3) applied to a separate baseline
