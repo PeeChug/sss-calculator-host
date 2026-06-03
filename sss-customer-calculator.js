@@ -772,7 +772,56 @@ __doc.getElementById('quoteNum').textContent = state.quoteId;
 // intro stage (not the dashboard), and never touches Jobber connection
 // state in the UI. We still wire up the progress bar observer and
 // pricing-override fetch so the math is correct from first paint.
+// =====================================================================
+//  SW REFERRAL TAGGING + REDIRECT (regular customer calc)
+// =====================================================================
+// A visitor who opens the SW edition (or arrives at any calc with
+// ?ref=sw) is tagged in localStorage for 30 days. This regular calc reads
+// that tag on load and routes them to the SW page so they keep seeing SW
+// products + the SW referral discount. Every step is wrapped in try/catch
+// so a storage/navigation failure can NEVER break the calculator.
+//
+// >>> SET SSS_SW_PAGE_PATH to your SW calculator page (e.g. '/sw' or a
+//     full https URL). Leave it '' to keep the redirect OFF (safe). <<<
+var SSS_SW_PAGE_PATH = '';
+var SSS_REF_KEY      = 'sss_ref';
+var SSS_REF_TTL_MS   = 30 * 24 * 60 * 60 * 1000;   // 30 days
+
+function sssHasSwRefParam() {
+  try { return /[?&]ref=sw(?=&|$)/i.test((window.location && window.location.search) || ''); }
+  catch (e) { return false; }
+}
+function sssTagSwReferral() {
+  try { localStorage.setItem(SSS_REF_KEY, 'sw:' + Date.now()); } catch (e) {}
+}
+function sssIsSwReferral() {
+  try {
+    var raw = localStorage.getItem(SSS_REF_KEY);
+    if (!raw) return false;
+    var parts = String(raw).split(':');
+    if (parts[0] !== 'sw') return false;
+    var ts = parseInt(parts[1], 10);
+    if (!isFinite(ts) || ts <= 0) return false;
+    if (Date.now() - ts > SSS_REF_TTL_MS) { try { localStorage.removeItem(SSS_REF_KEY); } catch (e) {} return false; }
+    return true;
+  } catch (e) { return false; }
+}
+function sssMaybeRouteToSw() {
+  if (sssHasSwRefParam()) sssTagSwReferral();   // shared-link tagging
+  if (!SSS_SW_PAGE_PATH) return;                // redirect not configured -> off
+  if (!sssIsSwReferral()) return;               // not a (current) SW visitor
+  var targetPath = SSS_SW_PAGE_PATH.replace(/^https?:\/\/[^/]+/i, '') || SSS_SW_PAGE_PATH;
+  var here = '';
+  try { here = window.location.pathname || ''; } catch (e) {}
+  if (here && targetPath && here.indexOf(targetPath) === 0) return;   // already on SW page -> no loop
+  try { window.location.href = SSS_SW_PAGE_PATH; } catch (e) {}
+}
+
 (function bootstrapCustomer() {
+  // SW REFERRAL: honor ?ref=sw, then route SW-tagged visitors to the SW
+  // edition. Guarded — never blocks the calculator from loading.
+  try { sssMaybeRouteToSw(); } catch (e) {}
+
   // Force the intro hero to be the only visible stage at load. Belt &
   // suspenders for any stale `.visible` class that might have shipped.
   try {
