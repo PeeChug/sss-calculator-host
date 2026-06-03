@@ -822,7 +822,23 @@ __doc.getElementById('quoteNum').textContent = state.quoteId;
 // intro stage (not the dashboard), and never touches Jobber connection
 // state in the UI. We still wire up the progress bar observer and
 // pricing-override fetch so the math is correct from first paint.
+// =====================================================================
+//  SW REFERRAL TAGGING (Sherwin-Williams edition)
+// =====================================================================
+// Opening this SW edition tags the browser as an SW referral for 30 days.
+// The regular customer calc reads that tag and routes the visitor back
+// here. Wrapped in try/catch so it can never break the calculator.
+var SSS_REF_KEY = 'sss_ref';
+
+function sssTagSwReferral() {
+  try { localStorage.setItem(SSS_REF_KEY, 'sw:' + Date.now()); } catch (e) {}
+}
+
 (function bootstrapCustomer() {
+  // SW EDITION: tag this browser as an SW referral (30-day window) so the
+  // regular calc keeps routing them here. Guarded — never blocks load.
+  try { sssTagSwReferral(); } catch (e) {}
+
   // Force the intro hero to be the only visible stage at load. Belt &
   // suspenders for any stale `.visible` class that might have shipped.
   try {
