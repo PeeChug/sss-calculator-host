@@ -1780,7 +1780,12 @@ function cancelNewQuote() {
    ============================================================ */
 function isHoa() { return state.activeProject.productType === 'hoa'; }
 function isClearSealer() {
-  return state.activeProject.productType === 'oil' && state.activeProject.tier === 'essential';
+  // No tier is a clear (no-pigment) sealer anymore — the essential oil
+  // tier is now the pigmented SuperDeck Exotic Timber Oil, which DOES get
+  // a color picker (its 4 stock tri-oil tones). Kept as a function
+  // (returns false) so the legacy callers that branch on it simply take
+  // the normal pigmented path.
+  return false;
 }
 function shouldSkipColorStage() {
   return isClearSealer() || isHoa();
