@@ -8467,6 +8467,43 @@ async function adminDeleteRep(repId, label) {
 // Hide revoked/expired sessions by default — they're rarely useful
 // in the admin view. Toggle keeps them around for audit when needed.
 var __adminDevicesShowAll = false;
+// ---- SW referral test reset (this device) -------------------------------
+// All three calcs share the same origin (superiorstainsolutions.com), so the
+// SW-referral tag set by the SW calc lives in this browser's localStorage and
+// is readable/clearable from here. This lets a tester clear the tag on the
+// device they're holding so the customer calc stops auto-redirecting to SW.
+// localStorage is per-device, so this only affects the device viewing the
+// dashboard (can't reach other phones/laptops).
+function sssReadDeviceRefState() {
+  try {
+    var raw = localStorage.getItem('sss_ref');
+    if (!raw) return { tagged: false };
+    var parts = String(raw).split(':');
+    if (parts[0] !== 'sw') return { tagged: false };
+    var ts = parseInt(parts[1], 10);
+    if (!isFinite(ts) || ts <= 0) return { tagged: false };
+    var msLeft = (ts + 30 * 24 * 60 * 60 * 1000) - Date.now();
+    if (msLeft <= 0) return { tagged: false };
+    return { tagged: true, daysLeft: Math.max(1, Math.ceil(msLeft / (24 * 60 * 60 * 1000))) };
+  } catch (e) { return { tagged: false }; }
+}
+function swTestSectionHtml() {
+  var st = sssReadDeviceRefState();
+  var msg = st.tagged
+    ? 'This device is tagged as an <strong>SW referral</strong> (expires in ~' + st.daysLeft + ' day' + (st.daysLeft === 1 ? '' : 's') + '). The customer calculator auto-redirects it to the SW edition.'
+    : 'This device is <strong>not</strong> tagged as an SW referral — the customer calculator behaves normally here.';
+  return '<div style="border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:16px;background:#f7f9fb;">'
+    + '<div style="font-weight:700;color:var(--navy);font-size:13px;margin-bottom:4px;">🧪 SW referral — this device</div>'
+    + '<div style="font-size:12px;color:var(--slate);margin-bottom:10px;">' + msg + '</div>'
+    + '<button class="btn btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="resetSwDeviceTag()"' + (st.tagged ? '' : ' disabled') + '>Reset SW tag on this device</button>'
+    + '</div>';
+}
+function resetSwDeviceTag() {
+  try { localStorage.removeItem('sss_ref'); } catch (e) {}
+  try { alert('✓ SW referral tag cleared on this device.\n\nThe customer calculator will no longer auto-redirect to the SW edition here. Open the SW calculator again (or use a ?ref=sw link) to re-tag this device.'); } catch (e) {}
+  try { loadAndRenderDevices(); } catch (e) {}   // re-render so the state line updates
+}
+
 async function loadAndRenderDevices() {
   const body = __doc.getElementById('devicesTabBody');
   if (!body) { console.log('[SSS Admin] loadAndRenderDevices: body missing, abort'); return; }
@@ -8537,7 +8574,7 @@ async function loadAndRenderDevices() {
     const toggleBtn = archivedCount > 0
       ? `<button class="btn btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="toggleAdminDevicesShowAll()">${showAll ? 'Hide' : 'Show'} ${archivedCount} revoked/expired</button>`
       : '';
-    liveBody.innerHTML = `
+    liveBody.innerHTML = swTestSectionHtml() + `
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
         <div style="font-size:12px;color:var(--slate);flex:1;min-width:200px;">${activeDevices.length} active session${activeDevices.length === 1 ? '' : 's'}${archivedCount > 0 ? ` · ${archivedCount} revoked/expired hidden` : ''}.</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -8548,7 +8585,7 @@ async function loadAndRenderDevices() {
       ${rows || '<div class="folder-empty">No active devices.</div>'}`;
   } catch (e) {
     const liveBodyErr = __doc.getElementById('devicesTabBody');
-    if (liveBodyErr) liveBodyErr.innerHTML = `<div class="folder-empty" style="color:var(--coral);">Couldn't load devices: ${escapeHtml(e.message || e)}</div>`;
+    if (liveBodyErr) liveBodyErr.innerHTML = swTestSectionHtml() + `<div class="folder-empty" style="color:var(--coral);">Couldn't load devices: ${escapeHtml(e.message || e)}</div>`;
   }
 }
 
@@ -9673,7 +9710,7 @@ renderDashboard();
   }, { capture: true });
 })();
   // Expose for inline onclick=/onchange= handlers in markup.
-  Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, returnToDashboard, cancelNewQuote, refreshDashboardHard, pickCustSearchResult, clearPickedCustomer, convertJobberRequestToQuote, copyJobberErrorToClipboard, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, onFolderToggle, onDashSearchInput, openRowMenu, closeRowMenu, resumeCloudQuote, resumeLocalDraft, deleteLocalDraft, moveCloudQuote, duplicateCloudQuote, permanentlyDeleteCloud, duplicateCurrentForEdit, onCustSubsToggle, onCustDraftsToggle, onCustAbandonedToggle, loadCustomerSubmissions, renderCustomerSubmissions, renderCustomerDrafts, loadCustomerAbandonedDrafts, renderCustomerAbandonedDrafts, dismissAbandonedDraft, dismissCustomerSubmission, openSubmissionDetails, openDraftDetails, closeSubmissionDetails, openCustCalcAnalytics, closeCustCalcAnalytics, loadCustCalcAnalytics, renderCustCalcAnalytics, toggleBulkMode, toggleBulkRow, bulkClearSelection, bulkSetStatus, bulkPermanentlyDelete, openPricingAdmin, closePricingAdmin, switchPricingAdminTab, savePricingAdmin, resetPricingAdmin, removeReferencePhoto, signOutAndReload, openChangePinPrompt, closeRepMenu, adminCreateRep, adminResetRepPin, adminDeleteRep, adminRevokeDevice, adminRevokeAllDevices, toggleAdminDevicesShowAll, openProjectSwitchDialog, closeProjectSwitchDialog, confirmAddAnotherProject, confirmSwitchProject, openJobberPanel, closeJobberPanel, jobberConnect, jobberManualRefresh, jobberDisconnectConfirm, jobberTestConnection, pushFinishedQuoteToJobber, resendFinishedToJobber, resendViewedQuoteToJobber, resendCurrentQuoteFromSuccess, resendCurrentViewedToJobber, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, toggleEditPanel, applyCustomColor, removeCustomAddon, state });
+  Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, returnToDashboard, cancelNewQuote, refreshDashboardHard, pickCustSearchResult, clearPickedCustomer, convertJobberRequestToQuote, copyJobberErrorToClipboard, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, onFolderToggle, onDashSearchInput, openRowMenu, closeRowMenu, resumeCloudQuote, resumeLocalDraft, deleteLocalDraft, moveCloudQuote, duplicateCloudQuote, permanentlyDeleteCloud, duplicateCurrentForEdit, onCustSubsToggle, onCustDraftsToggle, onCustAbandonedToggle, loadCustomerSubmissions, renderCustomerSubmissions, renderCustomerDrafts, loadCustomerAbandonedDrafts, renderCustomerAbandonedDrafts, dismissAbandonedDraft, dismissCustomerSubmission, openSubmissionDetails, openDraftDetails, closeSubmissionDetails, openCustCalcAnalytics, closeCustCalcAnalytics, loadCustCalcAnalytics, renderCustCalcAnalytics, toggleBulkMode, toggleBulkRow, bulkClearSelection, bulkSetStatus, bulkPermanentlyDelete, openPricingAdmin, closePricingAdmin, switchPricingAdminTab, savePricingAdmin, resetPricingAdmin, removeReferencePhoto, signOutAndReload, openChangePinPrompt, closeRepMenu, adminCreateRep, adminResetRepPin, adminDeleteRep, adminRevokeDevice, adminRevokeAllDevices, toggleAdminDevicesShowAll, resetSwDeviceTag, openProjectSwitchDialog, closeProjectSwitchDialog, confirmAddAnotherProject, confirmSwitchProject, openJobberPanel, closeJobberPanel, jobberConnect, jobberManualRefresh, jobberDisconnectConfirm, jobberTestConnection, pushFinishedQuoteToJobber, resendFinishedToJobber, resendViewedQuoteToJobber, resendCurrentQuoteFromSuccess, resendCurrentViewedToJobber, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, toggleEditPanel, applyCustomColor, removeCustomAddon, state });
 
   }
 
