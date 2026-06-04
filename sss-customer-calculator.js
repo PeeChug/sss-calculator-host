@@ -806,15 +806,59 @@ function sssIsSwReferral() {
     return true;
   } catch (e) { return false; }
 }
+// Timestamp (ms) of a valid local SW tag, or 0 if none / past the 30-day
+// TTL (clears an expired tag as a side effect).
+function sssLocalTagTs() {
+  try {
+    var raw = localStorage.getItem(SSS_REF_KEY);
+    if (!raw) return 0;
+    var parts = String(raw).split(':');
+    if (parts[0] !== 'sw') return 0;
+    var ts = parseInt(parts[1], 10);
+    if (!isFinite(ts) || ts <= 0) return 0;
+    if (Date.now() - ts > SSS_REF_TTL_MS) { try { localStorage.removeItem(SSS_REF_KEY); } catch (e) {} return 0; }
+    return ts;
+  } catch (e) { return 0; }
+}
+
+// Fetch the global "reset all devices" epoch (ms). cb(epoch) gets 0 on any
+// failure/timeout, so the redirect falls back to the local tag and never
+// hangs. ~1.2s cap. Only ever called when a local tag already exists.
+function sssFetchResetEpoch(cb) {
+  var done = false, timer = null;
+  var finish = function (ep) { if (done) return; done = true; if (timer) { try { clearTimeout(timer); } catch (e) {} } try { cb(ep || 0); } catch (e) {} };
+  try { timer = setTimeout(function () { finish(0); }, 1200); } catch (e) {}
+  try {
+    fetch('/_functions/swResetEpoch', { credentials: 'include' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { finish(d && Number(d.epoch)); })
+      .catch(function () { finish(0); });
+  } catch (e) { finish(0); }
+}
+
 function sssMaybeRouteToSw() {
-  if (sssHasSwRefParam()) sssTagSwReferral();   // shared-link tagging
-  if (!SSS_SW_PAGE_PATH) return;                // redirect not configured -> off
-  if (!sssIsSwReferral()) return;               // not a (current) SW visitor
-  var targetPath = SSS_SW_PAGE_PATH.replace(/^https?:\/\/[^/]+/i, '') || SSS_SW_PAGE_PATH;
-  var here = '';
-  try { here = window.location.pathname || ''; } catch (e) {}
-  if (here && targetPath && here.indexOf(targetPath) === 0) return;   // already on SW page -> no loop
-  try { window.location.href = SSS_SW_PAGE_PATH; } catch (e) {}
+  try {
+    if (sssHasSwRefParam()) sssTagSwReferral();   // shared-link tagging
+    if (!SSS_SW_PAGE_PATH) return;                // redirect not configured -> off
+    var ts = sssLocalTagTs();
+    if (!ts) return;                              // not tagged -> fast path, no fetch
+    // Already on the SW page? Skip (prevents loops) — no fetch needed.
+    var targetPath = SSS_SW_PAGE_PATH.replace(/^https?:\/\/[^/]+/i, '') || SSS_SW_PAGE_PATH;
+    var here = '';
+    try { here = window.location.pathname || ''; } catch (e) {}
+    if (here && targetPath && here.indexOf(targetPath) === 0) return;
+    // Tagged + not on the SW page -> verify against the global reset epoch,
+    // then redirect. The fetch only runs for already-tagged devices.
+    sssFetchResetEpoch(function (epoch) {
+      try {
+        if (epoch && ts < epoch) {                // a global "reset all" invalidated this tag
+          try { localStorage.removeItem(SSS_REF_KEY); } catch (e) {}
+          return;
+        }
+        window.location.href = SSS_SW_PAGE_PATH;
+      } catch (e) {}
+    });
+  } catch (e) {}
 }
 
 (function bootstrapCustomer() {
