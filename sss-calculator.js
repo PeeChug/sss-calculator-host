@@ -8493,15 +8493,37 @@ function swTestSectionHtml() {
     ? 'This device is tagged as an <strong>SW referral</strong> (expires in ~' + st.daysLeft + ' day' + (st.daysLeft === 1 ? '' : 's') + '). The customer calculator auto-redirects it to the SW edition.'
     : 'This device is <strong>not</strong> tagged as an SW referral — the customer calculator behaves normally here.';
   return '<div style="border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:16px;background:#f7f9fb;">'
-    + '<div style="font-weight:700;color:var(--navy);font-size:13px;margin-bottom:4px;">🧪 SW referral — this device</div>'
+    + '<div style="font-weight:700;color:var(--navy);font-size:13px;margin-bottom:4px;">🧪 SW referral — testing</div>'
     + '<div style="font-size:12px;color:var(--slate);margin-bottom:10px;">' + msg + '</div>'
-    + '<button class="btn btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="resetSwDeviceTag()"' + (st.tagged ? '' : ' disabled') + '>Reset SW tag on this device</button>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+    + '<button class="btn btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="resetSwDeviceTag()"' + (st.tagged ? '' : ' disabled') + '>Reset this device</button>'
+    + '<button class="btn btn-ghost-danger" style="padding:6px 12px;font-size:12px;" onclick="resetSwAllDevices()">Reset ALL devices</button>'
+    + '</div>'
+    + '<div style="font-size:11px;color:var(--slate);margin-top:8px;font-style:italic;">“Reset ALL devices” clears the SW tag everywhere — each device picks it up the next time it opens the calculator.</div>'
     + '</div>';
 }
 function resetSwDeviceTag() {
   try { localStorage.removeItem('sss_ref'); } catch (e) {}
   try { alert('✓ SW referral tag cleared on this device.\n\nThe customer calculator will no longer auto-redirect to the SW edition here. Open the SW calculator again (or use a ?ref=sw link) to re-tag this device.'); } catch (e) {}
   try { loadAndRenderDevices(); } catch (e) {}   // re-render so the state line updates
+}
+// Bumps the server-side global reset epoch so EVERY tagged device clears
+// its SW tag on its next calculator load. Also clears this device now.
+async function resetSwAllDevices() {
+  if (!confirm('Reset the SW referral tag on ALL devices?\n\nEvery device that opened the SW calculator clears its tag the next time it loads the calculator. (Devices not currently open pick this up on their next visit.)')) return;
+  try {
+    const r = await authFetch('/_functions/swResetAll', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    const data = await r.json().catch(() => null);
+    if (data && data.ok) {
+      try { localStorage.removeItem('sss_ref'); } catch (e) {}   // clear this device immediately too
+      try { alert('✓ Reset issued for all devices.\n\nThis device is cleared now. Other devices clear their SW tag the next time they open the calculator.'); } catch (e) {}
+      try { loadAndRenderDevices(); } catch (e) {}
+    } else {
+      alert('Could not reset all devices: ' + ((data && data.error) || 'unknown error') + '\n\nIf this says not_found / 404, re-publish the backend (pricingRules.jsw + http-functions.js) in Velo.');
+    }
+  } catch (e) {
+    alert('Error resetting all devices: ' + (e && e.message || e));
+  }
 }
 
 async function loadAndRenderDevices() {
@@ -9710,7 +9732,7 @@ renderDashboard();
   }, { capture: true });
 })();
   // Expose for inline onclick=/onchange= handlers in markup.
-  Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, returnToDashboard, cancelNewQuote, refreshDashboardHard, pickCustSearchResult, clearPickedCustomer, convertJobberRequestToQuote, copyJobberErrorToClipboard, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, onFolderToggle, onDashSearchInput, openRowMenu, closeRowMenu, resumeCloudQuote, resumeLocalDraft, deleteLocalDraft, moveCloudQuote, duplicateCloudQuote, permanentlyDeleteCloud, duplicateCurrentForEdit, onCustSubsToggle, onCustDraftsToggle, onCustAbandonedToggle, loadCustomerSubmissions, renderCustomerSubmissions, renderCustomerDrafts, loadCustomerAbandonedDrafts, renderCustomerAbandonedDrafts, dismissAbandonedDraft, dismissCustomerSubmission, openSubmissionDetails, openDraftDetails, closeSubmissionDetails, openCustCalcAnalytics, closeCustCalcAnalytics, loadCustCalcAnalytics, renderCustCalcAnalytics, toggleBulkMode, toggleBulkRow, bulkClearSelection, bulkSetStatus, bulkPermanentlyDelete, openPricingAdmin, closePricingAdmin, switchPricingAdminTab, savePricingAdmin, resetPricingAdmin, removeReferencePhoto, signOutAndReload, openChangePinPrompt, closeRepMenu, adminCreateRep, adminResetRepPin, adminDeleteRep, adminRevokeDevice, adminRevokeAllDevices, toggleAdminDevicesShowAll, resetSwDeviceTag, openProjectSwitchDialog, closeProjectSwitchDialog, confirmAddAnotherProject, confirmSwitchProject, openJobberPanel, closeJobberPanel, jobberConnect, jobberManualRefresh, jobberDisconnectConfirm, jobberTestConnection, pushFinishedQuoteToJobber, resendFinishedToJobber, resendViewedQuoteToJobber, resendCurrentQuoteFromSuccess, resendCurrentViewedToJobber, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, toggleEditPanel, applyCustomColor, removeCustomAddon, state });
+  Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, returnToDashboard, cancelNewQuote, refreshDashboardHard, pickCustSearchResult, clearPickedCustomer, convertJobberRequestToQuote, copyJobberErrorToClipboard, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, onFolderToggle, onDashSearchInput, openRowMenu, closeRowMenu, resumeCloudQuote, resumeLocalDraft, deleteLocalDraft, moveCloudQuote, duplicateCloudQuote, permanentlyDeleteCloud, duplicateCurrentForEdit, onCustSubsToggle, onCustDraftsToggle, onCustAbandonedToggle, loadCustomerSubmissions, renderCustomerSubmissions, renderCustomerDrafts, loadCustomerAbandonedDrafts, renderCustomerAbandonedDrafts, dismissAbandonedDraft, dismissCustomerSubmission, openSubmissionDetails, openDraftDetails, closeSubmissionDetails, openCustCalcAnalytics, closeCustCalcAnalytics, loadCustCalcAnalytics, renderCustCalcAnalytics, toggleBulkMode, toggleBulkRow, bulkClearSelection, bulkSetStatus, bulkPermanentlyDelete, openPricingAdmin, closePricingAdmin, switchPricingAdminTab, savePricingAdmin, resetPricingAdmin, removeReferencePhoto, signOutAndReload, openChangePinPrompt, closeRepMenu, adminCreateRep, adminResetRepPin, adminDeleteRep, adminRevokeDevice, adminRevokeAllDevices, toggleAdminDevicesShowAll, resetSwDeviceTag, resetSwAllDevices, openProjectSwitchDialog, closeProjectSwitchDialog, confirmAddAnotherProject, confirmSwitchProject, openJobberPanel, closeJobberPanel, jobberConnect, jobberManualRefresh, jobberDisconnectConfirm, jobberTestConnection, pushFinishedQuoteToJobber, resendFinishedToJobber, resendViewedQuoteToJobber, resendCurrentQuoteFromSuccess, resendCurrentViewedToJobber, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, toggleEditPanel, applyCustomColor, removeCustomAddon, state });
 
   }
 
