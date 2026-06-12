@@ -8356,6 +8356,8 @@ async function applyPricingOverrides() {
     if (!res || !res.ok) return;
     __pricingOverrides = {
       rules:     res.rules     || {},
+      // SW-edition layer — merged after the shared rules below.
+      rulesSw:   res.rulesSw   || {},
       discounts: res.discounts || []
     };
     __pricingMeta = {
@@ -8365,6 +8367,9 @@ async function applyPricingOverrides() {
     // Re-build PRICING from a clean baseline + overrides.
     Object.keys(__builtInPricing).forEach(k => { PRICING[k] = deepCopy(__builtInPricing[k]); });
     deepMerge(PRICING, __pricingOverrides.rules);
+    // SW-edition-specific overrides win over the shared layer (the SW
+    // build's higher built-in Showcase rates are already the baseline).
+    deepMerge(PRICING, __pricingOverrides.rulesSw);
     // Discounts: walk the built-in array, patch `rate` from overrides
     // by id. We deliberately don't allow adding/removing discount
     // entries from the UI — only re-tuning rates of the existing ones.
