@@ -50,7 +50,10 @@ const __sssBridge = (function () {
   let initStarted = false;
 
   // Methods that don't take a body — use GET. Everything else POSTs JSON.
-  const GET_METHODS = new Set(['whoami']);
+  // getPricingRules MUST go as GET: the backend only exposes
+  // get_getPricingRules (Wix routes strictly by {method}_{name}), so a
+  // POST 404s and pricing overrides silently never load. whoami same deal.
+  const GET_METHODS = new Set(['whoami', 'getPricingRules']);
 
   async function callBackend(method, args) {
     try {
@@ -157,7 +160,7 @@ const __CUSTOMER_BRIDGE_ALLOWED = new Set([
    PRICING TABLES
    ============================================================ */
 const PRICING = {
-  fence: { tiers: { essential: 9.20, performance: 11.20, showcase: 13.80 }, tiersByProduct: { water: { essential: 10.60, performance: 12.20, showcase: 13.80 } }, styleMultipliers: { privacy: 1.0, charleston: 1.0, shadowbox: 1.25, bob: 1.25, charleston_bob: 1.25, farm: 0.85 }, oneSidedFactor: 0.65, prep: { no_wash: 0, soft_wash: 2.00, soft_wash_complex: 3.00, strip_sand: 4.80 }, unit: 'ln ft' },
+  fence: { tiers: { essential: 9.20, performance: 11.20, showcase: 13.80 }, tiersByProduct: { water: { essential: 10.60, performance: 12.20, showcase: 13.80 } }, styleMultipliers: { privacy: 1.0, charleston: 1.0, shadowbox: 1.25, bob: 1.25, charleston_bob: 1.25, farm: 0.85 }, oneSidedFactor: 0.65, heightPremiumPerFt: 0.20, prep: { no_wash: 0, soft_wash: 2.00, soft_wash_complex: 3.00, strip_sand: 4.80 }, unit: 'ln ft' },
   // Deck tier rates are now expressed as actual $/sq ft (the FLAT
   // rate at each tier), matching every other project type. Used to be
   // a multiplier (0.8 / 1.0 / 1.3) applied to a separate baseline
@@ -259,7 +262,7 @@ const PRICING = {
     // SW Rain Refresh. Non-showcase oil = EXPERT Stain & Seal.
     // Non-showcase water = SW Woodscapes Solid.
     pail: {
-      water: { essential: 320, performance: 320, showcase: 385 },
+      water: { essential: 320, performance: 385, showcase: 407 },
       oil:   { essential: 264, performance: 264, showcase: 450 }
     },
     citronellaPerPail:        100,  // EXPERT Natural Defense additive
@@ -4369,7 +4372,10 @@ function renderPrevStainContext() {
 function fenceHeightMultiplier(height) {
   const h = Number(height) || 0;
   if (h <= 6) return 1;
-  return 1 + 0.20 * (h - 6);
+  // Premium-per-foot lives in PRICING so the Settings panel can tune it.
+  const per = (PRICING.fence && PRICING.fence.heightPremiumPerFt != null)
+    ? Number(PRICING.fence.heightPremiumPerFt) : 0.20;
+  return 1 + per * (h - 6);
 }
 
 // Base per-foot tier rate for a fence, product-aware. Water uses its own
@@ -8327,8 +8333,18 @@ function deepMerge(target, source) {
         const item = sv[i];
         if (item == null) continue;
         if (typeof item === 'object' && !Array.isArray(item)) {
-          if (!target[k][i] || typeof target[k][i] !== 'object') target[k][i] = {};
-          deepMerge(target[k][i], item);
+          // Match by id when the patch carries one — the calculator
+          // editions don't all share identical array ordering (e.g. the
+          // rep build has a two_tone stain upgrade the customer builds
+          // don't), so a positional patch can hit the wrong add-on.
+          let tgt = null;
+          if (item.id) tgt = target[k].find(x => x && x.id === item.id);
+          if (!tgt) {
+            if (item.id) continue;             // id'd patch with no local match — skip, never guess
+            if (!target[k][i] || typeof target[k][i] !== 'object') target[k][i] = {};
+            tgt = target[k][i];
+          }
+          deepMerge(tgt, item);
         } else {
           target[k][i] = item;
         }
