@@ -468,7 +468,11 @@ function getColorLibrary(productType, tier) {
    edition of the public calculator so an SW-referred customer
    sees the exact same products here as on /customer-calculator-sw)
    ============================================================ */
-const TIER_META_OIL_STD = TIER_META.oil;   // the EXPERT lineup defined above
+// The standard (EXPERT) oil lineup — captured lazily on the first
+// applySwMode() call. TIER_META is declared LATER in this file, so
+// reading it here at script-eval time throws a TDZ ReferenceError and
+// kills the whole init (symptom: stuck on "Checking your session…").
+let TIER_META_OIL_STD = null;
 const TIER_META_OIL_SW = {
   explain: "Sherwin-Williams oil-based stains penetrate deep into wood, bring out grain, and last longer in harsh sun. Slower dry, stronger smell, longer-lasting finish.",
   essential: {
@@ -544,6 +548,8 @@ function isSwMode() { return !!(state && state.swReferral); }
 let __pfmOilStd = null;
 function applySwMode() {
   try {
+    // First call captures the built-in lineup before any swap.
+    if (!TIER_META_OIL_STD) TIER_META_OIL_STD = TIER_META.oil;
     TIER_META.oil = isSwMode() ? TIER_META_OIL_SW : TIER_META_OIL_STD;
     if (typeof PRODUCT_FAMILY_META !== 'undefined' && PRODUCT_FAMILY_META.oil) {
       if (!__pfmOilStd) __pfmOilStd = PRODUCT_FAMILY_META.oil;
