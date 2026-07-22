@@ -12256,6 +12256,15 @@ function pipelineReconcile(cards, snap) {
         setStage(card, 'quoted');
       }
     }
+    // Still no "Assessed on" date after the assessment + appointment
+    // fills above? The quote's own creation date is the assessment
+    // date in practice — quotes are built on-site during the
+    // walk-through. Fills the blank only; a rep-entered date is
+    // never overwritten.
+    if (!card.visitAt && q.createdAt) {
+      card.visitAt = String(q.createdAt).slice(0, 10);
+      touch(card);
+    }
     indexCard(card);
   });
 
@@ -12875,6 +12884,10 @@ function pipelineNotifyQuotePushed(requestId, info) {
       card.stageSetBy = 'auto';
       card.stageChangedAt = new Date().toISOString();
     }
+    // Quote just went out — if nothing filled "Assessed on" yet, the
+    // assessment effectively happened today (quotes are built on-site
+    // during the walk-through). Fills the blank only.
+    if (!card.visitAt) card.visitAt = pipeTodayStr();
     pipeSaveCard(card);
     if (__dashTab === 'pipeline') renderPipeline();
   } catch (e) { console.warn('[Pipeline] quote-push notify skipped:', e); }
