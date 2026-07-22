@@ -12176,6 +12176,7 @@ function pipelineReconcile(cards, snap) {
     pipeStampVisit(c, stage);
     c.stage = stage; c.stageSetBy = 'auto'; c.stageChangedAt = nowIso;
     if (stage === 'won' && !c.wonAt) c.wonAt = nowIso;
+    if (stage === 'lost' && !c.lostAt) c.lostAt = nowIso;
     touch(c);
   };
   const setSnap = (c, patch) => {
@@ -12226,15 +12227,28 @@ function pipelineReconcile(cards, snap) {
     const qs = String(q.quoteStatus || '').toLowerCase();
     let card = (q.requestId && (byReq.get(q.requestId) || byKey.get('req:' + q.requestId)))
             || byQuote.get(q.id) || byKey.get('quote:' + q.id) || null;
-    if (!card && q.clientId) {
+    // Loose sole-client matching is for LIVE quotes only — an old
+    // archived quote must never claim (and then sink) the client's
+    // fresh, unrelated card.
+    if (!card && q.clientId && qs !== 'archived') {
       const cands = (byClient.get(q.clientId) || []).filter(c => !c.jobberQuoteId || c.jobberQuoteId === q.id);
       if (cands.length === 1) card = cands[0];
     }
     if (!card) {
-      if (qs === 'archived') return;
-      card = { key: 'quote:' + q.id, stage: 'quoted', stageSetBy: 'auto',
-               stageChangedAt: q.createdAt || nowIso,
-               createdAt: q.createdAt || nowIso, notes: [], archived: false, manual: false, snap: {} };
+      if (qs === 'archived') {
+        // An archived quote with no card is a loss that predates the
+        // board. Card it as lost + archived — hidden from the columns
+        // (visible via the archived toggle) but COUNTED in the win
+        // rate, so the stat tells the truth about history.
+        card = { key: 'quote:' + q.id, stage: 'lost', stageSetBy: 'auto',
+                 stageChangedAt: q.createdAt || nowIso, createdAt: q.createdAt || nowIso,
+                 lostAt: q.createdAt || nowIso, lostReason: 'Quote archived in Jobber',
+                 notes: [], archived: true, manual: false, snap: {} };
+      } else {
+        card = { key: 'quote:' + q.id, stage: 'quoted', stageSetBy: 'auto',
+                 stageChangedAt: q.createdAt || nowIso,
+                 createdAt: q.createdAt || nowIso, notes: [], archived: false, manual: false, snap: {} };
+      }
       CONTACT_FIELDS.forEach(f => { if (q[f]) card[f] = q[f]; });
       cards.push(card); touch(card);
     }
@@ -12246,7 +12260,16 @@ function pipelineReconcile(cards, snap) {
                     quoteCreatedAt: q.createdAt || '', quoteWebUri: q.jobberWebUri || '' });
     if (qs === 'approved' || qs === 'converted') {
       if (card.stage !== 'won' && card.stage !== 'lost') setStage(card, 'won');
-    } else if (qs !== 'archived') {
+    } else if (qs === 'archived') {
+      // Terminal fact, same weight as Won: archiving a quote in Jobber
+      // is how a dead quote gets closed out, so it records the LOSS.
+      // Won cards stay won — archiving a quote after it converts to a
+      // job is normal housekeeping, not a loss.
+      if (card.stage !== 'won' && card.stage !== 'lost') {
+        setStage(card, 'lost');
+        if (!card.lostReason) { card.lostReason = 'Quote archived in Jobber'; touch(card); }
+      }
+    } else {
       // A quote NEWLY appearing always advances the card — sending a
       // quote from the estimator is a fact, even if the rep had parked
       // the card by hand. Re-syncs of an already-linked quote respect
