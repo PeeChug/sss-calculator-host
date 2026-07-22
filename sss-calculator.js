@@ -23,8 +23,8 @@
     });
   }
 
-  const STYLE = ":host { display: block; width: 100%; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1a2540; line-height: 1.5; -webkit-font-smoothing: antialiased; }\n:host {\n    --navy: #1a2540; --navy-light: #2d3d5f;\n    --green: #2d6e4e; --green-light: #5a8d68; --green-pale: #e8f3eb;\n    --gold: #c89b3c; --gold-pale: #fef9ed;\n    --coral: #c84d3a; --coral-pale: #fde0d8;\n    --slate: #5a6378; --cream: #f7f5f1;\n    --paper: #ffffff; --line: #ece9e3; --line-soft: #f0ede7;\n    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);\n    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);\n    --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);\n    --radius: 12px; --radius-lg: 16px;\n  }\n  * { box-sizing: border-box; margin: 0; padding: 0; }\n  :host {\n    font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif;\n    background: var(--cream); color: var(--navy); line-height: 1.5;\n    -webkit-font-smoothing: antialiased;\n  }\n  /* Auto-resize iframe model: the calculator grows to fit its content and\n     the parent Wix page handles scrolling. Works consistently across phone,\n     tablet, and desktop without per-device tuning \u2014 at the cost of being\n     unable to pin elements (steps bar, sidebar) to the user's viewport. */\n  :host { overflow: visible; }\n  button { font-family: inherit; cursor: pointer; border: none; background: none; }\n  /* Block iOS double-tap-zoom on all interactive surfaces. `manipulation`\n     still allows scroll/pan gestures but prevents the browser from\n     interpreting two taps as a zoom-in, which is another way users can\n     get accidentally zoomed-in without an obvious way to zoom back out. */\n  button, .selectable-card, .tier-card, .condition-card, .product-choice-card,\n  .color-swatch, .toggle-row, .radio-row, .wood-age-btn,\n  .progress-step, .project-bubble, .draft-card,\n  .mini-tier-row, .mini-toggle { touch-action: manipulation; }\n  /* Allow native browser scroll. Iframe touch-capture on iOS still\n     sometimes \"catches\" on cards but at least normal scrolling works. */\n  :host, :host * { touch-action: pan-y; }\n  .progress { touch-action: pan-x !important; }\n  input, textarea, select { touch-action: auto !important; }\n\n  /* Remove the iOS tap-highlight blue flash on every interactive element \u2014\n     it lingers briefly on touchstart and can make scroll feel \"stuck\"\n     because the visual feedback fires before the drag is interpreted. */\n  * { -webkit-tap-highlight-color: transparent; }\n\n  /* Disable accidental text selection on drag everywhere EXCEPT inputs.\n     On iOS, a finger drag across card text sometimes triggers the system's\n     text-selection mode instead of scrolling \u2014 disabling user-select on\n     non-input surfaces forces the gesture to be interpreted as scroll. */\n  :host { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }\n  input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }\n  input, select { font-family: inherit; font-size: inherit; }\n\n  /* Disable hover-state transforms on touch-primary devices. On tablets the\n     browser briefly applies :hover when a finger lands on a card, then the\n     transform shifts the element under the finger and can confuse the scroll\n     gesture. (hover:none) targets touch-primary devices that don't truly hover. */\n  @media (hover: none), (pointer: coarse) {\n    .selectable-card:hover,\n    .tier-card:hover,\n    .condition-card:hover,\n    .product-choice-card:hover,\n    .color-swatch:hover,\n    .toggle-row:hover,\n    .radio-row:hover,\n    .wood-age-btn:hover,\n    .project-bubble:hover,\n    .draft-card:hover,\n    .mini-tier-row:hover,\n    .mini-toggle:hover { transform: none !important; box-shadow: var(--shadow-sm) !important; }\n  }\n\n  .app {\n    min-height: 100vh; display: flex; flex-direction: column;\n    /* Defensive: never let the app extend wider than the viewport so\n       horizontal scroll can't happen when the tablet flips orientation.\n       Individual wide elements (progress bar, side tracker) get their\n       own horizontal-scroll containers below. */\n    max-width: 100vw;\n    overflow-x: hidden;\n  }\n\n  /* HEADER \u2014 scrolls away so the step nav (below) can pin to the top.\n     Wraps on narrow screens so the right-side pills (quote ID, save\n     status, Jobber, totals) flow onto a second row instead of running\n     off the edge when iPad is rotated to portrait. */\n  .app-header {\n    background: var(--paper); border-bottom: 1px solid var(--line);\n    padding: 14px 28px; display: flex; align-items: center; gap: 20px;\n    box-shadow: var(--shadow-sm);\n    flex-wrap: wrap;\n    row-gap: 10px;\n  }\n  .brand-mark { display: flex; align-items: center; gap: 10px; min-width: 0; }\n  .brand-mark .logo {\n    width: 40px; height: 40px;\n    background: transparent url('https://static.wixstatic.com/media/6616da_4aa22f2adc3c42938a4f5ec0b8d67969~mv2.png') center / contain no-repeat;\n    flex-shrink: 0;\n    /* Keep the SS text content for screen readers but visually replace it\n       with the brush image. No green square \u2014 brush sits on whatever\n       header background color is behind it. */\n    text-indent: -9999px;\n    overflow: hidden;\n  }\n  .brand-mark .name {\n    font-weight: 700; font-size: 14px; color: var(--navy);\n    min-width: 0;\n  }\n  .brand-mark .sub { font-size: 11px; color: var(--slate); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }\n  .header-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }\n  .quote-id-tag { font-size: 12px; color: var(--slate); }\n  .quote-id-tag span { font-family: ui-monospace, monospace; color: var(--navy); font-weight: 600; }\n  .total-pill {\n    background: var(--green); color: white;\n    padding: 8px 16px; border-radius: 100px;\n    display: flex; flex-direction: column; align-items: flex-start;\n    min-width: 110px; transition: transform 0.3s, background 0.3s;\n  }\n  .total-pill .lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.85; font-weight: 700; line-height: 1; }\n  .total-pill .amt { font-size: 17px; font-weight: 800; line-height: 1.1; margin-top: 2px; }\n  .total-pill.pulse { animation: pulse 0.6s; }\n  .total-pill.secondary { background: var(--paper); color: var(--navy); border: 1.5px solid var(--line); padding: 7px 14px; }\n  .total-pill.secondary .lbl { color: var(--slate); }\n  @keyframes pulse {\n    0%, 100% { transform: scale(1); }\n    50% { transform: scale(1.06); background: var(--green-light); }\n  }\n\n  /* PROJECT BUBBLES \u2014 multi-project navigator above the step progress bar */\n  .project-bubbles {\n    background: var(--cream); padding: 10px 28px;\n    border-bottom: 1px solid var(--line);\n    display: flex; gap: 10px; align-items: center; overflow-x: auto;\n  }\n  .project-bubbles-label {\n    font-size: 11px; font-weight: 700; color: var(--slate);\n    text-transform: uppercase; letter-spacing: 0.08em;\n    margin-right: 6px; flex-shrink: 0;\n  }\n  .project-bubble {\n    display: inline-flex; align-items: center; gap: 8px;\n    padding: 8px 14px; background: var(--paper);\n    border: 2px solid var(--line); border-radius: 100px;\n    font-size: 13px; font-weight: 600; color: var(--navy);\n    cursor: pointer; transition: all 0.15s;\n    flex-shrink: 0; white-space: nowrap;\n  }\n  .project-bubble:hover { border-color: var(--green-light); }\n  .project-bubble.active {\n    background: var(--navy); color: white; border-color: var(--navy);\n    box-shadow: 0 2px 8px rgba(26, 37, 64, 0.2);\n  }\n  .project-bubble .pb-ico { font-size: 16px; }\n  .project-bubble .pb-price { font-size: 11px; opacity: 0.75; }\n  .project-bubble.add-new {\n    background: transparent; border-style: dashed; color: var(--green);\n    font-weight: 700;\n  }\n  .project-bubble.add-new:hover { background: var(--green-pale); border-color: var(--green); }\n\n  /* PROGRESS \u2014 sticks to the top of the iframe viewport so the customer\n     always sees which step they're on as the body scrolls underneath. */\n  .progress {\n    background: var(--paper); padding: 14px 28px;\n    border-bottom: 1px solid var(--line);\n    display: flex; gap: 6px; overflow-x: auto;\n    position: sticky; top: 0; z-index: 80;\n    box-shadow: var(--shadow-sm);\n    /* Smooth scroll for the auto-scroll-to-active animation + finger swipe\n       support on mobile. Scrollbar visually hidden on mobile but the bar\n       remains scrollable. */\n    scroll-behavior: smooth;\n    -webkit-overflow-scrolling: touch;\n    scrollbar-width: thin;\n  }\n  .progress::-webkit-scrollbar { height: 4px; }\n  .progress::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }\n  .progress-step {\n    /* Default desktop / iPad-landscape: steps flex-grow to fill the bar\n       so the strip spans full width. min-width keeps labels readable.\n       Narrow viewports (iPad portrait, phones) override below to\n       flex: 0 0 auto so the bar scrolls horizontally instead of\n       cramming everything together. */\n    flex: 1 1 auto; min-width: 90px;\n    padding: 8px 10px; background: var(--line-soft); border-radius: 8px;\n    font-size: 11px; font-weight: 600; color: var(--slate);\n    text-align: center; transition: background 0.18s, color 0.18s, border-color 0.18s, opacity 0.18s;\n    cursor: not-allowed; user-select: none; border: 2px solid transparent;\n    opacity: 0.55;\n    white-space: nowrap;\n  }\n  .progress-step.reachable { cursor: pointer; opacity: 1; }\n  .progress-step.reachable:hover { background: var(--line); }\n  .progress-step .step-num { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px; opacity: 0.7; }\n  .progress-step.active { background: var(--navy); color: white; border-color: var(--navy); opacity: 1; cursor: pointer; }\n  .progress-step.done { background: var(--green-pale); color: var(--green); border-color: var(--green); opacity: 1; cursor: pointer; }\n  .progress-step.done::before { content: \"\u2713 \"; }\n  .progress-step.skipped {\n    background: var(--line-soft); color: var(--slate);\n    opacity: 0.55; cursor: not-allowed; text-decoration: line-through;\n  }\n\n  /* Generous side padding on stage-wrap = there's always a finger-width strip\n     of empty space on the left and right where a touch drag definitely\n     scrolls the page instead of landing on a card. */\n  .stage-wrap { flex: 1; padding: 32px 44px 60px; max-width: 1400px; margin: 0 auto; width: 100%; }\n  .stage { display: none; animation: fadeUp 0.4s cubic-bezier(0.4, 0, 0.2, 1); }\n  .stage.visible { display: block; }\n  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }\n  .stage-title { color: var(--green); font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px; }\n  .stage h1 { font-size: 30px; font-weight: 700; color: var(--navy); margin-bottom: 8px; letter-spacing: -0.5px; }\n  .stage .lead { color: var(--slate); font-size: 15px; margin-bottom: 28px; max-width: 720px; }\n\n  /* CARDS */\n  /* Gap bumped from 14px to 22px \u2014 every gap pixel is a \"scroll-safe\" zone\n     between cards where a finger drag isn't on a card and definitely passes\n     through to the parent Wix page for scrolling. Has been the most effective\n     iframe-scroll improvement we've tried. */\n  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 22px; margin-bottom: 28px; }\n  .card-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }\n  .card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }\n  .card-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }\n  .card-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }\n  @media (max-width: 1100px) { .card-grid.cols-5, .card-grid.cols-4 { grid-template-columns: repeat(2, 1fr); } }\n  @media (max-width: 760px) { .card-grid.cols-3, .card-grid.cols-2, .card-grid.cols-4, .card-grid.cols-5 { grid-template-columns: 1fr; } }\n\n  .selectable-card {\n    background: var(--paper); border: 2px solid var(--line);\n    border-radius: var(--radius); text-align: left;\n    transition: all 0.2s; position: relative; overflow: hidden; padding: 0;\n    /* Flex column so the image stays a fixed size at the top and the\n       body fills any extra height the grid stretches the card to \u2014\n       prevents the \"white bar\" effect on shorter cards. */\n    display: flex; flex-direction: column;\n  }\n  .selectable-card .card-image { flex: 0 0 auto; }\n  .selectable-card .card-body { flex: 1 1 auto; display: flex; flex-direction: column; }\n  .selectable-card:hover { border-color: var(--green-light); transform: translateY(-2px); box-shadow: var(--shadow-md); }\n  .selectable-card.selected { border-color: var(--green); box-shadow: 0 0 0 4px rgba(45, 110, 78, 0.12); }\n  .selectable-card.selected::after {\n    content: \"\u2713\"; position: absolute; top: 12px; right: 12px;\n    width: 28px; height: 28px; background: var(--green); color: white;\n    border-radius: 50%; display: flex; align-items: center; justify-content: center;\n    font-weight: 700; font-size: 14px; z-index: 2;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.2);\n  }\n\n  .card-image {\n    width: 100%; height: 220px;\n    background-size: cover; background-position: center center;\n    background-color: var(--line-soft);\n    background-repeat: no-repeat;\n    border-bottom: 1px solid var(--line);\n    position: relative;\n  }\n  .card-image::after {\n    content: ''; position: absolute; inset: 0;\n    background: linear-gradient(180deg, transparent 75%, rgba(0,0,0,0.12));\n  }\n  .selectable-card.selected .card-image {\n    box-shadow: inset 0 0 0 3px var(--green-pale);\n  }\n  .card-body { padding: 18px 22px 22px; }\n  .card-body .title { font-size: 19px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }\n  .card-body .desc { font-size: 14px; color: var(--slate); line-height: 1.5; }\n  .card-body .badge {\n    display: inline-block; margin-top: 10px;\n    padding: 3px 8px; background: var(--green-pale); color: var(--green);\n    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;\n    text-transform: uppercase; border-radius: 4px;\n    /* .card-body is a flex column with default align-items:stretch, which\n       would otherwise stretch this inline-block to fill the full card\n       width. align-self:flex-start keeps it sized to its content only. */\n    align-self: flex-start;\n  }\n\n  /* TIER CARDS */\n  .tier-card {\n    background: var(--paper); border: 2px solid var(--line);\n    border-radius: var(--radius-lg); padding: 24px; text-align: left;\n    transition: all 0.25s; display: flex; flex-direction: column; position: relative;\n  }\n  .tier-card:hover { border-color: var(--green-light); transform: translateY(-4px); box-shadow: var(--shadow-lg); }\n  .tier-card.selected { border-color: var(--green); box-shadow: 0 0 0 4px rgba(45, 110, 78, 0.12), var(--shadow-md); }\n  .tier-card.recommended { border-color: var(--gold); background: linear-gradient(180deg, var(--gold-pale) 0%, var(--paper) 60%); }\n  .tier-card.recommended.selected { border-color: var(--green); }\n  .tier-card .reco-flag {\n    position: absolute; top: -10px; left: 20px;\n    background: var(--gold); color: white;\n    font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 100px;\n    letter-spacing: 0.1em; text-transform: uppercase;\n    box-shadow: 0 2px 6px rgba(0,0,0,0.18);\n  }\n  /* Color-coded feature badges (oil tiers): green = budget value,\n     blue = most color options, gold = longest-lasting premium. */\n  .tier-card .reco-flag.flag-green { background: var(--green); }\n  .tier-card .reco-flag.flag-blue  { background: #2f6fb0; }\n  .tier-card .reco-flag.flag-gold  { background: var(--gold); }\n  .tier-card .tier-name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--slate); margin-bottom: 4px; }\n  .tier-card .tier-product { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 8px; line-height: 1.25; }\n  .tier-card .tier-tagline { font-size: 12px; color: var(--slate); font-style: italic; margin-bottom: 10px; min-height: 32px; }\n  /* Desktop: tighten the dead space under the tagline. The 32px reserve\n     fits two lines, but most taglines are one line, leaving a big gap\n     above the price. Mobile keeps the taller reserve for wrapping. */\n  @media (min-width: 641px) {\n    .tier-card .tier-tagline { min-height: 18px; margin-bottom: 6px; }\n  }\n  .tier-card .tier-price { font-size: 30px; font-weight: 800; color: var(--green); margin: 8px 0 2px; letter-spacing: -0.5px; }\n  .tier-card .tier-cost-per-year { font-size: 12px; color: var(--slate); font-weight: 500; }\n  .tier-card .tier-life {\n    font-size: 12px; color: var(--gold); font-weight: 700;\n    margin: 8px 0 14px; text-transform: uppercase; letter-spacing: 0.06em;\n    padding: 6px 10px; background: var(--gold-pale); border-radius: 6px; display: inline-block;\n    cursor: help; position: relative;\n  }\n  .tier-card .tier-life::after {\n    content: ' \u24d8'; font-size: 10px; opacity: 0.7;\n  }\n  /* Tooltip on hover/focus over the lifespan badge */\n  .tier-life-tooltip {\n    position: absolute; bottom: calc(100% + 8px); left: 50%;\n    transform: translateX(-50%);\n    background: var(--navy); color: white;\n    padding: 10px 14px; border-radius: 8px;\n    font-size: 12px; font-weight: 500; line-height: 1.5;\n    letter-spacing: 0; text-transform: none;\n    width: 280px; max-width: 90vw;\n    box-shadow: 0 8px 24px rgba(0,0,0,0.25);\n    opacity: 0; pointer-events: none;\n    transition: opacity 0.18s, transform 0.18s;\n    z-index: 50; text-align: left;\n  }\n  .tier-life-tooltip::after {\n    content: ''; position: absolute; top: 100%; left: 50%;\n    transform: translateX(-50%);\n    border: 6px solid transparent; border-top-color: var(--navy);\n  }\n  .tier-card .tier-life:hover .tier-life-tooltip,\n  .tier-card .tier-life:focus-within .tier-life-tooltip {\n    opacity: 1; transform: translateX(-50%) translateY(-2px);\n  }\n  .tier-card .tier-pros { list-style: none; margin: 0 0 12px; }\n  .tier-card .tier-pros li { font-size: 13px; color: var(--navy); padding: 5px 0 5px 22px; position: relative; }\n  .tier-card .tier-pros li::before { content: \"\u2713\"; position: absolute; left: 0; color: var(--green); font-weight: 700; }\n  .tier-card .tier-pros li.standout { font-weight: 700; color: var(--gold); }\n  .tier-card .tier-pros li.standout::before { color: var(--gold); content: \"\u2605\"; }\n  .tier-card .tier-cons { list-style: none; margin: 8px 0 0; padding-top: 10px; border-top: 1px dashed var(--line); }\n  .tier-card .tier-cons li { font-size: 12px; color: var(--slate); padding: 4px 0 4px 22px; position: relative; }\n  .tier-card .tier-cons li::before { content: \"\u2014\"; position: absolute; left: 4px; color: var(--slate); }\n  .tier-card .best-for {\n    margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line);\n    font-size: 12px; color: var(--slate);\n  }\n  .tier-card .best-for strong { color: var(--navy); display: block; margin-bottom: 2px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }\n  /* What's Included footer on tier cards */\n  .tier-card .whats-included {\n    margin: 12px 0 16px; padding: 12px;\n    background: var(--green-pale); border-radius: 8px;\n    border: 1px solid rgba(45, 110, 78, 0.2);\n  }\n  .tier-card .whats-included-label {\n    font-size: 10px; font-weight: 700;\n    color: var(--green); text-transform: uppercase;\n    letter-spacing: 0.1em; margin-bottom: 6px;\n  }\n  .tier-card .whats-included ul { list-style: none; margin: 0; padding: 0; }\n  .tier-card .whats-included li {\n    font-size: 12px; color: #1f4d36;\n    line-height: 1.5; padding: 2px 0;\n  }\n  /* Risk reversal box on Review screen */\n  .risk-reversal-box {\n    background: linear-gradient(135deg, var(--green-pale) 0%, #f0f7f3 100%);\n    border: 1px solid var(--green);\n    border-radius: var(--radius);\n    padding: 18px 22px; margin-top: 18px;\n  }\n  .risk-reversal-box h4 {\n    color: var(--green); font-size: 13px; font-weight: 700;\n    text-transform: uppercase; letter-spacing: 0.08em;\n    margin-bottom: 8px;\n  }\n  .risk-reversal-box ul { list-style: none; margin: 0; padding: 0; }\n  .risk-reversal-box li {\n    font-size: 13px; color: #1f4d36; line-height: 1.6;\n    padding: 3px 0; padding-left: 22px; position: relative;\n  }\n  .risk-reversal-box li::before {\n    content: \"\u2713\"; position: absolute; left: 0; top: 3px;\n    color: var(--green); font-weight: 800; font-size: 14px;\n  }\n  /* Side-tracker notes section \u2014 compact by default, expands on focus/use */\n  .side-tracker-notes {\n    padding: 8px 14px 10px; border-top: 1px solid var(--line);\n    background: var(--cream);\n  }\n  .side-tracker-notes label {\n    display: block; color: var(--slate); font-size: 11px;\n    font-weight: 700; margin-bottom: 4px;\n    text-transform: uppercase; letter-spacing: 0.06em;\n  }\n  .side-tracker-notes textarea {\n    width: 100%; min-height: 30px; height: 30px; resize: none;\n    background: var(--paper); color: var(--navy);\n    border: 1.5px solid var(--line); border-radius: 6px;\n    padding: 6px 10px; font-size: 12px; line-height: 1.4;\n    font-family: inherit;\n    transition: height 0.18s ease, box-shadow 0.15s, border-color 0.15s;\n    overflow: hidden;\n  }\n  .side-tracker-notes textarea::placeholder { color: var(--slate); opacity: 0.65; }\n  /* Grow when focused so the user has typing room. Also grow when the\n     textarea has content (the .has-content class is toggled by JS so the\n     expanded height persists after blur if notes were entered). */\n  .side-tracker-notes textarea:focus,\n  .side-tracker-notes textarea.has-content {\n    min-height: 96px; height: 96px;\n    outline: none; border-color: var(--green);\n    box-shadow: 0 0 0 3px rgba(45, 110, 78, 0.2);\n    resize: vertical;\n    overflow: auto;\n  }\n  /* \"Save & Exit\" button in side-tracker footer \u2014 compact so it doesn't crowd the total */\n  .btn-save-exit {\n    padding: 6px 12px;\n    background: rgba(200, 155, 60, 0.2); color: var(--gold);\n    border: 1px solid var(--gold);\n    border-radius: 7px;\n    font-weight: 600; font-size: 12px; cursor: pointer;\n    transition: all 0.15s; white-space: nowrap;\n  }\n  .btn-save-exit:hover {\n    background: var(--gold); color: white;\n  }\n\n  /* Notes panel on Review screen */\n  .review-notes-box {\n    margin-top: 18px; padding: 16px 20px;\n    background: var(--cream); border-left: 4px solid var(--gold);\n    border-radius: 8px;\n  }\n  .review-notes-box h4 {\n    font-size: 12px; color: var(--gold); font-weight: 700;\n    text-transform: uppercase; letter-spacing: 0.08em;\n    margin-bottom: 6px;\n  }\n  .review-notes-box p {\n    font-size: 14px; color: var(--navy); line-height: 1.55;\n    white-space: pre-wrap; /* preserve customer's line breaks */\n  }\n\n  /* DIY cost comparison on Review */\n  .diy-comparison {\n    margin-top: 16px;\n    padding: 18px 22px;\n    background: var(--paper);\n    border: 1px dashed var(--slate);\n    border-radius: var(--radius);\n  }\n  .diy-comparison h4 {\n    font-size: 13px; color: var(--slate);\n    text-transform: uppercase; letter-spacing: 0.08em;\n    font-weight: 700; margin-bottom: 4px;\n  }\n  .diy-comparison .diy-blurb {\n    font-size: 13px; color: var(--slate); margin-bottom: 14px;\n  }\n  .diy-comparison .diy-row {\n    display: flex; justify-content: space-between;\n    padding: 8px 0; border-bottom: 1px dashed var(--line);\n    font-size: 13px; color: var(--navy);\n  }\n  .diy-comparison .diy-row.diy-total {\n    border-bottom: none; padding-top: 10px; margin-top: 4px;\n    font-weight: 700; font-size: 15px;\n    border-top: 2px solid var(--navy);\n  }\n  /* \"SW List Price\" pill shown on the Timber Oil stain line in the DIY\n     comparison \u2014 signals the figure is Sherwin-Williams' published\n     per-gallon list price, not a contractor rate. */\n  .diy-comparison .diy-tag {\n    display: inline-block;\n    background: #2f6fb0; color: #fff !important;\n    font-size: 9.5px; font-weight: 700;\n    text-transform: uppercase; letter-spacing: 0.06em;\n    padding: 2px 7px; border-radius: 100px;\n    margin-left: 6px; vertical-align: middle;\n    white-space: nowrap;\n    text-decoration: none; cursor: pointer;\n    transition: background 0.12s;\n  }\n  .diy-comparison .diy-tag:hover { background: #24598f; text-decoration: none; }\n  .diy-comparison .diy-conclusion {\n    margin-top: 14px; padding: 12px 14px;\n    background: var(--gold-pale); border-radius: 8px;\n    font-size: 13px; color: #5a4a1f; line-height: 1.55;\n  }\n  .diy-comparison .diy-conclusion strong { color: var(--navy); }\n\n  /* Quote expiration banner */\n  .quote-expiry-banner {\n    background: var(--navy); color: white;\n    padding: 12px 18px; border-radius: 8px;\n    margin-bottom: 16px; display: flex; align-items: center;\n    gap: 12px; font-size: 13px;\n  }\n  .quote-expiry-banner .icon { font-size: 18px; }\n  .quote-expiry-banner strong { color: var(--gold); }\n  /* Stackable discount checkbox + summary line */\n  .radio-row .dot-outer.square {\n    border-radius: 5px;\n  }\n  .radio-row .dot-outer.square::after {\n    content: '\u2713'; width: auto; height: auto; background: transparent;\n    color: white; font-size: 14px; font-weight: 800; line-height: 1;\n    border-radius: 0;\n  }\n  .radio-row.checked .dot-outer.square {\n    background: var(--green); border-color: var(--green);\n  }\n  .discount-sum-line {\n    display: flex; justify-content: space-between; align-items: center;\n    background: var(--navy); color: white;\n    padding: 16px 20px; border-radius: 12px; margin-top: 14px;\n    font-size: 14px;\n  }\n  .discount-sum-line strong { display: block; margin-bottom: 2px; }\n  .discount-sum-line #discountSumText { font-size: 12px; opacity: 0.85; }\n  .discount-sum-rate {\n    color: var(--gold); font-size: 22px; font-weight: 800;\n    letter-spacing: -0.5px;\n  }\n\n  /* Grouped color sections */\n  .color-group { margin-bottom: 28px; }\n  .color-group-label {\n    font-size: 14px; font-weight: 700; color: var(--navy);\n    text-transform: uppercase; letter-spacing: 0.08em;\n    margin-bottom: 12px; padding-bottom: 6px;\n    border-bottom: 1px solid var(--line);\n  }\n  .color-group-label small {\n    font-weight: 500; color: var(--slate);\n    text-transform: none; letter-spacing: 0; font-size: 12px;\n  }\n  .color-swatch.custom-swatch .chip {\n    background-image: linear-gradient(135deg, transparent 0%, transparent 45%, var(--gold) 45%, var(--gold) 55%, transparent 55%) !important;\n    background-color: var(--cream) !important;\n    border: 2px dashed var(--gold) !important;\n  }\n  .custom-color-entry {\n    display: none; padding: 18px; margin-top: 14px;\n    background: var(--gold-pale);\n    border: 2px solid var(--gold); border-radius: 12px;\n  }\n  .custom-color-entry.visible { display: block; }\n\n  /* LARGER add-on cards \u2014 easier to see product images */\n  .toggle-row .addon-img {\n    width: 96px !important; height: 96px !important;\n    border-radius: 12px;\n  }\n  .addon-section .toggle-row {\n    padding: 16px 18px;\n    gap: 14px;\n    min-height: 116px;\n  }\n  .toggle-row .addon-desc .ad-name { font-size: 16px; font-weight: 700; }\n  .toggle-row .addon-desc .ad-sub { font-size: 13px; margin-top: 4px; line-height: 1.5; }\n  .toggle-row .price { font-size: 15px; }\n  /* Single-column for the stain-product-upgrades section so the images get even more room */\n  .addon-section:first-of-type .addon-grid {\n    grid-template-columns: 1fr;\n  }\n\n  /* Confetti animation overlay */\n  .confetti-piece {\n    position: fixed; width: 10px; height: 14px;\n    pointer-events: none; z-index: 999;\n    animation: confetti-fall 1.6s ease-out forwards;\n  }\n  @keyframes confetti-fall {\n    0% { transform: translateY(0) rotate(0); opacity: 1; }\n    100% { transform: translateY(120vh) rotate(720deg); opacity: 0; }\n  }\n\n  /* Bigger bundle savings celebration */\n  .bundle-savings-pill {\n    display: inline-flex; align-items: center; gap: 8px;\n    background: linear-gradient(135deg, var(--green) 0%, var(--green-light) 100%);\n    color: white; padding: 10px 18px;\n    border-radius: 100px; font-weight: 700; font-size: 15px;\n    margin-bottom: 16px;\n    box-shadow: 0 4px 12px rgba(45, 110, 78, 0.3);\n    animation: bundle-celebrate 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);\n  }\n  @keyframes bundle-celebrate {\n    0% { transform: scale(0.5); opacity: 0; }\n    60% { transform: scale(1.1); }\n    100% { transform: scale(1); opacity: 1; }\n  }\n  .tier-card.disabled {\n    opacity: 0.5; cursor: not-allowed; background: var(--line-soft);\n    filter: grayscale(70%);\n  }\n  .tier-card.disabled:hover { transform: none; box-shadow: none; border-color: var(--line); }\n\n  /* PRODUCT CHOICE CARDS */\n  .product-choice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }\n  @media (max-width: 980px) { .product-choice-grid { grid-template-columns: 1fr; } }\n  .product-choice-card {\n    background: var(--paper); border: 2px solid var(--line);\n    border-radius: var(--radius); padding: 0;\n    cursor: pointer; transition: all 0.2s;\n    position: relative; text-align: left;\n    display: flex; flex-direction: column;\n    overflow: hidden;\n  }\n  .product-choice-card:hover { border-color: var(--green-light); transform: translateY(-2px); box-shadow: var(--shadow-md); }\n  .product-choice-card.selected { border-color: var(--green); box-shadow: 0 0 0 4px rgba(45, 110, 78, 0.12); }\n  .product-choice-card.selected::after {\n    content: \"\u2713\"; position: absolute; top: 12px; right: 12px;\n    width: 28px; height: 28px; background: var(--green); color: white;\n    border-radius: 50%; display: flex; align-items: center; justify-content: center;\n    font-weight: 700; font-size: 14px; z-index: 2;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.2);\n  }\n  .product-choice-card.recommended { border-color: var(--gold); }\n  .product-choice-card.recommended.selected { border-color: var(--green); }\n  .product-choice-card .reco-flag {\n    position: absolute; top: 12px; left: 12px;\n    background: var(--gold); color: white;\n    font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 100px;\n    letter-spacing: 0.1em; text-transform: uppercase; z-index: 2;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.2);\n  }\n  .product-choice-card .prod-image {\n    width: 100%; height: 200px;\n    background-size: cover; background-position: center 50%;\n    background-color: var(--line-soft); border-bottom: 1px solid var(--line);\n    background-repeat: no-repeat;\n    position: relative;\n  }\n  /* HOA image is wide-angle of rooftops with lots of sky \u2014 anchor to bottom so the houses show */\n  .product-choice-card[data-product=\"hoa\"] .prod-image { background-position: center 85%; }\n  .product-choice-card .prod-image::after {\n    content: ''; position: absolute; inset: 0;\n    background: linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.2));\n  }\n  .product-choice-card .prod-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 6px; flex: 1; }\n  .product-choice-card .icon { font-size: 24px; }\n  .product-choice-card .h { font-size: 18px; font-weight: 700; color: var(--navy); }\n  .product-choice-card .d { font-size: 13px; color: var(--slate); line-height: 1.5; }\n  .product-choice-card .pros { font-size: 12px; color: var(--green); font-weight: 600; margin-top: auto; padding-top: 6px; }\n  /* Pros / cons bullet lists inside product family cards */\n  .product-choice-card .prod-pros, .product-choice-card .prod-cons {\n    list-style: none; margin: 8px 0 0; padding: 0;\n  }\n  .product-choice-card .prod-pros li {\n    font-size: 12.5px; color: var(--navy); line-height: 1.45;\n    padding: 4px 0 4px 20px; position: relative;\n  }\n  .product-choice-card .prod-pros li::before {\n    content: \"\u2713\"; position: absolute; left: 2px; top: 4px;\n    color: var(--green); font-weight: 700; font-size: 13px;\n  }\n  .product-choice-card .prod-cons {\n    margin-top: 8px; padding-top: 8px;\n    border-top: 1px dashed var(--line);\n  }\n  .product-choice-card .prod-cons li {\n    font-size: 12px; color: var(--slate); line-height: 1.45;\n    padding: 3px 0 3px 20px; position: relative;\n  }\n  .product-choice-card .prod-cons li::before {\n    content: \"\u2014\"; position: absolute; left: 6px; top: 3px;\n    color: var(--slate); font-weight: 700;\n  }\n  .product-choice-card .prod-recommend-note {\n    /* margin-top:auto pushes this box to the bottom of the flex column so all\n       three product cards have their \"When to pick this\" boxes aligned on the\n       same baseline regardless of how long the pros/cons lists are. */\n    margin-top: auto; padding: 10px 12px;\n    background: var(--cream); border-left: 3px solid var(--gold);\n    border-radius: 6px;\n    font-size: 12px; line-height: 1.5; color: var(--navy);\n  }\n  /* Ensure the pros/cons block leaves room above the bottom-pinned note */\n  .product-choice-card .prod-cons { margin-bottom: 8px; }\n  .product-choice-card .prod-recommend-note strong {\n    color: var(--gold); display: block; margin-bottom: 2px;\n    font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;\n  }\n  .product-choice-card.recommended .prod-recommend-note {\n    background: var(--gold-pale);\n  }\n\n  /* COLOR SWATCHES \u2014 now with images */\n  .color-grid {\n    display: grid;\n    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));\n    gap: 14px; margin-bottom: 24px;\n  }\n  .color-swatch {\n    background: var(--paper); border: 3px solid var(--line);\n    border-radius: var(--radius); padding: 10px;\n    cursor: pointer; transition: all 0.18s;\n    text-align: center; user-select: none;\n  }\n  .color-swatch:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--green-light); }\n  .color-swatch.selected { border-color: var(--green); box-shadow: 0 0 0 4px rgba(45, 110, 78, 0.15); }\n  .color-swatch .chip {\n    width: 100%; aspect-ratio: 1 / 1; border-radius: 8px;\n    border: 1px solid rgba(0,0,0,0.12);\n    background-size: cover; background-position: center;\n    background-color: var(--line-soft);\n    margin-bottom: 8px;\n  }\n  /* Hex fallback (used when no image URL) */\n  .color-swatch .chip.hex-only {\n    box-shadow: inset 0 -8px 12px rgba(0,0,0,0.15), inset 0 8px 12px rgba(255,255,255,0.08);\n  }\n  .color-swatch .name { font-size: 13px; font-weight: 700; color: var(--navy); line-height: 1.2; }\n  .color-swatch .code { font-size: 10px; color: var(--slate); margin-top: 2px; font-family: ui-monospace, monospace; }\n\n  /* FORMS */\n  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }\n  @media (max-width: 760px) { .form-grid { grid-template-columns: 1fr; } }\n  .form-grid.full { grid-template-columns: 1fr; }\n  .field label { display: block; font-size: 12px; font-weight: 700; color: var(--slate); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }\n  .field input, .field select, .field textarea {\n    width: 100%; background: var(--paper);\n    border: 2px solid var(--line); border-radius: 10px;\n    padding: 12px 14px; font-size: 15px; color: var(--navy);\n    transition: border-color 0.15s, box-shadow 0.15s;\n  }\n  .field textarea { min-height: 70px; resize: vertical; font-family: inherit; }\n  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(45, 110, 78, 0.12); }\n  .field .hint { font-size: 12px; color: var(--slate); margin-top: 4px; }\n  .field .err { font-size: 12px; color: var(--coral); margin-top: 4px; font-weight: 600; display: none; }\n  .field.invalid input, .field.invalid select {\n    border-color: var(--coral) !important;\n    background: var(--coral-pale) !important;\n    box-shadow: 0 0 0 3px rgba(200, 77, 58, 0.18);\n    animation: shake 0.4s cubic-bezier(.36,.07,.19,.97);\n  }\n  .field.invalid .err {\n    display: block; color: var(--coral); font-weight: 700;\n    font-size: 12px; margin-top: 6px;\n  }\n  .field.invalid label { color: var(--coral); }\n  @keyframes shake {\n    0%, 100% { transform: translateX(0); }\n    20%, 60% { transform: translateX(-6px); }\n    40%, 80% { transform: translateX(6px); }\n  }\n\n  /* TOGGLES */\n  .toggle-row {\n    display: flex; align-items: center; gap: 12px;\n    padding: 12px 14px; background: var(--paper);\n    border: 2px solid var(--line); border-radius: 10px;\n    cursor: pointer; transition: all 0.15s; margin-bottom: 8px; user-select: none;\n  }\n  .toggle-row:hover { border-color: var(--green-light); }\n  .toggle-row.checked { background: var(--green-pale); border-color: var(--green); }\n  .toggle-row .box {\n    width: 20px; height: 20px; border: 2px solid var(--line); border-radius: 5px;\n    background: var(--paper); flex-shrink: 0;\n    display: flex; align-items: center; justify-content: center;\n    color: white; font-weight: 700; font-size: 12px; transition: all 0.15s;\n  }\n  .toggle-row.checked .box { background: var(--green); border-color: var(--green); }\n  .toggle-row.checked .box::after { content: \"\u2713\"; }\n  .toggle-row .name { flex: 1; font-size: 14px; font-weight: 600; color: var(--navy); }\n  .toggle-row .name .restr { font-size: 10px; color: var(--coral); font-weight: 700; text-transform: uppercase; margin-left: 6px; letter-spacing: 0.05em; }\n  .toggle-row .price { color: var(--green); font-weight: 700; font-size: 14px; white-space: nowrap; }\n  .toggle-row .qty-input { width: 70px; padding: 4px 6px; font-size: 12px; border: 1px solid var(--line); border-radius: 6px; margin-right: 8px; }\n\n  /* RADIO ROW (for discounts \u2014 single-select) */\n  .radio-row {\n    display: flex; align-items: center; gap: 14px;\n    padding: 12px 16px 12px 12px; background: var(--paper);\n    border: 2px solid var(--line); border-radius: 12px;\n    cursor: pointer; transition: all 0.15s; margin-bottom: 10px;\n  }\n  .radio-row:hover { border-color: var(--green-light); transform: translateY(-1px); }\n  .radio-row.checked { background: var(--green-pale); border-color: var(--green); }\n  .radio-row .disc-img {\n    width: 76px; height: 76px; border-radius: 10px;\n    background-size: cover; background-position: center;\n    background-color: var(--line-soft);\n    flex-shrink: 0; border: 1px solid var(--line);\n  }\n  .radio-row.no-img { padding-left: 16px; }\n  .radio-row .dot-outer {\n    width: 22px; height: 22px; border: 2px solid var(--line); border-radius: 50%;\n    flex-shrink: 0; display: flex; align-items: center; justify-content: center;\n    transition: all 0.15s;\n  }\n  .radio-row.checked .dot-outer { border-color: var(--green); }\n  .radio-row .dot-outer::after {\n    content: ''; width: 10px; height: 10px; border-radius: 50%;\n    background: var(--green); opacity: 0; transition: opacity 0.15s;\n  }\n  .radio-row.checked .dot-outer::after { opacity: 1; }\n  .radio-row .label { flex: 1; }\n  .radio-row .label .head { font-size: 14px; font-weight: 700; color: var(--navy); }\n  .radio-row .label .sub { font-size: 12px; color: var(--slate); margin-top: 2px; line-height: 1.4; }\n  .radio-row .value { color: var(--green); font-weight: 700; font-size: 16px; white-space: nowrap; }\n  /* Informational rows (e.g. cash payment) \u2014 neutral palette so it doesn't read as a percentage discount */\n  .radio-row.informational .value { color: var(--navy); font-size: 13px; }\n  .radio-row.informational.checked { background: var(--cream); border-color: var(--navy); }\n  .radio-row.informational.checked .dot-outer.square { background: var(--navy); border-color: var(--navy); }\n\n  /* INFO PANELS */\n  .info-panel { background: var(--paper); border: 2px solid var(--line); border-radius: var(--radius-lg); padding: 22px; margin-bottom: 20px; }\n  .info-panel.highlighted { border-color: var(--gold); background: linear-gradient(180deg, var(--gold-pale) 0%, var(--paper) 50%); }\n  .info-panel.previous { border-color: #3a7095; background: linear-gradient(180deg, #e6f0f7 0%, var(--paper) 50%); }\n  .info-panel h3 { font-size: 15px; color: var(--navy); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }\n  .info-panel .panel-hint { font-size: 13px; color: var(--slate); margin-bottom: 16px; }\n\n  /* RECOMMENDATION BANNER */\n  .reco-banner {\n    background: linear-gradient(135deg, var(--gold-pale) 0%, #fff7e0 100%);\n    border-left: 4px solid var(--gold);\n    border-radius: var(--radius); padding: 14px 18px;\n    margin-bottom: 20px; display: flex; align-items: flex-start; gap: 12px;\n  }\n  .reco-banner .reco-ico { font-size: 20px; flex-shrink: 0; }\n  .reco-banner .reco-content { flex: 1; font-size: 13px; color: #5a4a1f; line-height: 1.5; }\n  .reco-banner .reco-content strong { color: var(--navy); display: block; margin-bottom: 2px; }\n\n  /* TIP BOXES (employee-facing scripts) */\n  .tip-box {\n    background: linear-gradient(135deg, #fff 0%, #f7fbf8 100%);\n    border-left: 4px solid var(--green);\n    border-radius: 10px;\n    padding: 14px 16px; margin-bottom: 16px;\n    font-size: 13px; line-height: 1.55;\n    display: flex; gap: 12px; align-items: flex-start;\n  }\n  .tip-box .tip-ico { font-size: 18px; flex-shrink: 0; line-height: 1.3; }\n  .tip-box .tip-body { flex: 1; color: var(--navy); }\n  .tip-box .tip-body strong { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--green); margin-bottom: 4px; }\n  .tip-box .tip-body em { font-style: italic; color: var(--slate); }\n  /* (Script tip variant removed \u2014 all tips are now customer-facing facts) */\n\n  /* Wood-age 3-button selector on Step 3 */\n  .wood-age-buttons {\n    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;\n  }\n  @media (max-width: 760px) { .wood-age-buttons { grid-template-columns: 1fr; } }\n  .wood-age-btn {\n    display: flex; align-items: center; gap: 12px;\n    padding: 14px 16px; background: var(--paper);\n    border: 2px solid var(--line); border-radius: 12px;\n    cursor: pointer; transition: all 0.15s;\n    text-align: left;\n  }\n  .wood-age-btn:hover { border-color: var(--green-light); transform: translateY(-1px); }\n  .wood-age-btn.selected {\n    border-color: var(--green); background: var(--green-pale);\n    box-shadow: 0 0 0 3px rgba(45, 110, 78, 0.15);\n  }\n  .wood-age-btn .wa-ico { font-size: 28px; flex-shrink: 0; }\n  .wood-age-btn .wa-label { font-size: 14px; font-weight: 700; color: var(--navy); line-height: 1.25; }\n  .wood-age-btn .wa-label small { display: block; font-weight: 500; color: var(--slate); margin-top: 2px; font-size: 11px; }\n  .wood-age-btn.selected .wa-label small { color: var(--green); }\n  /* Fence height selector \u2014 6 ft / 8 ft / Other segmented buttons. */\n  .height-select { display: flex; gap: 8px; flex-wrap: wrap; }\n  .height-opt {\n    flex: 1 1 0; min-width: 60px; padding: 12px 10px; background: var(--paper);\n    border: 2px solid var(--line); border-radius: 10px; cursor: pointer;\n    font-size: 14px; font-weight: 700; color: var(--navy); text-align: center;\n    transition: all 0.15s;\n  }\n  .height-opt:hover { border-color: var(--green-light); }\n  .height-opt.selected { border-color: var(--green); background: var(--green-pale); color: var(--green); box-shadow: 0 0 0 3px rgba(45, 110, 78, 0.15); }\n\n  /* Disabled condition cards (gated by wood age) */\n  .condition-card.locked {\n    opacity: 0.45; cursor: not-allowed; filter: grayscale(70%);\n    pointer-events: none;\n  }\n  .condition-card.locked .reco-flag,\n  .condition-card.locked.recommended { background: var(--line-soft); border-color: var(--line); }\n  .condition-card .locked-badge {\n    position: absolute; top: 12px; left: 12px;\n    background: var(--slate); color: white; z-index: 2;\n    font-size: 10px; font-weight: 700; padding: 4px 10px;\n    border-radius: 100px; letter-spacing: 0.08em; text-transform: uppercase;\n    box-shadow: 0 2px 6px rgba(0,0,0,0.2);\n  }\n\n  /* MEASUREMENTS */\n  .measure-section { background: var(--paper); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-sm); margin-bottom: 16px; }\n  .measure-section h3 { font-size: 16px; color: var(--navy); margin-bottom: 4px; }\n  .measure-section .section-hint { font-size: 13px; color: var(--slate); margin-bottom: 16px; }\n\n  /* REFERENCE PHOTOS \u2014 grid of square thumbs with a Remove overlay.\n     Lives on the Measurements step. Each card stays a stable 100\u00d7100\n     so the layout doesn't reflow as photos finish uploading. */\n  .photos-section { margin-top: 16px; }\n  .photo-upload-grid {\n    display: grid;\n    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));\n    gap: 10px;\n    margin-bottom: 12px;\n  }\n  .photo-upload-grid:empty { display: none; }\n  .photo-card {\n    position: relative;\n    aspect-ratio: 1 / 1;\n    background: var(--line-soft);\n    border: 1px solid var(--line);\n    border-radius: 10px;\n    overflow: hidden;\n  }\n  .photo-card img {\n    width: 100%; height: 100%; object-fit: cover;\n    display: block;\n  }\n  .photo-card .photo-remove {\n    position: absolute; top: 4px; right: 4px;\n    background: rgba(26, 37, 64, 0.85); color: white;\n    width: 26px; height: 26px; border-radius: 999px;\n    display: flex; align-items: center; justify-content: center;\n    font-size: 14px; font-weight: 700;\n    cursor: pointer; user-select: none;\n    border: none;\n    -webkit-tap-highlight-color: transparent;\n  }\n  .photo-card.uploading::after {\n    content: 'Uploading\u2026';\n    position: absolute; inset: 0;\n    display: flex; align-items: center; justify-content: center;\n    background: rgba(0,0,0,0.5); color: white;\n    font-size: 11px; font-weight: 600;\n  }\n  .photo-card.failed::after {\n    content: '\u26a0 Upload failed';\n    position: absolute; inset: 0;\n    display: flex; align-items: center; justify-content: center;\n    background: rgba(193, 74, 74, 0.78); color: white;\n    font-size: 11px; font-weight: 600;\n    text-align: center; padding: 6px;\n  }\n  .photo-add-btn { display: inline-flex; align-items: center; gap: 6px; }\n  @media (max-width: 640px) {\n    .photo-upload-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }\n  }\n\n  /* ALERTS */\n  .alert { padding: 14px 18px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 12px; }\n  .alert .ico { font-size: 18px; line-height: 1.2; flex-shrink: 0; }\n  .alert.info { background: #e6f0f7; border-left: 4px solid #3a7095; color: #234862; }\n  .alert.warn { background: var(--gold-pale); border-left: 4px solid var(--gold); color: #5a4a1f; }\n  .alert.success { background: var(--green-pale); border-left: 4px solid var(--green); color: #1f4d36; }\n  .alert.error { background: var(--coral-pale); border-left: 4px solid var(--coral); color: #5a2519; }\n  .alert strong { display: block; margin-bottom: 2px; }\n\n  /* CONDITION CARDS \u2014 image-based */\n  .condition-card {\n    background: var(--paper); border: 2px solid var(--line);\n    border-radius: var(--radius);\n    cursor: pointer; transition: all 0.2s;\n    text-align: left; display: flex; flex-direction: column;\n    padding: 0; overflow: hidden;\n    position: relative;\n  }\n  .condition-card:hover { border-color: var(--green-light); transform: translateY(-2px); box-shadow: var(--shadow-md); }\n  .condition-card.selected { border-color: var(--green); box-shadow: 0 0 0 4px rgba(45, 110, 78, 0.12); }\n  .condition-card.selected::after {\n    content: \"\u2713\"; position: absolute; top: 10px; right: 10px;\n    width: 26px; height: 26px; background: var(--green); color: white;\n    border-radius: 50%; display: flex; align-items: center; justify-content: center;\n    font-weight: 700; font-size: 13px; z-index: 2;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.2);\n  }\n  .condition-card .card-image { height: 130px; }\n  .condition-card .cond-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }\n  .condition-card .cond-name { font-size: 15px; font-weight: 700; color: var(--navy); }\n  .condition-card .cond-prep { color: var(--slate); font-size: 12px; line-height: 1.45; }\n  .condition-card .cond-add {\n    font-size: 15px; color: var(--coral); font-weight: 700;\n    padding-top: 10px; border-top: 1px dashed var(--line);\n  }\n  /* Footer wrapper that keeps the timing badge + the prep cost line glued\n     to the bottom of every condition card, so all three cards line up\n     uniformly even when their bullet lists are different lengths. */\n  .condition-card .cond-card-footer {\n    margin-top: auto;\n    display: flex; flex-direction: column; gap: 8px;\n    width: 100%;\n  }\n  .condition-card.selected .cond-add { color: var(--green); }\n  .condition-card.recommended {\n    border-color: var(--gold);\n    background: linear-gradient(180deg, var(--gold-pale) 0%, var(--paper) 25%);\n  }\n  .condition-card.recommended .reco-flag {\n    position: absolute; top: 12px; left: 12px;\n    background: var(--gold); color: white;\n    font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 100px;\n    letter-spacing: 0.1em; text-transform: uppercase;\n    z-index: 2; box-shadow: 0 2px 8px rgba(0,0,0,0.2);\n  }\n  .condition-card.recommended.selected { border-color: var(--green); }\n\n  /* Bullet point sections inside condition cards */\n  .cond-bullets-group { margin-top: 10px; }\n  .cond-bullets-label {\n    font-size: 10px; font-weight: 700; color: var(--slate);\n    text-transform: uppercase; letter-spacing: 0.08em;\n    margin-bottom: 4px;\n  }\n  .cond-bullets { list-style: none; margin: 0 0 6px 0; padding: 0; }\n  .cond-bullets li {\n    font-size: 12px; color: var(--navy); line-height: 1.4;\n    padding: 3px 0 3px 18px; position: relative;\n  }\n  .cond-bullets li::before {\n    content: \"\u2022\"; position: absolute; left: 4px; color: var(--green); font-weight: 700;\n  }\n  .cond-bullets.process li::before { content: \"\u2192\"; color: var(--gold); font-size: 11px; }\n  .cond-timing {\n    font-size: 11px; color: var(--gold); font-weight: 700;\n    background: var(--gold-pale); padding: 4px 8px;\n    border-radius: 6px; margin-top: 8px;\n    display: inline-block; text-transform: uppercase; letter-spacing: 0.04em;\n  }\n\n  /* Service-includes section \u2014 checkmarked-by-default, never billable, never togglable */\n  .service-includes-section { background: linear-gradient(180deg, var(--green-pale) 0%, var(--paper) 80%); border: 1px solid rgba(45, 110, 78, 0.25); }\n  .service-includes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }\n  @media (max-width: 760px) { .service-includes-grid { grid-template-columns: 1fr; } }\n  .service-include-row {\n    display: flex; align-items: center; gap: 12px;\n    padding: 12px 14px; background: var(--paper);\n    border: 1.5px solid rgba(45, 110, 78, 0.25);\n    border-radius: 10px;\n  }\n  .service-include-row .check {\n    width: 28px; height: 28px; flex-shrink: 0;\n    background: var(--green); color: white;\n    border-radius: 50%;\n    display: flex; align-items: center; justify-content: center;\n    font-weight: 800; font-size: 14px;\n  }\n  .service-include-row .addon-desc { flex: 1; }\n  .service-include-row .addon-desc .ad-name { font-size: 14px; font-weight: 700; color: var(--navy); }\n  .service-include-row .addon-desc .ad-sub { font-size: 12px; color: var(--slate); margin-top: 2px; line-height: 1.45; }\n  .service-include-row .price { color: var(--green); font-weight: 700; font-size: 12px; letter-spacing: 0.06em; }\n\n  /* ADD-ONS */\n  .addon-section { background: var(--paper); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 14px; box-shadow: var(--shadow-sm); }\n  .addon-section h4 { font-size: 14px; color: var(--navy); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }\n  .addon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }\n  @media (max-width: 760px) { .addon-grid { grid-template-columns: 1fr; } }\n  .toggle-row .addon-img {\n    width: 44px; height: 44px; border-radius: 8px;\n    background-size: cover; background-position: center;\n    background-color: var(--line-soft); flex-shrink: 0;\n    border: 1px solid var(--line);\n  }\n  .toggle-row .addon-desc {\n    flex: 1; display: flex; flex-direction: column;\n  }\n  .toggle-row .addon-desc .ad-name { font-size: 14px; font-weight: 600; color: var(--navy); }\n  .toggle-row .addon-desc .ad-sub { font-size: 11px; color: var(--slate); margin-top: 2px; line-height: 1.4; }\n  .toggle-row .addon-desc .ad-name .restr { font-size: 10px; color: var(--coral); font-weight: 700; text-transform: uppercase; margin-left: 6px; letter-spacing: 0.05em; }\n  /* Custom addon button */\n  .custom-add-btn {\n    background: var(--navy); color: white;\n    padding: 6px 12px; border-radius: 6px;\n    font-size: 12px; font-weight: 600;\n  }\n  .custom-add-btn:hover { background: var(--navy-light); }\n  .custom-add-form {\n    background: var(--cream); padding: 14px;\n    border-radius: 10px; margin-top: 12px;\n    border: 1px dashed var(--slate);\n  }\n  .custom-add-form .form-row { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 8px; align-items: end; }\n  @media (max-width: 760px) { .custom-add-form .form-row { grid-template-columns: 1fr; } }\n  .custom-add-form input, .custom-add-form select {\n    width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px;\n    font-size: 13px; background: white;\n  }\n  .custom-add-form label { font-size: 11px; color: var(--slate); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; display: block; }\n  .custom-add-form .btn-save { background: var(--green); color: white; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 13px; }\n  .custom-add-form .btn-cancel { background: transparent; color: var(--slate); padding: 8px 8px; font-size: 13px; }\n  .custom-item-row {\n    display: flex; align-items: center; gap: 12px;\n    padding: 10px 14px; background: #fff7e6;\n    border: 1.5px dashed var(--gold); border-radius: 10px;\n    margin-bottom: 6px;\n  }\n  .custom-item-row .name { flex: 1; font-size: 14px; font-weight: 600; color: var(--navy); }\n  .custom-item-row .price { color: var(--green); font-weight: 700; font-size: 14px; margin-right: 8px; }\n  .custom-item-row .remove-btn { color: var(--coral); font-size: 18px; padding: 2px 8px; }\n  .employee-badge {\n    display: inline-block;\n    /* Match the size & shape of the adjacent \"+ Add Custom Item\" button\n       but with a warm coral palette so it reads as \"internal/heads-up\"\n       rather than another action button. */\n    background: var(--coral-pale); color: var(--coral);\n    border: 1px solid var(--coral);\n    padding: 6px 12px; border-radius: 6px;\n    font-size: 12px; font-weight: 700;\n    letter-spacing: 0.06em; text-transform: uppercase;\n    line-height: 1;\n  }\n\n  /* STAGE NAV */\n  .stage-nav { display: flex; gap: 12px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); }\n  .btn { padding: 14px 28px; border-radius: 10px; font-size: 15px; font-weight: 700; transition: all 0.15s; display: inline-flex; align-items: center; gap: 8px; }\n  .btn-primary { background: var(--green); color: white; }\n  .btn-primary:hover { background: var(--green-light); transform: translateY(-1px); box-shadow: var(--shadow-md); }\n  .btn-primary:disabled { background: var(--line); color: var(--slate); cursor: not-allowed; transform: none; box-shadow: none; }\n  .btn-secondary { background: transparent; color: var(--navy); border: 2px solid var(--line); }\n  .btn-secondary:hover { border-color: var(--navy); background: var(--paper); }\n  .btn-ghost { background: transparent; color: var(--slate); }\n  .btn-ghost:hover { color: var(--navy); }\n  .btn .arr-l { margin-right: -2px; }\n  .btn .arr-r { margin-left: -2px; }\n\n  /* BUNDLE */\n  .saved-projects { background: var(--paper); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 18px; border: 1px solid var(--line); }\n  .bundle-stack-title { font-size: 12px; color: var(--slate); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; margin-bottom: 8px; }\n  .saved-project-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px dashed var(--line); gap: 10px; }\n  .saved-project-row:last-child { border-bottom: none; }\n  .saved-project-row .ico { font-size: 22px; }\n  .saved-project-row .meta { flex: 1; padding-left: 4px; }\n  .saved-project-row .meta .nm { font-weight: 700; color: var(--navy); font-size: 14px; }\n  .saved-project-row .meta .det { font-size: 12px; color: var(--slate); margin-top: 2px; }\n  .saved-project-row .amt { color: var(--green); font-weight: 700; font-size: 16px; margin-right: 6px; }\n  .saved-project-row .row-actions { display: flex; gap: 6px; }\n  .saved-project-row .row-actions button { padding: 6px 12px; border-radius: 7px; font-size: 12px; font-weight: 600; transition: all 0.12s; }\n  .saved-project-row .row-actions .edit-btn { background: var(--navy); color: white; }\n  .saved-project-row .row-actions .edit-btn:hover { background: var(--navy-light); }\n  .saved-project-row .row-actions .remove-btn { background: transparent; color: var(--coral); border: 1px solid var(--coral); }\n  .saved-project-row .row-actions .remove-btn:hover { background: var(--coral-pale); }\n\n  /* FINAL BREAKDOWN */\n  .final-grid { display: grid; grid-template-columns: 1fr 380px; gap: 24px; align-items: start; }\n  @media (max-width: 980px) { .final-grid { grid-template-columns: 1fr; } }\n  .final-main { background: var(--paper); border-radius: var(--radius-lg); padding: 28px; box-shadow: var(--shadow-md); }\n  .final-main h3 { font-size: 14px; color: var(--green); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; margin-bottom: 16px; }\n  .breakdown-line { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--line); gap: 12px; }\n  .breakdown-line:last-child { border-bottom: none; }\n  .breakdown-line .desc { font-size: 14px; color: var(--navy); font-weight: 500; }\n  .breakdown-line .desc small { display: block; font-size: 12px; color: var(--slate); font-weight: 400; margin-top: 2px; }\n  .breakdown-line .val { font-weight: 700; color: var(--navy); white-space: nowrap; }\n  .breakdown-line.discount .val { color: var(--green); }\n  .breakdown-line.minimum { background: var(--gold-pale); margin: 4px -12px; padding: 10px 12px; border-radius: 6px; border: none; }\n  .breakdown-line.minimum .desc { color: #5a4a1f; }\n  .breakdown-line.minimum .val { color: var(--gold); }\n  .breakdown-section { margin-bottom: 18px; padding-bottom: 12px; border-bottom: 2px solid var(--line); }\n  .breakdown-section h4 { font-size: 12px; color: var(--slate); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; margin-bottom: 6px; }\n  .breakdown-section:last-child { border-bottom: none; }\n\n  .color-pill { display: inline-flex; align-items: center; gap: 8px; background: var(--cream); padding: 4px 10px; border-radius: 100px; font-size: 12px; font-weight: 600; color: var(--navy); margin-top: 4px; }\n  .color-pill .dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.15); background-size: cover; background-position: center; }\n  .color-pill.hoa { background: var(--gold-pale); color: #5a4a1f; }\n  .color-pill.hoa .dot { background: var(--gold); border-color: #8e6e26; }\n\n  .grand-total { margin-top: 12px; padding: 18px 20px; background: var(--navy); border-radius: var(--radius); color: white; display: flex; justify-content: space-between; align-items: center; }\n  .grand-total .label { font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; opacity: 0.85; max-width: 50%; }\n  .grand-total .amount { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; display: block; }\n  .grand-total .grand-total-amount-block { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }\n  .grand-total .grand-total-savings {\n    display: block; font-size: 12px; color: var(--gold);\n    font-weight: 600; margin-top: 4px; letter-spacing: 0;\n    text-transform: none;\n  }\n  /* Math walk-through \u2014 explicit calculation lines above Grand Total */\n  .math-walk {\n    margin-top: 14px; padding: 14px 18px;\n    background: var(--cream); border: 1px solid var(--line);\n    border-radius: 10px;\n  }\n  .math-walk h4 {\n    font-size: 11px; color: var(--slate);\n    text-transform: uppercase; letter-spacing: 0.08em;\n    font-weight: 700; margin-bottom: 10px;\n  }\n  .math-walk-row {\n    display: flex; justify-content: space-between;\n    padding: 5px 0; font-size: 13px; color: var(--navy);\n  }\n  .math-walk-row.math-walk-subtotal {\n    border-top: 1px solid var(--line); margin-top: 4px; padding-top: 8px;\n    font-weight: 700;\n  }\n  .math-walk-row.math-walk-discount {\n    color: var(--green); font-weight: 600;\n  }\n  .math-walk-row.math-walk-total-savings {\n    border-top: 1px dashed var(--line); margin-top: 4px; padding-top: 8px;\n    color: var(--green); font-weight: 800; font-size: 14px;\n  }\n  /* Collapse-project button on the active breakdown header */\n  .breakdown-header-row {\n    display: flex; justify-content: space-between; align-items: center;\n    gap: 12px; margin-bottom: 16px;\n  }\n  .breakdown-header-row h3 {\n    flex: 1; min-width: 0;\n  }\n  .btn-collapse-project {\n    background: transparent; color: var(--slate);\n    border: 1px solid var(--line); border-radius: 7px;\n    padding: 6px 12px; font-size: 12px; font-weight: 600;\n    cursor: pointer; transition: all 0.15s;\n    white-space: nowrap; flex-shrink: 0;\n  }\n  .btn-collapse-project:hover {\n    border-color: var(--navy); color: var(--navy);\n    background: var(--cream);\n  }\n\n  /* Project Total \u2014 sits in the middle of the breakdown; less prominent than the bottom Grand Total */\n  .project-total {\n    margin-top: 12px; padding: 14px 18px;\n    background: var(--cream); border: 1.5px solid var(--navy);\n    border-radius: 10px; color: var(--navy);\n    display: flex; justify-content: space-between; align-items: center;\n  }\n  .project-total .label {\n    font-size: 12px; text-transform: uppercase;\n    letter-spacing: 0.1em; font-weight: 700; color: var(--slate);\n  }\n  .project-total .amount {\n    font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: var(--navy);\n  }\n  /* DIY per-project breakdown (when multiple projects in the quote) */\n  .diy-project-list {\n    background: var(--cream); border-radius: 8px;\n    padding: 10px 14px; margin-bottom: 12px;\n    border: 1px dashed var(--line);\n  }\n  .diy-project-item {\n    display: flex; justify-content: space-between;\n    padding: 5px 0; font-size: 12px; color: var(--slate);\n    border-bottom: 1px dashed rgba(0,0,0,0.06);\n  }\n  .diy-project-item:last-child { border-bottom: none; }\n\n  .final-side { background: var(--paper); border-radius: var(--radius-lg); padding: 22px; box-shadow: var(--shadow-md); position: sticky; top: 90px; }\n  .final-side h3 { font-size: 14px; color: var(--navy); margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }\n  /* Collapsible Adjust & Recalculate panel \u2014 full-width header acts as the\n     toggle button. On mobile this defaults collapsed; on desktop it defaults\n     expanded. The state persists across re-renders. */\n  .edit-panel-toggle {\n    width: 100%; display: flex; justify-content: space-between; align-items: center;\n    background: transparent; border: none; padding: 0; margin-bottom: 14px;\n    padding-bottom: 8px; border-bottom: 1px solid var(--line);\n    cursor: pointer; user-select: none;\n  }\n  .edit-panel-toggle h3 {\n    margin: 0; padding: 0; border: none;\n    font-size: 14px; color: var(--navy);\n  }\n  .edit-panel-arrow {\n    font-size: 14px; color: var(--slate);\n    transition: transform 0.2s ease;\n  }\n  .edit-panel-collapsed .edit-panel-toggle { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }\n  .edit-panel-collapsed .edit-panel-arrow { transform: rotate(-90deg); }\n  .edit-panel-collapsed .edit-panel-body { display: none; }\n  .side-section { margin-bottom: 18px; }\n  .side-section h4 { font-size: 11px; color: var(--slate); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; font-weight: 700; }\n  .mini-tier-row { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; transition: all 0.15s; font-size: 13px; }\n  .mini-tier-row:hover { border-color: var(--green-light); }\n  .mini-tier-row.active { border-color: var(--green); background: var(--green-pale); font-weight: 700; }\n  .mini-tier-row .label { font-weight: 600; color: var(--navy); }\n  .mini-tier-row .price { color: var(--green); font-weight: 700; }\n\n  .mini-toggle { display: flex; align-items: center; gap: 8px; padding: 6px 10px; cursor: pointer; border-radius: 6px; transition: background 0.12s; font-size: 13px; }\n  .mini-toggle:hover { background: var(--line-soft); }\n  .mini-toggle.checked { background: var(--green-pale); color: var(--green); }\n  .mini-toggle .check { width: 16px; height: 16px; border: 1.5px solid var(--line); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; }\n  .mini-toggle.checked .check { background: var(--green); border-color: var(--green); }\n  .mini-toggle.checked .check::after { content: \"\u2713\"; }\n  .mini-toggle .name { flex: 1; }\n  .mini-toggle .price { color: var(--green); font-weight: 600; font-size: 12px; }\n  .mini-toggle .mini-qty-input {\n    width: 48px; padding: 3px 6px; font-size: 12px;\n    border: 1px solid var(--line); border-radius: 4px;\n    text-align: center; margin-right: 6px;\n    background: white;\n  }\n  .mini-toggle .mini-qty-input:focus { outline: none; border-color: var(--green); }\n\n  .payment-pill { display: inline-flex; align-items: center; gap: 6px; background: var(--gold-pale); color: #5a4a1f; padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: 700; margin-left: 8px; }\n\n  .action-bar { margin-top: 28px; padding: 24px; background: var(--paper); border-radius: var(--radius-lg); display: flex; gap: 12px; box-shadow: var(--shadow-md); flex-wrap: wrap; justify-content: space-between; align-items: center; }\n  .action-bar .left { display: flex; gap: 8px; flex-wrap: wrap; }\n  .action-bar .right { display: flex; gap: 10px; flex-wrap: wrap; }\n\n  .success-screen { text-align: center; padding: 48px 24px; background: var(--paper); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }\n  .jobber-push-row {\n    display: flex; align-items: flex-start; gap: 10px;\n    padding: 12px 16px; border-radius: 10px;\n    font-size: 14px; text-align: left;\n  }\n  .jobber-push-row.pending { background: #fff5e6; color: #6b5d2a; }\n  .jobber-push-row.success { background: #e6f5ec; color: #2d6e4e; }\n  .jobber-push-row.error   { background: var(--coral-pale); color: var(--coral); }\n  .jobber-push-row .ico { font-size: 18px; flex-shrink: 0; }\n  /* Diagnostic <pre> blocks inside the error row \u2014 wrap long lines\n     (Jobber's encoded IDs are 50+ chars and were causing horizontal\n     overflow) and constrain height with vertical scroll. */\n  .jobber-push-row .err-pre {\n    margin: 6px 0 0;\n    padding: 8px 10px;\n    background: #fff;\n    color: var(--navy);\n    border-radius: 6px;\n    font-size: 11px; line-height: 1.4;\n    white-space: pre-wrap;\n    word-break: break-word;\n    overflow-wrap: anywhere;\n    max-height: 200px;\n    overflow-y: auto;\n    text-align: left;\n    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;\n  }\n  .jobber-push-row details summary { color: inherit; }\n  .success-icon { width: 72px; height: 72px; background: var(--green); border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 20px; animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }\n  @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }\n\n  /* Project-switch dialog action row */\n  .project-switch-actions {\n    padding: 14px 20px 18px;\n    display: flex; flex-wrap: wrap; gap: 8px;\n    justify-content: flex-end;\n    border-top: 1px solid var(--line);\n  }\n  .project-switch-actions .btn { min-height: 44px; padding: 10px 16px; font-size: 14px; }\n  @media (max-width: 640px) {\n    .project-switch-actions { flex-direction: column-reverse; }\n    .project-switch-actions .btn { width: 100%; }\n  }\n\n  /* Read-only view (finished/archived/trashed) */\n  .view-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 18px 0 24px; }\n  .view-summary { background: var(--paper); border: 1.5px solid var(--line); border-radius: 12px; padding: 22px; }\n  .view-summary h3 { font-size: 13px; font-weight: 700; color: var(--slate); text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 10px; }\n  .view-summary h3:not(:first-child) { margin-top: 22px; }\n  .view-summary .vs-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }\n  .view-summary .vs-row:last-of-type { border-bottom: none; }\n  .view-summary .vs-row .lbl { color: var(--slate); }\n  .view-summary .vs-row .val { color: var(--navy); font-weight: 600; text-align: right; }\n  .view-summary .vs-proj { padding: 12px 14px; background: #fafaf7; border-radius: 8px; margin-bottom: 10px; }\n  .view-summary .vs-proj-head { display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }\n  .view-summary .vs-proj-meta { font-size: 12px; color: var(--slate); }\n  /* Jobber status block inside the read-only summary */\n  .view-summary .vs-jobber {\n    margin: 16px 0 0; padding: 14px 16px;\n    border-radius: 10px;\n    display: flex; flex-wrap: wrap; gap: 10px;\n    align-items: center; justify-content: space-between;\n  }\n  .view-summary .vs-jobber.success { background: #e6f5ec; color: #2d6e4e; }\n  .view-summary .vs-jobber.error   { background: var(--coral-pale); color: var(--coral); }\n  .view-summary .vs-jobber.pending { background: #fff5e6; color: #6b5d2a; }\n  .view-summary .vs-jobber-status { display: flex; align-items: center; gap: 8px; font-size: 14px; flex: 1; min-width: 200px; }\n  .view-summary .vs-jobber-status .ico { font-size: 18px; }\n  .view-summary .vs-jobber-btn { font-size: 13px; padding: 8px 14px; min-height: 38px; }\n  @media (max-width: 640px) {\n    .view-summary .vs-jobber { flex-direction: column; align-items: stretch; }\n    .view-summary .vs-jobber-btn { width: 100%; }\n  }\n\n  .view-summary .vs-total { margin-top: 18px; padding-top: 16px; border-top: 2px solid var(--green); display: flex; justify-content: space-between; align-items: center; }\n  .view-summary .vs-total .lbl { font-size: 14px; color: var(--slate); text-transform: uppercase; letter-spacing: 0.06em; }\n  .view-summary .vs-total .val { font-size: 24px; font-weight: 800; color: var(--green); }\n  .view-status-pill { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-left: 10px; }\n  .view-status-pill.finished { background: #e6f5ec; color: #2d6e4e; }\n  .view-status-pill.archived { background: #f0ece0; color: #6b5d2a; }\n  .view-status-pill.trashed  { background: var(--coral-pale); color: var(--coral); }\n  @media (max-width: 640px) {\n    .view-actions .btn { flex: 1; min-height: 44px; font-size: 13px; }\n    .view-summary { padding: 16px 14px; }\n    .view-summary .vs-row { font-size: 13px; }\n    .view-summary .vs-total .val { font-size: 20px; }\n  }\n\n  .editing-banner { background: var(--gold-pale); border-left: 4px solid var(--gold); padding: 10px 16px; border-radius: 8px; font-size: 13px; color: #5a4a1f; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }\n  .editing-banner strong { color: var(--navy); }\n  .editing-banner button { font-size: 12px; padding: 4px 10px; border-radius: 6px; background: var(--navy); color: white; font-weight: 600; }\n  /* Cancel-add button inside the \"Adding another project\" banner */\n  .btn-cancel-add {\n    margin-left: auto; padding: 8px 14px;\n    background: var(--paper); color: var(--navy);\n    border: 1.5px solid var(--navy); border-radius: 8px;\n    font-size: 12px; font-weight: 700; cursor: pointer;\n    transition: all 0.15s; white-space: nowrap;\n  }\n  .btn-cancel-add:hover { background: var(--navy); color: white; }\n\n  @media print { .app-header, .progress, .stage-nav, .action-bar, .final-side, .side-tracker, .side-tracker-tab, .info-dialog { display: none !important; } }\n\n  /* ---- Customer search on Step 1 (Jobber type-ahead) ---- */\n  .cust-search {\n    position: relative;\n    margin: 0 0 20px;\n    padding: 14px 16px;\n    background: #f0f5f1;\n    border: 1.5px solid #d2e6d6;\n    border-radius: 12px;\n  }\n  .cust-search-label {\n    display: block; font-size: 12px; font-weight: 700;\n    color: var(--green); text-transform: uppercase;\n    letter-spacing: 0.06em; margin-bottom: 8px;\n  }\n  .cust-search input {\n    width: 100%; padding: 12px 14px;\n    border: 1.5px solid var(--line); border-radius: 10px;\n    font-size: 16px;\n    background: var(--paper); color: var(--navy);\n    -webkit-appearance: none;\n    transition: border-color 0.12s;\n  }\n  .cust-search input:focus { outline: none; border-color: var(--green); }\n  .cust-search-results {\n    position: absolute; left: 16px; right: 16px; top: 100%;\n    background: var(--paper); border: 1.5px solid var(--line);\n    border-radius: 10px; box-shadow: var(--shadow-lg);\n    margin-top: 4px;\n    max-height: 320px; overflow-y: auto;\n    z-index: 20;\n  }\n  .cust-result {\n    padding: 10px 14px; border-bottom: 1px solid var(--line);\n    cursor: pointer; transition: background 0.12s;\n    -webkit-tap-highlight-color: transparent;\n  }\n  .cust-result:last-child { border-bottom: none; }\n  .cust-result:hover, .cust-result.kbd-active { background: #eaf3ec; }\n  .cust-result .cr-name { font-size: 14px; font-weight: 700; color: var(--navy); }\n  .cust-result .cr-meta {\n    font-size: 12px; color: var(--slate); margin-top: 2px;\n    display: flex; gap: 8px; flex-wrap: wrap;\n  }\n  .cust-result .cr-meta .sep { opacity: 0.5; }\n  .cust-search-empty, .cust-search-loading {\n    padding: 12px 14px; font-size: 13px; color: var(--slate);\n    text-align: center; font-style: italic;\n  }\n  .cust-search-picked {\n    margin-top: 8px;\n    padding: 8px 12px;\n    background: #e6f5ec; color: #2d6e4e;\n    border-radius: 8px; font-size: 13px;\n    display: flex; align-items: center; justify-content: space-between;\n    gap: 10px;\n  }\n  .cust-search-picked .pck-clear {\n    background: transparent; border: none; color: var(--coral);\n    font-size: 12px; font-weight: 700; cursor: pointer;\n    text-decoration: underline;\n    -webkit-tap-highlight-color: transparent;\n  }\n  @media (max-width: 640px) {\n    .cust-search { padding: 12px; }\n    .cust-search input { font-size: 16px; }\n    .cust-search-results { left: 12px; right: 12px; max-height: 280px; }\n    .cust-result { padding: 12px; }\n  }\n\n  /* DASHBOARD */\n  .dashboard-actions {\n    display: flex; gap: 12px; flex-wrap: wrap;\n    margin-bottom: 24px; padding-bottom: 24px;\n    border-bottom: 1px solid var(--line);\n  }\n  .draft-card {\n    display: flex; align-items: center; gap: 16px;\n    padding: 18px 22px; background: var(--paper);\n    border: 1.5px solid var(--line); border-radius: 12px;\n    margin-bottom: 12px; transition: all 0.15s;\n  }\n  .draft-card:hover { border-color: var(--green-light); transform: translateY(-1px); box-shadow: var(--shadow-md); }\n  .draft-card-main { flex: 1; }\n  .draft-customer { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }\n  .draft-meta {\n    display: flex; gap: 6px; flex-wrap: wrap; align-items: center;\n    font-size: 12px; color: var(--slate);\n  }\n  .quote-id-mono { font-family: ui-monospace, monospace; color: var(--navy); font-weight: 600; }\n  .draft-running-total {\n    color: var(--green); font-weight: 700; font-size: 14px; margin-top: 6px;\n  }\n  .draft-card-actions { display: flex; gap: 8px; align-items: center; }\n  .btn-ghost-danger {\n    background: transparent; color: var(--coral);\n    border: 1px solid var(--coral); padding: 10px 12px;\n    border-radius: 8px; font-size: 14px; cursor: pointer;\n    transition: all 0.12s;\n  }\n  .btn-ghost-danger:hover { background: var(--coral-pale); }\n  .empty-drafts {\n    text-align: center; padding: 48px 24px;\n    background: var(--paper); border-radius: 12px;\n    border: 1px dashed var(--line); margin-top: 16px;\n  }\n  .empty-drafts .empty-icon { font-size: 48px; opacity: 0.5; margin-bottom: 12px; }\n  .empty-drafts h3 { color: var(--navy); margin-bottom: 6px; }\n  .empty-drafts p { color: var(--slate); font-size: 14px; max-width: 400px; margin: 0 auto; }\n\n  /* ---- Recent Jobber Requests panel ---- */\n  .req-panel {\n    background: #fff8eb;\n    border: 1.5px solid #f1d68e;\n    border-radius: 12px;\n    margin: 0 0 18px;\n    overflow: hidden;\n  }\n  .req-panel summary {\n    list-style: none; cursor: pointer;\n    padding: 14px 16px;\n    display: flex; align-items: center; gap: 10px;\n    user-select: none; -webkit-tap-highlight-color: transparent;\n    min-height: 48px;\n  }\n  .req-panel summary::-webkit-details-marker { display: none; }\n  .req-panel summary .chev {\n    font-size: 12px; color: #a66400; transition: transform 0.15s;\n    width: 14px; text-align: center;\n  }\n  .req-panel[open] summary .chev { transform: rotate(90deg); }\n  .req-panel .rp-title {\n    flex: 1;\n    font-size: 13px; font-weight: 700; color: #a66400;\n    text-transform: uppercase; letter-spacing: 0.06em;\n  }\n  .req-panel summary .folder-count {\n    background: #f1d68e; color: #6b4d00;\n    padding: 2px 10px; border-radius: 999px;\n    font-size: 12px; font-weight: 700;\n  }\n  .req-panel-toolbar { padding: 0 12px 10px; }\n  .req-panel-toolbar input[type=\"search\"] {\n    width: 100%; box-sizing: border-box;\n    padding: 10px 14px; min-height: 40px;\n    background: var(--paper);\n    border: 1.5px solid #f1d68e; border-radius: 8px;\n    font-size: 14px; color: var(--navy);\n    -webkit-appearance: none;\n  }\n  .req-panel-toolbar input[type=\"search\"]:focus {\n    outline: none; border-color: #d4a72c;\n    box-shadow: 0 0 0 3px rgba(212, 167, 44, 0.18);\n  }\n  .req-panel-body { padding: 0 12px 12px; max-height: 460px; overflow-y: auto; }\n  .req-card {\n    display: flex; align-items: center; gap: 12px;\n    padding: 14px;\n    background: var(--paper);\n    border: 1px solid #f1d68e; border-radius: 10px;\n    margin-bottom: 8px;\n    transition: border-color 0.12s, transform 0.12s;\n    -webkit-tap-highlight-color: transparent;\n  }\n  .req-card:hover { border-color: #d4a72c; }\n  .req-card-main { flex: 1; min-width: 0; }\n  .req-card-cust { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 3px; word-break: break-word; }\n  .req-card-title { font-size: 13px; color: var(--navy); margin-bottom: 4px; }\n  .req-card-meta {\n    display: flex; gap: 6px; flex-wrap: wrap; align-items: center;\n    font-size: 12px; color: var(--slate);\n  }\n  .req-card-meta .sep { opacity: 0.5; }\n  .req-card-status {\n    display: inline-block; padding: 1px 8px; border-radius: 999px;\n    font-size: 10px; font-weight: 700; text-transform: uppercase;\n    letter-spacing: 0.04em;\n    background: #fff5e6; color: #a66400;\n  }\n  .req-card-actions { display: flex; gap: 6px; flex-shrink: 0; }\n  .req-card-actions .btn { padding: 8px 14px; font-size: 13px; min-height: 36px; }\n  .req-empty, .req-error {\n    padding: 14px; color: var(--slate); font-size: 13px;\n    text-align: center; font-style: italic;\n  }\n  .req-error { color: var(--coral); }\n  @media (max-width: 640px) {\n    .req-card { flex-direction: column; align-items: stretch; }\n    .req-card-actions { justify-content: stretch; }\n    .req-card-actions .btn { flex: 1; min-height: 42px; }\n    .req-panel summary { padding: 12px; min-height: 52px; }\n  }\n\n  /* ---- NEW DASHBOARD CHROME ---- */\n  .dash-stats {\n    display: flex; gap: 12px; flex-wrap: wrap;\n    margin: 12px 0 18px;\n  }\n  .stat-card {\n    flex: 1 1 140px; min-width: 140px;\n    background: var(--paper); border: 1.5px solid var(--line);\n    border-radius: 12px; padding: 14px 16px;\n  }\n  .stat-card .stat-num { font-size: 22px; font-weight: 800; color: var(--navy); line-height: 1.1; }\n  .stat-card .stat-sub { font-size: 12px; color: var(--slate); margin-top: 4px; }\n  .stat-card .stat-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--slate); margin-top: 8px; }\n\n  .dash-toolbar {\n    display: flex; gap: 12px; flex-wrap: wrap; align-items: center;\n    margin-bottom: 18px; padding-bottom: 18px;\n    border-bottom: 1px solid var(--line);\n  }\n  .dash-search {\n    flex: 1; min-width: 220px; position: relative;\n  }\n  .dash-search input {\n    width: 100%; padding: 12px 14px 12px 42px;\n    border: 1.5px solid var(--line); border-radius: 10px;\n    font-size: 16px; /* 16px on mobile to prevent iOS autozoom */\n    background: var(--paper); color: var(--navy);\n    transition: border-color 0.12s;\n    -webkit-appearance: none;\n  }\n  .dash-search input::placeholder {\n    color: var(--slate); opacity: 0.6;\n  }\n  .dash-search input:focus { outline: none; border-color: var(--green); }\n  .dash-search::before {\n    content: '\ud83d\udd0e'; position: absolute; left: 14px; top: 50%;\n    transform: translateY(-50%); font-size: 13px; opacity: 0.55;\n    pointer-events: none;\n  }\n\n  .recent-strip { margin: 8px 0 24px; }\n  .recent-strip h3,\n  .folder summary .folder-label {\n    font-size: 13px; font-weight: 700; color: var(--slate);\n    text-transform: uppercase; letter-spacing: 0.08em;\n  }\n  .recent-strip h3 { margin: 0 0 10px; }\n\n  .folder {\n    background: var(--paper); border: 1.5px solid var(--line);\n    border-radius: 12px; margin-bottom: 10px;\n    overflow: hidden;\n  }\n  .folder summary {\n    list-style: none; cursor: pointer;\n    padding: 14px 16px; display: flex; align-items: center; gap: 10px;\n    user-select: none; -webkit-tap-highlight-color: transparent;\n    min-height: 48px;\n  }\n  .folder summary::-webkit-details-marker { display: none; }\n  .folder summary .chev {\n    font-size: 12px; color: var(--slate); transition: transform 0.15s;\n    width: 14px; text-align: center;\n  }\n  .folder[open] summary .chev { transform: rotate(90deg); }\n  .folder summary .folder-icon { font-size: 18px; }\n  .folder summary .folder-label { flex: 1; }\n  .folder summary .folder-count {\n    background: var(--line-soft); color: var(--navy);\n    padding: 2px 10px; border-radius: 999px;\n    font-size: 12px; font-weight: 700;\n  }\n  .folder-body { padding: 0 12px 12px; }\n  .folder-empty {\n    padding: 14px 4px; color: var(--slate); font-size: 13px;\n    text-align: center;\n  }\n\n  /* ---- Dashboard tabs (My Quotes / Customer Leads / Analytics) ---- */\n  .dash-tabs {\n    display: flex; gap: 4px; margin: 18px 0 16px;\n    border-bottom: 2px solid var(--line);\n    overflow-x: auto; -webkit-overflow-scrolling: touch;\n    scrollbar-width: none;\n    /* Stays pinned while long lists scroll under it. */\n    position: sticky; top: 0; z-index: 30;\n    background: var(--cream);\n  }\n  /* ---- Tappable stat cards (click = filter the quote list) ---- */\n  .stat-card { cursor: pointer; transition: border-color 0.12s, box-shadow 0.12s; -webkit-tap-highlight-color: transparent; }\n  .stat-card:hover { border-color: var(--green-light); }\n  .stat-card.active { border-color: var(--green); box-shadow: 0 0 0 3px rgba(45, 110, 78, 0.15); }\n  .dash-filter-chip { margin: -6px 0 12px; }\n  .dash-filter-chip .chip {\n    display: inline-flex; align-items: center; gap: 8px;\n    background: var(--green-pale); color: var(--green);\n    border: 1px solid var(--green-light); border-radius: 999px;\n    padding: 5px 12px; font-size: 12px; font-weight: 700;\n  }\n  .dash-filter-chip .chip b { cursor: pointer; font-size: 15px; line-height: 1; }\n  /* ---- Skeleton loaders ---- */\n  .skel-stack { padding: 8px 0; }\n  .skel {\n    height: 14px; border-radius: 7px; margin-bottom: 10px;\n    background: linear-gradient(90deg, var(--line-soft) 25%, #e7e2d8 37%, var(--line-soft) 63%);\n    background-size: 400% 100%;\n    animation: skelShimmer 1.3s ease infinite;\n  }\n  .skel.tall { height: 52px; border-radius: 10px; }\n  @keyframes skelShimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }\n  /* ---- Settings: Pricing | Team segmented control + live preview ---- */\n  .pa-groups { display: flex; gap: 6px; padding: 14px 14px 4px; }\n  .pa-group-btn {\n    appearance: none; border: 1.5px solid var(--line); background: var(--paper);\n    border-radius: 999px; padding: 7px 16px; font-family: inherit;\n    font-size: 13px; font-weight: 700; color: var(--slate); cursor: pointer;\n  }\n  .pa-group-btn.active { border-color: var(--green); background: var(--green-pale); color: var(--green); }\n  .pa-preview {\n    background: var(--green-pale); border: 1px solid var(--green-light);\n    border-radius: 10px; padding: 10px 14px; margin-bottom: 14px;\n    font-size: 12.5px; color: #1f4d36; line-height: 1.6;\n  }\n  /* ---- Mobile bottom nav + FAB (dashboard only \u2014 lives inside the\n     dashboard <section>, so it auto-hides on every other stage) ---- */\n  .dash-bottom-nav { display: none; }\n  .dash-fab { display: none; }\n  @media (max-width: 640px) {\n    /* The bottom bar replaces the top tab strip AND the \u2699\ufe0f utility\n       button on phones \u2014 no point showing the same nav twice. Refresh\n       and Select stay up top (they're not in the bar). */\n    .dash-tabs { display: none; }\n    #dashUtilSettings { display: none; }\n    .dash-bottom-nav {\n      display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 600;\n      background: var(--paper); border-top: 1px solid var(--line);\n      padding: 3px 6px calc(3px + env(safe-area-inset-bottom, 0px));\n      box-shadow: 0 -4px 16px rgba(26, 37, 64, 0.10);\n    }\n    .dbn-btn {\n      position: relative;\n      flex: 1; appearance: none; background: none; border: none; font-family: inherit;\n      font-size: 8.5px; font-weight: 700; color: var(--slate);\n      display: flex; flex-direction: column; align-items: center; gap: 1px;\n      padding: 2px; cursor: pointer; -webkit-tap-highlight-color: transparent;\n    }\n    .dbn-btn .i { font-size: 14px; line-height: 1; }\n    .dbn-btn.active { color: var(--green); }\n    .dbn-count {\n      position: absolute; top: -2px; right: 22%;\n      background: var(--green); color: #fff; border-radius: 999px;\n      font-size: 8px; font-weight: 800; line-height: 1.4;\n      padding: 0 4px; min-width: 13px; text-align: center;\n    }\n    .dash-fab {\n      display: flex; align-items: center; justify-content: center;\n      position: fixed; right: 14px; bottom: calc(48px + env(safe-area-inset-bottom, 0px)); z-index: 599;\n      width: 48px; height: 48px; border-radius: 50%;\n      background: var(--green); color: #fff; font-size: 26px; border: none;\n      box-shadow: 0 6px 20px rgba(45, 110, 78, 0.45); cursor: pointer;\n    }\n    .dash-fab:active { transform: scale(0.94); }\n    /* Breathing room so the fixed nav never covers the last rows. */\n    #stage-dashboard { padding-bottom: 64px; }\n    /* The FAB replaces the big Start-New-Quote button on phones. */\n    #dashNewQuoteBtn { display: none; }\n    /* Big dialogs present as bottom sheets on phones. */\n    /* Bottom sheets must fully override the base .info-dialog centering\n       (top/left 50% + translate(-50%,-50%)). Leaving those in place while\n       the sheetUp animation replaces the transform shoved the dialog half\n       off the right/bottom edge of the screen. */\n    dialog.cust-details-dialog, dialog.cust-analytics-dialog, dialog.pricing-admin-dialog {\n      position: fixed;\n      top: auto; left: 0; right: 0; bottom: 0;\n      transform: none;\n      margin: 0;\n      width: 100%; max-width: 100%; min-width: 0;\n      border-radius: 16px 16px 0 0; max-height: 88vh;\n      box-sizing: border-box;\n      animation: sheetUp 0.22s ease;\n    }\n    /* Analytics KPI cards scroll horizontally with snap. */\n    .dan-kpis { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 10px; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }\n    .dan-kpis .dan-kpi { flex: 0 0 42%; scroll-snap-align: start; }\n    .dan-split { grid-template-columns: 1fr; }\n  }\n  @keyframes sheetUp { from { transform: translateY(48px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } }\n  .dash-tabs::-webkit-scrollbar { display: none; }\n  .dash-tab {\n    appearance: none; background: none; border: none;\n    border-bottom: 3px solid transparent; margin-bottom: -2px;\n    padding: 10px 16px; font-weight: 700; font-size: 14px;\n    color: var(--slate); cursor: pointer; white-space: nowrap;\n    font-family: inherit; transition: color 0.15s, border-color 0.15s;\n  }\n  .dash-tab:hover { color: var(--navy); }\n  .dash-tab.active { color: var(--navy); border-bottom-color: var(--green); }\n  .dash-tab .tab-count {\n    display: inline-block; min-width: 18px; padding: 1px 6px; margin-left: 4px;\n    background: var(--green); color: white; border-radius: 999px;\n    font-size: 11px; font-weight: 800; text-align: center;\n  }\n  @media (max-width: 640px) {\n    .dash-tab { padding: 10px 12px; font-size: 13px; }\n  }\n  /* ---- Inline analytics tab ---- */\n  .dan-kpis {\n    display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));\n    gap: 10px; margin-bottom: 18px;\n  }\n  .dan-kpi {\n    background: var(--paper); border: 1px solid var(--line); border-radius: 10px;\n    padding: 14px 14px 12px;\n  }\n  .dan-kpi .num { font-size: 24px; font-weight: 800; color: var(--navy); line-height: 1.1; }\n  .dan-kpi .lbl { font-size: 11px; font-weight: 700; color: var(--slate); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; }\n  .dan-kpi .sub { font-size: 11px; color: var(--slate); margin-top: 2px; }\n  .dan-section { margin-bottom: 20px; }\n  .dan-section > h4 { font-size: 13px; font-weight: 800; color: var(--navy); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px; }\n  .dan-cols { display: flex; align-items: flex-end; gap: 4px; height: 110px; padding: 0 2px; }\n  .dan-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; min-width: 0; }\n  .dan-col .dan-col-bar { width: 100%; max-width: 36px; background: var(--green); border-radius: 4px 4px 0 0; min-height: 2px; transition: height 0.3s; }\n  .dan-col .dan-col-num { font-size: 10px; font-weight: 700; color: var(--navy); margin-bottom: 2px; }\n  .dan-col .dan-col-lbl { font-size: 9px; color: var(--slate); margin-top: 4px; white-space: nowrap; }\n  .dan-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }\n  .dan-bar-row .name { flex: 0 0 110px; font-size: 12px; font-weight: 600; color: var(--navy); text-align: right; }\n  .dan-bar-row .bar { flex: 1; height: 14px; background: var(--line-soft); border-radius: 7px; overflow: hidden; }\n  .dan-bar-row .bar-fill { height: 100%; background: var(--green); border-radius: 7px; }\n  .dan-bar-row.funnel .bar-fill { background: #2f6fb0; }\n  .dan-bar-row .count { flex: 0 0 36px; font-size: 12px; font-weight: 700; color: var(--navy); }\n  .dan-split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }\n  .dan-split .dan-kpi.sw { border-color: #2f6fb0; background: #f3f8fc; }\n  .dan-note { font-size: 11px; color: var(--slate); font-style: italic; margin-top: 8px; }\n  .dan-toolbar { display: flex; justify-content: flex-end; margin-bottom: 10px; }\n\n  /* ---- Customer Submissions folder (bottom-of-dashboard) ----\n     Soft blue accent so the customer-calc inbound queue is visually\n     distinct from both the gold \"Recent Jobber requests\" panel above\n     (which surfaces ALL Jobber Requests) and from the rep's own\n     Drafts/Finished/Archived/Trash folders. */\n  .cust-subs-folder {\n    background: #eef4fb;\n    border-color: #c8d8ec;\n    margin-top: 18px;     /* breathing room below Trash */\n  }\n  .cust-subs-folder summary .chev { color: #2c6da7; }\n  .cust-subs-folder summary .folder-label { color: #2c6da7; }\n  .cust-subs-folder summary .folder-count {\n    background: #c8d8ec; color: #1e4978;\n  }\n\n  /* Customer Drafts / Needs Review folder \u2014 coral accent so it's\n     visually obvious these rows need rep action. Sits directly below\n     the regular Customer Submissions folder. */\n  .cust-drafts-folder {\n    background: #fdf2ed;\n    border-color: #f1c4a8;\n    margin-top: 10px;\n  }\n  .cust-drafts-folder summary .chev { color: #a14820; }\n  .cust-drafts-folder summary .folder-label { color: #a14820; }\n  .cust-drafts-folder summary .folder-count {\n    background: #f1c4a8; color: #6d2f0c;\n  }\n  .cust-drafts-folder .cust-subs-toolbar input[type=\"search\"] {\n    border-color: #f1c4a8;\n  }\n  .cust-drafts-folder .cust-subs-toolbar input[type=\"search\"]:focus {\n    border-color: #a14820;\n    box-shadow: 0 0 0 3px rgba(161, 72, 32, 0.18);\n  }\n  .cust-drafts-folder .cust-subs-card { border-color: #f1c4a8; }\n  .cust-drafts-folder .cust-subs-card:hover { border-color: #a14820; }\n\n  /* Customer Drafts (abandoned) folder \u2014 amber accent so it's visually\n     distinct from the coral 'Needs Review' folder above. These are\n     mid-flow leads we want to follow up on, not failures we need to\n     fix. */\n  .cust-abandoned-folder {\n    background: #fdf6e3;\n    border-color: #efe0a8;\n    margin-top: 10px;\n  }\n  .cust-abandoned-folder summary .chev { color: #8a6515; }\n  .cust-abandoned-folder summary .folder-label { color: #8a6515; }\n  .cust-abandoned-folder summary .folder-count {\n    background: #efe0a8; color: #5a3f00;\n  }\n  .cust-abandoned-folder .cust-subs-toolbar input[type=\"search\"] {\n    border-color: #efe0a8;\n  }\n  .cust-abandoned-folder .cust-subs-toolbar input[type=\"search\"]:focus {\n    border-color: #8a6515;\n    box-shadow: 0 0 0 3px rgba(138, 101, 21, 0.18);\n  }\n  .cust-abandoned-folder .cust-subs-card { border-color: #efe0a8; }\n  .cust-abandoned-folder .cust-subs-card:hover { border-color: #8a6515; }\n  .cust-abandoned-folder .cust-subs-card-tag.stage {\n    background: #efe0a8; color: #5a3f00;\n  }\n  /* Generic dismiss button \u2014 used on every card in the Customer\n     Submissions / Needs Review / Abandoned folders. Coral-tinted so\n     it reads as a destructive action without competing with the\n     primary 'Open in Jobber' / 'Client Hub' actions next to it.\n     Per-folder rules below override the color tint to match each\n     folder's accent palette. */\n  .cust-subs-card-actions .btn-dismiss {\n    background: transparent; color: var(--coral); border: 1px solid var(--coral-pale);\n    padding: 8px 12px; font-size: 12.5px; font-weight: 700;\n    border-radius: 6px; cursor: pointer;\n    transition: background 0.12s, border-color 0.12s;\n  }\n  .cust-subs-card-actions .btn-dismiss:hover {\n    background: var(--coral-pale); border-color: var(--coral);\n  }\n  /* Abandoned folder uses amber instead of coral. */\n  .cust-abandoned-folder .cust-subs-card-actions .btn-dismiss {\n    color: #8a6515; border-color: #efe0a8;\n  }\n  .cust-abandoned-folder .cust-subs-card-actions .btn-dismiss:hover {\n    background: #efe0a8; border-color: #8a6515;\n  }\n  .cust-subs-toolbar {\n    padding: 4px 0 10px;\n    display: flex; gap: 8px; align-items: center;\n  }\n  .cust-subs-toolbar input[type=\"search\"] {\n    flex: 1; box-sizing: border-box;\n    padding: 10px 14px; min-height: 40px;\n    background: var(--paper);\n    border: 1.5px solid #c8d8ec; border-radius: 8px;\n    font-size: 14px; color: var(--navy);\n    -webkit-appearance: none;\n  }\n  .cust-subs-toolbar input[type=\"search\"]:focus {\n    outline: none; border-color: #2c6da7;\n    box-shadow: 0 0 0 3px rgba(44, 109, 167, 0.18);\n  }\n  .cust-subs-analytics-btn {\n    flex-shrink: 0;\n    padding: 8px 14px; min-height: 40px;\n    background: var(--paper);\n    border: 1.5px solid #c8d8ec; border-radius: 8px;\n    color: #2c6da7; font-size: 13px; font-weight: 700;\n    cursor: pointer;\n    transition: background 0.12s, border-color 0.12s;\n  }\n  .cust-subs-analytics-btn:hover { background: #c8d8ec; border-color: #2c6da7; }\n  @media (max-width: 640px) {\n    .cust-subs-toolbar { flex-direction: column; align-items: stretch; }\n    .cust-subs-analytics-btn { width: 100%; }\n  }\n\n  /* Customer Calc Analytics modal. Mirrors the info-dialog visual\n     pattern used elsewhere for measurement tutorials / info modals. */\n  .cust-analytics-dialog { max-width: 720px; }\n  .cust-analytics-loading {\n    padding: 30px; text-align: center; color: var(--slate);\n    font-size: 14px;\n  }\n  .cust-analytics-error {\n    padding: 18px; background: var(--coral-pale); color: var(--coral);\n    border-radius: 8px; font-size: 14px;\n  }\n  .cust-analytics-empty {\n    padding: 30px; text-align: center; color: var(--slate);\n    font-size: 14px; font-style: italic;\n  }\n  .cust-analytics-grid {\n    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;\n    margin-bottom: 18px;\n  }\n  .cust-analytics-card {\n    background: var(--paper); border: 1px solid var(--line);\n    border-radius: 10px; padding: 14px 16px;\n  }\n  .cust-analytics-card .lbl {\n    font-size: 11px; color: var(--slate); font-weight: 700;\n    text-transform: uppercase; letter-spacing: 0.06em;\n    margin-bottom: 4px;\n  }\n  .cust-analytics-card .val {\n    font-size: 22px; font-weight: 800; color: var(--navy);\n    line-height: 1.15;\n  }\n  .cust-analytics-card .sub {\n    font-size: 11px; color: var(--slate); margin-top: 2px;\n  }\n  .cust-analytics-section {\n    background: var(--paper); border: 1px solid var(--line);\n    border-radius: 10px; padding: 14px 16px; margin-bottom: 12px;\n  }\n  .cust-analytics-section h4 {\n    margin: 0 0 10px; font-size: 13px; color: var(--slate);\n    font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;\n  }\n  .cust-analytics-bar-row {\n    display: flex; align-items: center; gap: 10px;\n    padding: 5px 0;\n    font-size: 13px; color: var(--navy);\n  }\n  .cust-analytics-bar-row .name { width: 110px; flex-shrink: 0; }\n  .cust-analytics-bar-row .bar {\n    flex: 1; height: 8px; background: var(--line-soft); border-radius: 999px;\n    overflow: hidden;\n  }\n  .cust-analytics-bar-row .bar-fill {\n    display: block; height: 100%;\n    background: linear-gradient(90deg, #2c6da7, #4d8bc0);\n  }\n  .cust-analytics-bar-row .count {\n    width: 40px; text-align: right; font-weight: 700;\n    color: var(--slate); font-size: 12px;\n  }\n  @media (max-width: 640px) {\n    .cust-analytics-grid { grid-template-columns: 1fr 1fr; }\n    .cust-analytics-card .val { font-size: 18px; }\n  }\n  /* Card = swipe viewport; .cust-subs-card-inner is the translatable\n     surface. Actions live behind a \u22ef menu + a swipe-to-reveal delete. */\n  .cust-subs-card {\n    position: relative; overflow: hidden;\n    background: var(--paper);\n    border: 1px solid #c8d8ec; border-radius: 10px;\n    margin-bottom: 8px;\n    transition: border-color 0.12s;\n    -webkit-tap-highlight-color: transparent;\n  }\n  .cust-subs-card-inner {\n    display: flex; align-items: center; gap: 12px;\n    padding: 12px 14px;\n    background: var(--paper);\n    position: relative; z-index: 1;\n    will-change: transform;\n  }\n  .cust-subs-card-side {\n    display: flex; align-items: center; gap: 8px; flex-shrink: 0;\n  }\n  .cust-subs-card-side .cust-subs-card-total { margin: 0; white-space: nowrap; }\n  .lead-menu-btn {\n    appearance: none; border: 1px solid var(--line); background: var(--paper);\n    border-radius: 8px; width: 34px; height: 34px; min-height: 34px;\n    font-size: 18px; font-weight: 800; color: var(--slate); cursor: pointer;\n    display: flex; align-items: center; justify-content: center; line-height: 1;\n  }\n  .lead-menu-btn:hover { border-color: var(--navy); color: var(--navy); }\n  .swipe-del {\n    position: absolute; top: 0; bottom: 0; right: 0; width: 88px;\n    display: flex; align-items: center; justify-content: center;\n    background: #c0392b; z-index: 0;\n  }\n  .swipe-del .btn-dismiss {\n    background: transparent; border: none; color: #fff; font-weight: 800;\n    font-size: 12px; cursor: pointer; width: 100%; height: 100%;\n  }\n  .cust-subs-card:hover { border-color: #2c6da7; }\n  .cust-subs-card-main { flex: 1; min-width: 0; }\n  .cust-subs-card-cust { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 3px; word-break: break-word; }\n  .cust-subs-card-meta {\n    display: flex; gap: 6px; flex-wrap: wrap; align-items: center;\n    font-size: 12px; color: var(--slate); margin-top: 4px;\n  }\n  .cust-subs-card-meta .sep { opacity: 0.5; }\n  .cust-subs-card-total {\n    font-size: 15px; font-weight: 700; color: var(--green);\n    margin-top: 4px;\n  }\n  .cust-subs-card-tag {\n    display: inline-block; padding: 1px 8px; border-radius: 999px;\n    font-size: 10px; font-weight: 700; text-transform: uppercase;\n    letter-spacing: 0.04em;\n    background: #c8d8ec; color: #1e4978;\n  }\n  .cust-subs-card-tag.callback { background: #fde8e0; color: #a14820; }\n  .cust-subs-card-tag.failed   { background: #fde0e0; color: #a12020; }\n  .cust-subs-card-actions { display: flex; gap: 6px; flex-shrink: 0; }\n  .cust-subs-card-actions .btn { padding: 8px 14px; font-size: 13px; min-height: 36px; }\n\n  /* ---- Submission Details modal ---- */\n  .cust-details-dialog { max-width: 640px; width: calc(100vw - 32px); }\n  .cust-details-head { padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }\n  .cust-details-name { font-size: 18px; font-weight: 800; color: var(--navy); }\n  .cust-details-tags { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }\n  .cust-details-contact { margin-top: 8px; font-size: 13px; color: var(--ink); }\n  .cust-details-meta { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--slate); align-items: center; }\n  .cust-details-total { font-weight: 700; color: var(--navy); }\n  .cust-details-proj { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; background: #fcfbf9; }\n  .cust-details-proj-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 8px; }\n  .cust-details-proj-title { font-size: 15px; font-weight: 700; color: var(--navy); }\n  .cust-details-proj-sub { font-size: 14px; font-weight: 700; color: var(--green); white-space: nowrap; }\n  .cust-details-desc {\n    margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;\n    font-size: 12px; line-height: 1.55; color: var(--ink);\n    white-space: pre-wrap; word-break: break-word;\n  }\n  .cust-details-notes { margin-top: 4px; padding: 10px 12px; background: #fff8ec; border: 1px solid #f0e2c0; border-radius: 8px; font-size: 13px; color: var(--ink); }\n\n  /* Dashboard title row \u2014 pairs the welcome copy with a compact\n     cluster of utility buttons (Refresh, Select, Pricing). These are\n     intentionally low-contrast icon+label pills so they don't compete\n     with Start-New-Quote in the primary toolbar below. */\n  .dash-title-row {\n    display: flex; align-items: flex-start; justify-content: space-between;\n    gap: 16px; flex-wrap: wrap;\n    margin-bottom: 4px;\n  }\n  .dash-title-row > div:first-child { flex: 1; min-width: 240px; }\n  .dash-utility {\n    display: flex; gap: 6px; flex-wrap: wrap;\n    padding-top: 6px;\n  }\n  .dash-util-btn {\n    display: inline-flex; align-items: center; gap: 6px;\n    padding: 8px 12px; min-height: 38px;\n    background: var(--paper); color: var(--slate);\n    border: 1px solid var(--line); border-radius: 999px;\n    font-size: 12px; font-weight: 600;\n    cursor: pointer; transition: background 0.12s, color 0.12s, border-color 0.12s;\n    -webkit-tap-highlight-color: transparent;\n  }\n  .dash-util-btn:hover { background: var(--line-soft); color: var(--navy); border-color: var(--navy); }\n  .dash-util-btn .ico { font-size: 14px; line-height: 1; }\n  .dash-util-btn.active {\n    background: var(--navy); color: white; border-color: var(--navy);\n  }\n  @media (max-width: 640px) {\n    .dash-utility { width: 100%; justify-content: flex-end; }\n    .dash-util-btn .lbl { display: none; }\n    .dash-util-btn { padding: 8px 10px; min-width: 40px; justify-content: center; }\n    .dash-util-btn .ico { font-size: 16px; }\n  }\n\n  /* Bulk-select toggle + action bar.\n     When bulkMode is on, the dashboard's data-bulk attribute flips\n     and every .qrow shifts to expose its leading checkbox. */\n  #bulkSelectToggle.active {\n    background: var(--navy); color: white; border-color: var(--navy);\n  }\n  .bulk-action-bar {\n    position: sticky; top: 0; z-index: 30;\n    margin: 0 0 14px;\n    padding: 12px 14px;\n    background: var(--navy); color: white;\n    border-radius: 10px;\n    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;\n    box-shadow: var(--shadow-md);\n  }\n  .bulk-action-bar .bulk-count {\n    font-weight: 700; font-size: 14px;\n    padding: 4px 10px; background: rgba(255,255,255,0.18);\n    border-radius: 999px;\n  }\n  .bulk-action-bar .bulk-actions { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; justify-content: flex-end; }\n  .bulk-action-bar .btn {\n    padding: 7px 14px; font-size: 12px; min-height: 36px;\n    background: rgba(255,255,255,0.15); color: white;\n    border: 1px solid rgba(255,255,255,0.35);\n  }\n  .bulk-action-bar .btn:hover { background: rgba(255,255,255,0.28); }\n  .bulk-action-bar .btn-danger {\n    background: var(--coral); color: white; border-color: var(--coral);\n  }\n  .bulk-action-bar .btn-danger:hover { background: #c14a4a; }\n  .qrow-checkbox {\n    display: none;\n    width: 22px; height: 22px;\n    flex-shrink: 0; cursor: pointer;\n  }\n  #dashContent.bulk-mode .qrow-checkbox { display: block; }\n  #dashContent.bulk-mode .qrow.selected {\n    border-color: var(--navy);\n    background: linear-gradient(0deg, rgba(26,37,64,0.04), rgba(26,37,64,0.04)), var(--paper);\n  }\n\n  /* Cloud row card \u2014 denser & cleaner than the old draft-card */\n  .qrow {\n    display: flex; align-items: center; gap: 12px;\n    padding: 14px 14px; background: var(--paper);\n    border: 1px solid var(--line); border-radius: 10px;\n    margin-bottom: 8px; transition: border-color 0.12s, transform 0.12s;\n    -webkit-tap-highlight-color: transparent;\n  }\n  .qrow:hover { border-color: var(--green-light); }\n  .qrow-main { flex: 1; min-width: 0; }\n  .qrow-cust { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 3px; word-break: break-word; }\n  .qrow-meta {\n    display: flex; gap: 6px; flex-wrap: wrap; align-items: center;\n    font-size: 12px; color: var(--slate);\n  }\n  .qrow-meta .sep { opacity: 0.5; }\n  .qrow-total {\n    color: var(--green); font-weight: 700; font-size: 13px;\n    margin-top: 4px;\n  }\n  .qrow-actions { display: flex; gap: 6px; flex-shrink: 0; }\n  .qrow-actions .btn { padding: 8px 14px; font-size: 13px; min-height: 36px; }\n  /* Project chips on row cards \u2014 compact summary of what's in the quote */\n  .qrow-chips, .qrow-chips-row {\n    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;\n    align-items: center;\n  }\n  .proj-chip {\n    display: inline-block;\n    font-size: 11px; font-weight: 600;\n    color: var(--green); background: #eaf3ec;\n    padding: 2px 8px; border-radius: 999px;\n    white-space: nowrap;\n  }\n  /* Rep-quoting-by chip on each dashboard row. Small avatar circle\n     + name, mirrors the header rep chip style so the eye recognizes\n     it instantly. */\n  .qrow-rep-chip {\n    display: inline-flex; align-items: center; gap: 5px;\n    padding: 2px 8px 2px 2px;\n    background: var(--line-soft);\n    border-radius: 999px;\n    font-size: 11px; font-weight: 600;\n    color: var(--navy);\n    white-space: nowrap;\n    max-width: 220px;\n  }\n  .qrow-rep-avatar {\n    width: 20px; height: 20px;\n    background: var(--navy); color: white;\n    border-radius: 50%;\n    display: inline-flex; align-items: center; justify-content: center;\n    font-size: 9px; font-weight: 800;\n    flex-shrink: 0;\n  }\n  .qrow-rep-name {\n    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\n  }\n  .qrow-addr {\n    /* Truncate long addresses on a single line in the meta row */\n    max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\n    display: inline-block; vertical-align: bottom;\n  }\n  .qrow-actions .ico-btn {\n    width: 38px; height: 38px; border-radius: 8px;\n    background: var(--line-soft); color: var(--slate);\n    display: flex; align-items: center; justify-content: center;\n    font-size: 18px; cursor: pointer; border: none;\n    transition: background 0.12s;\n    -webkit-tap-highlight-color: transparent;\n  }\n  .qrow-actions .ico-btn:hover { background: var(--line); color: var(--navy); }\n\n  /* Inline action menu \u2014 replaces native dropdown for mobile-friendliness */\n  .row-menu {\n    position: absolute; z-index: 100;\n    background: var(--paper); border: 1.5px solid var(--line);\n    border-radius: 10px; box-shadow: var(--shadow-lg);\n    padding: 6px; min-width: 180px;\n  }\n  .row-menu button {\n    display: block; width: 100%; text-align: left;\n    background: transparent; border: none; cursor: pointer;\n    padding: 10px 12px; border-radius: 6px; font-size: 14px;\n    color: var(--navy); transition: background 0.1s;\n    -webkit-tap-highlight-color: transparent;\n    min-height: 40px;\n  }\n  .row-menu button:hover { background: var(--line-soft); }\n  .row-menu button.danger { color: var(--coral); }\n  .row-menu button.danger:hover { background: var(--coral-pale); }\n  .row-menu hr { border: none; border-top: 1px solid var(--line); margin: 4px 0; }\n\n  /* Status pill in header \u2014 shows save state for the current draft */\n  .save-pill {\n    display: inline-flex; align-items: center; gap: 6px;\n    padding: 4px 10px; border-radius: 999px;\n    font-size: 11px; font-weight: 700;\n    background: var(--line-soft); color: var(--slate);\n    transition: background 0.15s, color 0.15s;\n    white-space: nowrap;\n  }\n  .save-pill.saving { background: #fff5e6; color: #a66400; }\n  .save-pill.saved  { background: #e6f5ec; color: #2d6e4e; }\n  .save-pill.failed { background: var(--coral-pale); color: var(--coral); cursor: pointer; }\n  .save-pill.hidden { display: none; }\n  .save-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }\n  .save-pill.saving .dot { animation: pulse 1s ease-in-out infinite; }\n  @keyframes pulse { 50% { opacity: 0.3; } }\n\n  /* Jobber integration pill \u2014 clickable, in the header */\n  .jobber-pill {\n    display: inline-flex; align-items: center; gap: 6px;\n    padding: 4px 10px; border-radius: 999px;\n    font-size: 11px; font-weight: 700;\n    background: var(--line-soft); color: var(--slate);\n    border: none; cursor: pointer;\n    transition: background 0.15s, color 0.15s;\n    -webkit-tap-highlight-color: transparent;\n    white-space: nowrap;\n  }\n  .jobber-pill:hover { background: var(--line); }\n  .jobber-pill.connected { background: #e6f5ec; color: #2d6e4e; }\n  .jobber-pill.warn      { background: #fff5e6; color: #a66400; }\n  .jobber-pill.error     { background: var(--coral-pale); color: var(--coral); }\n  .jobber-pill .jp-dot {\n    width: 6px; height: 6px; border-radius: 50%;\n    background: currentColor;\n  }\n\n  .jobber-action {\n    display: flex; align-items: center; gap: 10px;\n    padding: 12px 14px;\n    background: var(--paper); border: 1.5px solid var(--line);\n    border-radius: 10px; cursor: pointer;\n    font-size: 14px; font-weight: 600; color: var(--navy);\n    transition: border-color 0.12s, background 0.12s;\n    width: 100%; text-align: left;\n    -webkit-tap-highlight-color: transparent;\n    min-height: 44px;\n  }\n  .jobber-action:hover { border-color: var(--green); }\n  .jobber-action.primary { background: var(--green); color: white; border-color: var(--green); }\n  .jobber-action.primary:hover { background: var(--green-light); border-color: var(--green-light); }\n  .jobber-action.danger { color: var(--coral); }\n  .jobber-action.danger:hover { border-color: var(--coral); background: var(--coral-pale); }\n  .jobber-action .ico { font-size: 18px; }\n\n  @media (max-width: 640px) {\n    .jobber-pill { font-size: 10px; padding: 3px 8px; }\n  }\n\n  /* ============================================================\n     MOBILE \u2014 dashboard refinements (\u2264640px).\n     Scoped to dashboard surfaces only (stat cards, quote rows,\n     folders, bulk bar, settings dialog). Tablet + desktop layouts\n     above 640px are untouched.\n     ============================================================ */\n  @media (max-width: 640px) {\n    /* Dashboard title row \u2014 keep welcome copy + utility cluster on\n       one screenful. Heading shrinks more aggressively here than\n       the global .stage h1 because the dashboard is a list-first\n       surface where customers' names ARE the focal point. */\n    .dash-title-row {\n      gap: 8px;\n      margin-bottom: 8px;\n    }\n    .dash-title-row > div:first-child { min-width: 0; }\n    #stage-dashboard h1 {\n      font-size: 18px; margin-bottom: 4px;\n    }\n    #stage-dashboard .lead {\n      font-size: 12px; margin-bottom: 12px;\n      /* On phones, the lead paragraph is just chrome \u2014 clip to one\n         line so the actual list lands above the fold. The full\n         text is still in the DOM for accessibility. */\n      max-height: 2.6em; overflow: hidden;\n    }\n    .dash-utility { padding-top: 0; gap: 4px; }\n\n    /* Stat cards \u2014 2-up grid using flex baselines already set;\n       reduce numeric weight so they don't dominate when the rep\n       just wants to scan their list. */\n    .dash-stats { gap: 8px; margin: 8px 0 14px; }\n    .stat-card { padding: 10px 12px; flex-basis: calc(50% - 4px); min-width: 0; }\n    .stat-card .stat-num { font-size: 18px; }\n    .stat-card .stat-sub {\n      font-size: 11px;\n      /* Long $-totals like \"$12,345 in projects\" can wrap awkwardly;\n         keep them on one ellipsised line. */\n      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;\n    }\n    .stat-card .stat-lbl { font-size: 10px; margin-top: 6px; }\n\n    /* Toolbar \u2014 full-width Start-New + Search stacked. */\n    .dash-toolbar { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 14px; padding-bottom: 14px; }\n    .dash-toolbar .btn { width: 100%; min-height: 46px; }\n    .dash-search { width: 100%; }\n    .dash-search input { padding: 10px 12px 10px 36px; font-size: 16px; /* keep 16px to suppress iOS autozoom */ }\n    .dash-search::before { left: 12px; font-size: 12px; }\n\n    /* Quote-row card \u2014 denser, with the meta + chip rows tuned\n       so they NEVER overflow the card width on a 360px phone. */\n    .qrow {\n      flex-direction: column; align-items: stretch;\n      padding: 12px; gap: 10px;\n    }\n    .qrow-cust { font-size: 14px; line-height: 1.3; }\n    .qrow-meta {\n      font-size: 11px; gap: 4px 6px;\n      /* The meta row can pile up: quote-id \u00b7 phone \u00b7 address \u00b7 ago.\n         Allow it to wrap and clamp address truncation to fit. */\n    }\n    .qrow-meta .quote-id-mono {\n      font-size: 11px;\n      /* Truncate especially long IDs so they don't push the row wide */\n      max-width: 38vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\n      display: inline-block; vertical-align: bottom;\n    }\n    .qrow-total { font-size: 12px; margin-top: 2px; }\n    .qrow-addr {\n      /* Was 60vw which on iPhone SE / 360px phones still pushed past\n         the card's inner width once padding + gap was subtracted.\n         50vw keeps it safely inside even with the quote-id leading. */\n      max-width: 50vw;\n    }\n    .qrow-chips-row { gap: 4px; margin-top: 4px; }\n    .proj-chip { font-size: 10px; padding: 2px 7px; }\n    .qrow-rep-chip {\n      max-width: calc(100% - 8px);\n      font-size: 10px; padding: 2px 8px 2px 2px;\n    }\n    .qrow-rep-avatar { width: 18px; height: 18px; font-size: 8.5px; }\n    .qrow-rep-name {\n      /* Cap the rep name so a long \"First Lastname\" doesn't elbow\n         out the project chips. */\n      max-width: 130px;\n    }\n\n    /* Row actions \u2014 Resume button + \u22ef menu side-by-side, both\n       chunky enough to thumb-tap. */\n    .qrow-actions { justify-content: stretch; gap: 8px; }\n    .qrow-actions .btn { flex: 1; min-height: 44px; font-size: 13.5px; padding: 10px 14px; }\n    .qrow-actions .ico-btn { width: 44px; height: 44px; flex-shrink: 0; font-size: 19px; }\n\n    /* Bulk-mode tweaks \u2014 when select-mode is on, the row gets a\n       leading checkbox AND the column layout means the checkbox\n       lands on top of the customer name. Float it to the top-left\n       corner so the layout stays scannable. */\n    #dashContent.bulk-mode .qrow {\n      flex-direction: row; flex-wrap: wrap; align-items: flex-start;\n    }\n    #dashContent.bulk-mode .qrow .qrow-checkbox {\n      width: 24px; height: 24px; margin-top: 4px;\n    }\n    #dashContent.bulk-mode .qrow-main { flex: 1 1 calc(100% - 36px); }\n    #dashContent.bulk-mode .qrow-actions { flex: 1 1 100%; }\n\n    /* Bulk action bar \u2014 when selection is non-empty, the floating\n       toolbar at the top needs the count + actions to stack rather\n       than fight for horizontal room with 3-4 wide buttons. */\n    .bulk-action-bar {\n      padding: 10px 12px;\n      flex-direction: column; align-items: stretch; gap: 8px;\n    }\n    .bulk-action-bar .bulk-count { align-self: flex-start; font-size: 12px; padding: 3px 9px; }\n    .bulk-action-bar .bulk-actions {\n      justify-content: stretch; gap: 6px; flex-wrap: wrap;\n    }\n    .bulk-action-bar .bulk-actions .btn {\n      flex: 1 1 calc(50% - 3px); min-height: 40px; font-size: 12px; padding: 8px 10px;\n    }\n\n    /* Folders */\n    .folder { margin-bottom: 8px; border-radius: 10px; }\n    .folder summary { padding: 12px; min-height: 48px; gap: 8px; }\n    .folder summary .folder-label { font-size: 12px; letter-spacing: 0.06em; }\n    .folder summary .folder-count { font-size: 11px; padding: 2px 8px; }\n    .folder summary .folder-icon { font-size: 16px; }\n    .folder-body { padding: 0 10px 10px; }\n    .folder-empty { font-size: 12px; padding: 12px 4px; }\n\n    /* Recent strip */\n    .recent-strip { margin: 4px 0 14px; }\n    .recent-strip h3 { font-size: 11px; margin: 0 0 8px; }\n\n    /* Inline action menu (\u22ef) \u2014 bigger tap targets, hugs the row */\n    .row-menu { min-width: 200px; max-width: calc(100vw - 24px); }\n    .row-menu button { font-size: 14px; padding: 12px; min-height: 44px; }\n\n    /* Header save / Jobber pills */\n    .save-pill { font-size: 10px; padding: 3px 8px; }\n\n    /* Jobber requests panel (orange \"\ud83d\udce5 Recent Jobber requests\") */\n    .req-panel { margin-bottom: 12px; }\n    .req-card-cust { font-size: 14px; }\n    .req-card-title { font-size: 12px; }\n    .req-card-meta { font-size: 11px; }\n\n    /* Settings dialog \u2014 re-clamp max-height (the desktop rule sets\n       92vh, but on mobile the dialog also has a sticky tabs bar\n       and footer that eat ~110px; 88vh prevents the footer from\n       being scrolled off when content is tall). */\n    .pricing-admin-dialog { max-height: 88vh; }\n    .pricing-admin-dialog .pa-tabs {\n      gap: 2px; padding: 6px 6px 0;\n      /* Tabs row can overflow horizontally on a phone \u2014 let it scroll\n         rather than wrap into a 2nd row that pushes content down. */\n      overflow-x: auto; flex-wrap: nowrap;\n      scrollbar-width: none;\n    }\n    .pricing-admin-dialog .pa-tabs::-webkit-scrollbar { display: none; }\n    .pa-tab { padding: 8px 10px; font-size: 12px; white-space: nowrap; }\n    .pa-body { padding: 12px 14px; }\n    .pa-readonly { padding: 5px 8px; font-size: 12px; }\n    .pa-footer { padding: 10px 14px; flex-wrap: wrap; gap: 8px; }\n    .pa-footer .pa-meta { font-size: 10.5px; min-width: 0; flex-basis: 100%; }\n    .pa-footer .btn { flex: 1; min-height: 42px; }\n  }\n\n  /* Ultra-narrow phones (iPhone SE 1st gen, small Androids \u2264380px).\n     The 640px block above already does most of the work; these\n     tweaks just rescue the surfaces that still ran out of room\n     at 320\u2013380px. */\n  @media (max-width: 380px) {\n    .dash-stats { gap: 6px; }\n    .stat-card { padding: 8px 10px; flex-basis: calc(50% - 3px); }\n    .stat-card .stat-num { font-size: 16px; }\n    .stat-card .stat-lbl { font-size: 9.5px; letter-spacing: 0.06em; }\n    .dash-util-btn { padding: 7px 8px; min-width: 36px; min-height: 36px; }\n    .dash-util-btn .ico { font-size: 14px; }\n    .qrow { padding: 10px; gap: 8px; }\n    .qrow-cust { font-size: 13.5px; }\n    .qrow-actions .btn { font-size: 13px; min-height: 42px; }\n    .qrow-actions .ico-btn { width: 42px; height: 42px; }\n    .qrow-rep-name { max-width: 100px; }\n    .qrow-addr { max-width: 44vw; }\n    .qrow-meta .quote-id-mono { max-width: 32vw; }\n    .folder summary { padding: 10px; }\n  }\n\n  /* UI POLISH \u2014 iPad portrait breakpoint (768\u20131024px) */\n  @media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {\n    .stage-wrap { padding: 24px 18px 80px; }\n    .card-grid.cols-3 { grid-template-columns: 1fr 1fr; }\n    .final-grid { grid-template-columns: 1fr; }\n    .final-side { position: relative; top: 0; }\n    .app-header { padding: 12px 18px; }\n    .progress { padding: 12px 18px; }\n    /* iPad portrait: revert to content-sized + scroll so labels never\n       get squished mid-word. The landscape breakpoint above keeps the\n       fill-the-bar default. */\n    .progress-step { flex: 0 0 auto; min-width: 80px; font-size: 10px; }\n    /* Bigger touch targets on tablet */\n    .btn { padding: 16px 28px; font-size: 16px; min-height: 52px; }\n    .toggle-row { padding: 16px 16px; min-height: 56px; }\n    .radio-row { padding: 14px 16px; }\n    .selectable-card .card-body { padding: 20px 22px 24px; }\n    .progress-step { padding: 10px 12px; min-height: 44px; }\n    .wood-age-btn { padding: 18px 18px; min-height: 64px; }\n  }\n  /* Phone-specific tweaks (below 760px) \u2014 sticky stage-nav is global now so\n     no duplicate position rule needed here. */\n  @media (max-width: 760px) {\n    .stage-wrap { padding-bottom: 24px; }\n    /* Bigger touch targets across the board */\n    .btn { padding: 14px 22px; font-size: 15px; min-height: 50px; }\n    .toggle-row { padding: 14px 14px; min-height: 56px; }\n    .radio-row { padding: 14px 14px; min-height: 64px; }\n    .selectable-card .card-body { padding: 16px 18px; }\n    .wood-age-btn { padding: 16px; min-height: 60px; }\n    /* Side-tracker becomes a bottom sheet on phones \u2014 much better thumb reach.\n       Belt-and-suspenders hide: transform AND visibility, so even if Wix\n       wraps the Custom Element in something that breaks position:fixed,\n       the panel is still completely invisible when closed.\n       inset/width are explicit-viewport-width so it always centers\n       horizontally regardless of the host's containing block. */\n    .side-tracker {\n      inset: auto 0 0 0 !important;\n      top: auto !important;\n      left: 0 !important; right: 0 !important;\n      width: 100vw !important; max-width: 100vw !important;\n      height: 85vh; max-height: 85vh;\n      margin: 0 !important;\n      border-radius: 16px 16px 0 0;\n      transform: translateY(105%);\n      visibility: hidden;\n      pointer-events: none;\n      box-sizing: border-box;\n    }\n    .side-tracker.open { transform: translateY(0); visibility: visible; pointer-events: auto; }\n    /* Prevent any horizontal overflow that could let part of the off-screen\n       panel peek through at the page edge. */\n    :host, :host { overflow-x: hidden; max-width: 100vw; }\n    /* Mobile side-tracker tab \u2014 slim vertical pill, minimal footprint */\n    .side-tracker-tab {\n      writing-mode: vertical-rl !important;\n      text-orientation: mixed;\n      top: 50% !important;\n      bottom: auto !important;\n      right: 0 !important;\n      transform: translateY(-50%) !important;\n      padding: 5px 2.5px;\n      font-size: 8.5px;\n      letter-spacing: 0;\n      border-radius: 5px 0 0 5px;\n      box-shadow: -2px 2px 6px rgba(0,0,0,0.12);\n    }\n    .side-tracker-tab.visible { animation: none; }\n    .side-tracker-tab .count {\n      writing-mode: horizontal-tb;\n      font-size: 8px; padding: 0 3px;\n      margin-top: 2px; margin-left: 0;\n      min-width: 0;\n      border-radius: 4px;\n      line-height: 1.3;\n    }\n\n    /* Draft cards \u2014 stack vertically on phones so the customer name, meta\n       row, and Resume/Delete actions each get their own line instead of\n       being crammed into a single horizontal row. */\n    .draft-card {\n      flex-direction: column;\n      align-items: stretch;\n      gap: 10px;\n      padding: 14px 16px;\n    }\n    .draft-card-main { width: 100%; }\n    .draft-customer { font-size: 15px; margin-bottom: 4px; }\n    .draft-meta { font-size: 11px; gap: 3px 6px; line-height: 1.45; }\n    .draft-running-total { font-size: 13px; margin-top: 4px; }\n    .draft-card-actions {\n      width: 100%;\n      justify-content: stretch;\n      gap: 8px;\n    }\n    .draft-card-actions .btn-primary {\n      flex: 1;\n      padding: 12px 16px;\n      font-size: 14px;\n      min-height: 44px;\n      justify-content: center;\n    }\n    .draft-card-actions .btn-ghost-danger {\n      flex: 0 0 auto;\n      padding: 0 14px;\n      min-height: 44px;\n      min-width: 50px;\n    }\n    /* Progress bar \u2014 content-sized steps that finger-swipe horizontally.\n       overflow-x and touch-action explicitly !important so nothing in the\n       cascade can block the swipe. Children also get touch-action: pan-x\n       so a touch starting on a step button doesn't get hijacked. */\n    .progress {\n      padding: 8px 10px; gap: 6px;\n      touch-action: pan-x !important;\n      overflow-x: auto !important;\n      overflow-y: hidden !important;\n      -webkit-overflow-scrolling: touch !important;\n      overscroll-behavior-x: contain;\n    }\n    .progress-step {\n      flex: 0 0 auto;\n      min-width: 60px;\n      font-size: 9.5px;\n      padding: 6px 9px;\n      min-height: 42px;\n      display: inline-flex; flex-direction: column;\n      align-items: center; justify-content: center;\n      touch-action: pan-x;\n    }\n    .progress-step .step-num { font-size: 7.5px; }\n    .progress::-webkit-scrollbar { display: none; }\n    .progress { scrollbar-width: none; }\n    /* Header \u2014 compact on phone.\n       Three competing pieces \u2014 brand mark, save/Jobber pills, and the\n       Quote Total \u2014 used to fight for horizontal room and visibly\n       overlap on narrow phones. Strategy:\n         1. Shrink the brand mark hard (logo only at very narrow widths;\n            name truncates aggressively before that).\n         2. Let .brand-mark itself shrink (its `min-width: 0` lets the\n            ellipsis actually clip; previously the flex item was sized\n            to fit content and pushed the right cluster off-screen).\n         3. Cap .header-right with a max-width derived from viewport,\n            then let it scroll horizontally if its contents overflow \u2014\n            beats a wrapped second row that doubles header height. */\n    .app-header { padding: 8px 10px; gap: 6px; flex-wrap: nowrap; }\n    .app-header .brand-mark { gap: 8px; min-width: 0; flex-shrink: 1; }\n    .app-header .brand-mark .sub { display: none; }\n    .app-header .brand-mark .name {\n      font-size: 11.5px; line-height: 1.2;\n      /* Shorter cap than before (was 120px). Combined with min-width: 0\n         on the parent, the name now ellipsises gracefully when the\n         pills on the right need the space. */\n      max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\n    }\n    .app-header .brand-mark .logo { width: 26px; height: 26px; }\n    .header-right {\n      gap: 6px; flex-shrink: 0;\n      max-width: calc(100vw - 60px);\n      overflow-x: auto; overflow-y: hidden;\n      scrollbar-width: none;\n      /* prevent inertia scrolling from feeling like a bug on iOS */\n      -webkit-overflow-scrolling: auto;\n    }\n    .header-right::-webkit-scrollbar { display: none; }\n    .total-pill { min-width: 60px; padding: 4px 9px; }\n    .total-pill .amt { font-size: 13px; }\n    .total-pill .lbl { font-size: 8px; }\n    /* Quote-id tag \u2014 hide on tiny screens to keep header tight */\n    .quote-id-tag { display: none; }\n    /* Save pill \u2014 keep visible but tighter; hide the text on very narrow\n       screens, just show the colored dot. */\n    .save-pill { font-size: 10px; padding: 3px 7px; gap: 5px; }\n    .save-pill .save-pill-text {\n      max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\n    }\n    /* Jobber pill \u2014 same treatment. */\n    .jobber-pill {\n      font-size: 10px; padding: 3px 8px; gap: 5px;\n    }\n    .jobber-pill #jobberPillText {\n      max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\n    }\n    /* Stage header text \u2014 pulled down a notch (\"too damn big\" feedback) */\n    .stage-title { font-size: 10px; margin-bottom: 4px; }\n    .stage h1 { font-size: 19px; margin-bottom: 6px; line-height: 1.25; letter-spacing: -0.3px; }\n    .stage .lead { font-size: 12.5px; margin-bottom: 16px; line-height: 1.45; }\n\n    /* Tip boxes \u2014 were eating a big chunk of vertical space on a phone */\n    .tip-box { padding: 10px 12px; font-size: 12px; gap: 8px; margin-bottom: 12px; }\n    .tip-box .tip-ico { font-size: 14px; }\n    .tip-box .tip-body strong { font-size: 10px; margin-bottom: 3px; }\n\n    /* Alerts (reco banner, warnings, etc.) */\n    .alert { padding: 10px 12px; font-size: 12px; gap: 8px; margin-bottom: 12px; }\n    .reco-banner { padding: 10px 12px; margin-bottom: 14px; gap: 8px; }\n    .reco-banner .reco-content { font-size: 12px; }\n\n    /* Tighter side padding on phones to maximize content area */\n    .stage-wrap { padding: 14px 10px 24px; }\n    /* Grid gaps reduce \u2014 was 22px, fine on desktop but huge on a phone */\n    .card-grid { gap: 12px; margin-bottom: 18px; }\n    .product-choice-grid { gap: 12px; margin-bottom: 18px; }\n    .addon-grid { gap: 8px; }\n\n    /* Card images take less vertical space on phones */\n    .card-image { height: 150px; }\n    .selectable-card .card-body { padding: 12px 14px; }\n    .selectable-card .card-body .title { font-size: 15px; margin-bottom: 4px; }\n    .selectable-card .card-body .desc { font-size: 12px; line-height: 1.4; }\n    .selectable-card .card-body .badge { font-size: 9px; padding: 2px 6px; margin-top: 6px; }\n\n    /* Tier cards \u2014 much tighter padding + fonts */\n    .tier-card { padding: 14px; border-radius: 12px; }\n    .tier-card .tier-name { font-size: 10px; margin-bottom: 3px; }\n    .tier-card .tier-product { font-size: 15px; margin-bottom: 5px; line-height: 1.2; }\n    .tier-card .tier-tagline { font-size: 11px; margin-bottom: 8px; min-height: 0; }\n    .tier-card .tier-price { font-size: 22px; margin: 6px 0 1px; }\n    .tier-card .tier-cost-per-year { font-size: 11px; }\n    .tier-card .tier-life { font-size: 11px; padding: 4px 8px; margin: 6px 0 10px; }\n    .tier-card .tier-pros li, .tier-card .tier-cons li { font-size: 12px; padding-top: 3px; padding-bottom: 3px; }\n    .tier-card .whats-included { padding: 10px; margin: 10px 0 14px; }\n    .tier-card .whats-included-label, .tier-card .whats-included ul li { font-size: 11px; }\n    .tier-card .best-for { padding-top: 10px; font-size: 11px; }\n    .tier-card .best-for strong { font-size: 10px; }\n\n    /* Product family cards */\n    .product-choice-card .prod-image { height: 130px; }\n    .product-choice-card .prod-body { padding: 12px 14px; gap: 5px; }\n    .product-choice-card .icon { font-size: 20px; }\n    .product-choice-card .h { font-size: 15px; }\n    .product-choice-card .d { font-size: 12px; line-height: 1.4; }\n    .product-choice-card .prod-pros li { font-size: 11.5px; padding: 3px 0 3px 18px; }\n    .product-choice-card .prod-cons li { font-size: 11px; padding: 2px 0 2px 18px; }\n    .product-choice-card .prod-recommend-note { padding: 8px 10px; font-size: 11px; margin-top: 10px; }\n    .product-choice-card .prod-recommend-note strong { font-size: 9px; }\n\n    /* Condition cards (Step 4) */\n    .condition-card .card-image { height: 100px; }\n    .condition-card .cond-body { padding: 10px 12px; }\n    .condition-card .cond-name { font-size: 13.5px; }\n    .condition-card .cond-prep { font-size: 11px; margin: 4px 0 8px; }\n    .condition-card .cond-bullets-label { font-size: 9px; }\n    .condition-card .cond-bullets li { font-size: 11px; line-height: 1.3; padding: 2px 0 2px 16px; }\n    .condition-card .cond-timing { font-size: 10px; padding: 3px 6px; margin-top: 6px; }\n    .condition-card .cond-add { font-size: 13px; padding-top: 8px; }\n\n    /* Form inputs \u2014 were big on desktop, way too big on phone */\n    .field label { font-size: 10.5px; margin-bottom: 4px; }\n    /* iOS Safari auto-zooms in when focusing an input with font-size < 16px\n       and doesn't reliably zoom back out \u2014 feels like the page is \"stuck\"\n       zoomed. Forcing every editable field to \u226516px on mobile is the\n       standard fix and prevents the surprise zoom entirely. */\n    .field input, .field select, .field textarea,\n    input[type=\"text\"], input[type=\"tel\"], input[type=\"email\"],\n    input[type=\"number\"], input[type=\"password\"], input[type=\"search\"],\n    input:not([type]), textarea, select {\n      padding: 10px 12px; font-size: 16px !important; border-radius: 8px;\n    }\n    .field .hint, .field .err { font-size: 11px; }\n    .form-grid { gap: 12px; margin-bottom: 16px; }\n    /* Other editable fields outside .field need the bump too */\n    .side-tracker-notes textarea { font-size: 16px !important; }\n    .custom-add-form input, .custom-add-form select { font-size: 16px !important; padding: 8px 10px; }\n    /* Custom color code input on Step 7 */\n    .custom-color-entry input { font-size: 16px !important; }\n\n    /* Measurement section */\n    .measure-section { padding: 14px 14px; margin-bottom: 12px; border-radius: 10px; }\n    .measure-section h3 { font-size: 14px; }\n    .measure-section .section-hint { font-size: 11.5px; margin-bottom: 12px; }\n\n    /* Wood age and toggle rows */\n    .wood-age-btn { padding: 12px 14px; }\n    .wood-age-btn .wa-ico { font-size: 22px; }\n    .wood-age-btn .wa-label { font-size: 12.5px; }\n    .wood-age-btn .wa-label small { font-size: 10px; }\n    .toggle-row { padding: 10px 12px; min-height: 0; margin-bottom: 6px; }\n    .toggle-row .name { font-size: 13px; }\n    .toggle-row .box { width: 18px; height: 18px; font-size: 11px; }\n    .toggle-row .price { font-size: 12.5px; }\n\n    /* Buttons \u2014 slightly smaller, still tap-friendly (\u226544px) */\n    .btn { padding: 11px 18px; font-size: 14px; min-height: 44px; border-radius: 8px; }\n\n    /* Color swatches */\n    .color-group-label { font-size: 12px; margin-bottom: 8px; }\n    .color-group-label small { font-size: 11px; }\n    .color-swatch { padding: 5px; border-radius: 8px; }\n    .color-swatch .name { font-size: 10.5px; }\n    .color-swatch .code { font-size: 9px; }\n    /* Color grid override already set earlier */\n    /* Color swatch grid \u2014 3 per row instead of fewer big ones */\n    .color-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 10px; }\n    .color-swatch { padding: 6px; }\n    .color-swatch .name { font-size: 11px; }\n    /* Final breakdown stacks; side panel goes below */\n    .final-side { margin-top: 16px; }\n    /* Discount rows \u2014 value chip on its own line UNDER the description so\n       long values like \"No processing fee\" never overflow. */\n    .radio-row {\n      flex-wrap: wrap;\n      padding: 12px;\n      gap: 8px 10px;\n      align-items: flex-start;\n    }\n    .radio-row .disc-img { width: 52px; height: 52px; flex-shrink: 0; }\n    .radio-row .dot-outer { margin-top: 4px; flex-shrink: 0; }\n    .radio-row .label {\n      flex: 1 1 0; min-width: 0;\n    }\n    .radio-row .label .head { font-size: 13px; }\n    .radio-row .label .sub { font-size: 11px; line-height: 1.4; }\n    .radio-row .value {\n      flex: 1 1 100%;\n      white-space: normal !important;\n      text-align: right;\n      font-size: 14px;\n      max-width: 100%;\n      line-height: 1.2;\n      margin-top: 2px;\n    }\n\n    /* Addon rows (Step 8) \u2014 restructure so the image sits ABOVE the\n       description and price on mobile. The checkbox floats over the\n       top-left corner of the image as an overlay. */\n    .addon-section .toggle-row {\n      flex-direction: column;\n      flex-wrap: nowrap;\n      align-items: stretch;\n      padding: 10px;\n      gap: 8px;\n      min-height: 0;\n      position: relative;\n    }\n    .addon-section .toggle-row .box {\n      position: absolute;\n      top: 18px; left: 18px;\n      z-index: 2;\n      /* No background override here \u2014 lets the base white/green cascade\n         through so the checkbox actually fills green when checked. The\n         shadow keeps it visible against any image color underneath. */\n      box-shadow: 0 2px 6px rgba(0,0,0,0.35);\n      flex-shrink: 0;\n    }\n    .toggle-row .addon-img {\n      width: 100% !important; height: 140px !important;\n      border-radius: 8px;\n      flex-shrink: 0;\n      order: -2;\n    }\n    .toggle-row .addon-desc { min-width: 0; order: -1; }\n    .toggle-row .addon-desc .ad-name { font-size: 14px; line-height: 1.3; }\n    .toggle-row .addon-desc .ad-sub { font-size: 12px; }\n    .toggle-row .price {\n      white-space: normal !important;\n      font-size: 14px;\n      text-align: right;\n      flex-shrink: 0;\n      order: 1;\n    }\n    .toggle-row .qty-input { width: 60px; align-self: flex-end; }\n\n    /* Addon rows WITHOUT an image (custom service rows etc.) stay in their\n       compact horizontal layout. */\n    .addon-section .toggle-row:not(:has(.addon-img)) {\n      flex-direction: row;\n      align-items: flex-start;\n    }\n    .addon-section .toggle-row:not(:has(.addon-img)) .box { position: static; box-shadow: none; }\n\n    /* Service-includes rows (the \"Included free\" green cards on Step 8) */\n    .service-include-row {\n      padding: 10px 12px; gap: 10px;\n      align-items: flex-start;\n    }\n    .service-include-row .check { width: 24px; height: 24px; font-size: 12px; margin-top: 2px; }\n    .service-include-row .addon-desc .ad-name { font-size: 13.5px; }\n    .service-include-row .addon-desc .ad-sub { font-size: 11px; }\n    .service-include-row .price { font-size: 10px; }\n\n    /* Custom items list + add form \u2014 repack so they stack cleanly */\n    .custom-item-row {\n      flex-wrap: wrap;\n      padding: 10px 12px;\n      gap: 6px 10px;\n    }\n    .custom-item-row .name { flex: 1 1 100%; font-size: 13px; }\n    .custom-item-row .price { font-size: 13px; }\n    .custom-add-btn { font-size: 11px; padding: 5px 10px; }\n\n    /* REVIEW screen \u2014 tighten edges and pad the main breakdown so the\n       customer-facing summary uses every available pixel on a phone. */\n    .stage-wrap { padding: 16px 10px 24px; }\n    .final-main { padding: 16px 14px; border-radius: 12px; }\n    .final-side { padding: 16px 14px; border-radius: 12px; }\n    .breakdown-section { margin-bottom: 14px; padding-bottom: 8px; }\n    .breakdown-line { padding: 8px 0; gap: 8px; }\n    .breakdown-line .desc { font-size: 13px; }\n    .breakdown-line .val { font-size: 13px; }\n    .saved-projects { padding: 12px 14px; }\n    .saved-project-row {\n      flex-wrap: wrap;\n      gap: 6px 10px;\n    }\n    .saved-project-row .meta { flex: 1 1 100%; padding-left: 0; }\n    .saved-project-row .amt { font-size: 14px; margin-right: 0; }\n    .saved-project-row .row-actions { width: 100%; gap: 6px; }\n    .saved-project-row .row-actions button { flex: 1; }\n    .grand-total { padding: 12px 14px; flex-wrap: wrap; gap: 6px; }\n    .grand-total .label { font-size: 11px; max-width: 100%; }\n    .grand-total .amount { font-size: 22px; }\n    .grand-total .grand-total-amount-block { align-items: flex-start; text-align: left; }\n    .grand-total .grand-total-savings { font-size: 10.5px; }\n    /* Project Total mid-breakdown box \u2014 was visually competing with the\n       Grand Total on phone. Shrink it. */\n    .project-total { padding: 10px 14px; margin-top: 10px; }\n    .project-total .label { font-size: 10.5px; }\n    .project-total .amount { font-size: 18px; }\n    /* Header amount pill */\n    .total-pill .lbl { font-size: 7.5px; }\n    /* Stage h1 even tighter \u2014 friend feedback was big on this */\n    .stage h1 { font-size: 17px; }\n    .stage .lead { font-size: 12px; margin-bottom: 14px; }\n    .stage-title { font-size: 9.5px; }\n    /* Breakdown header row inside review (project name + collapse button) */\n    .breakdown-header-row { margin-bottom: 10px; gap: 8px; }\n    .breakdown-header-row h3 { font-size: 15px; }\n    /* Math walk + DIY totals */\n    .math-walk h4 { font-size: 10px; margin-bottom: 6px; }\n    .math-walk-row.math-walk-subtotal,\n    .math-walk-row.math-walk-total-savings { font-size: 12.5px; }\n    .diy-comparison h4 { font-size: 12px; }\n    .diy-comparison .diy-blurb { font-size: 11.5px; margin-bottom: 10px; }\n    .diy-comparison .diy-row.diy-total { font-size: 13px; padding-top: 8px; }\n    .diy-comparison .diy-conclusion { padding: 10px 12px; font-size: 12px; }\n    /* Bundle savings pill (the celebrate banner) */\n    .bundle-savings-pill { font-size: 13px; padding: 8px 14px; }\n    .bundle-savings-pill strong { font-size: 15px !important; }\n    /* Math walk-through and DIY comparison are tighter too */\n    .math-walk, .diy-comparison { padding: 12px 14px; }\n    .math-walk-row, .diy-row { font-size: 12px; padding: 5px 0; }\n    .diy-project-item { flex-wrap: wrap; }\n    .diy-project-item span:first-child { flex: 1 1 100%; }\n    .quote-expiry-banner { padding: 10px 12px; font-size: 12px; gap: 8px; }\n    .risk-reversal-box { padding: 14px 16px; }\n    .risk-reversal-box li { font-size: 12px; }\n    .review-notes-box { padding: 12px 14px; }\n    .review-notes-box p { font-size: 13px; }\n\n    /* Modal \u2014 near-full-screen on phone with smaller text */\n    .info-dialog {\n      max-width: calc(100% - 16px);\n      width: calc(100% - 16px);\n      max-height: 96vh;\n      border-radius: 12px;\n    }\n    .info-modal-header { padding: 12px 14px; }\n    .info-modal-header h3 { font-size: 15px; }\n    .info-modal-header .close-x { width: 24px; height: 24px; font-size: 14px; }\n    .info-modal-body { padding: 14px 16px; font-size: 12.5px; line-height: 1.5; }\n    .info-modal-body p { margin-bottom: 8px; }\n    .info-modal-body li { margin-bottom: 4px; font-size: 12.5px; line-height: 1.4; }\n    .info-modal-body strong { font-size: 12.5px; }\n\n    /* \"You're saving $X \u2014 discounts ($X)\" pill was rendering as a vertical\n       column of one-word lines on phone because inline-flex was wrapping\n       inside a fixed-width pill shape. Convert to a full-width rounded\n       block on mobile with normal text flow. */\n    .bundle-savings-pill {\n      display: block;\n      width: 100%;\n      box-sizing: border-box;\n      border-radius: 12px;\n      padding: 10px 14px;\n      font-size: 12.5px;\n      text-align: left;\n      line-height: 1.4;\n    }\n    .bundle-savings-pill strong { font-size: 14px !important; }\n\n    /* Review screen \u2014 fence-performance-(oil) breakdown header was too big */\n    .breakdown-header-row { gap: 6px; }\n    .breakdown-header-row h3 { font-size: 13px !important; line-height: 1.25; }\n    .btn-collapse-project { font-size: 11px; padding: 5px 10px; }\n\n    /* All buttons \u2014 one more notch tighter than before. Still 40px min\n       height for tap-friendliness. */\n    .btn { padding: 9px 16px; font-size: 13px; min-height: 40px; }\n    .btn-secondary { padding: 9px 14px; }\n    .btn-save-exit { padding: 5px 10px; font-size: 11px; }\n\n    /* Custom items section h4 (the one with \"Employee Only\" badge + the\n       \"+ Add Custom Item\" button on the right) was overflowing on phone */\n    .addon-section h4 {\n      font-size: 12px;\n      flex-wrap: wrap; gap: 6px;\n    }\n    .addon-section h4 > span {\n      flex-wrap: wrap !important;\n      gap: 4px !important;\n    }\n    .employee-badge { font-size: 10px; padding: 4px 8px; }\n    .custom-add-btn { font-size: 10px; padding: 4px 8px; }\n    .custom-add-form { padding: 10px; }\n    .custom-add-form input, .custom-add-form select { padding: 6px 8px; font-size: 12px; }\n    .custom-add-form .btn-save, .custom-add-form .btn-cancel { padding: 6px 10px; font-size: 11px; }\n    .custom-item-row { padding: 8px 12px; }\n    .custom-item-row .name { font-size: 12.5px; }\n    .custom-item-row .price { font-size: 12.5px; }\n  }\n  /* Extra-narrow phones (\u2264 400px) \u2014 squeeze further */\n  @media (max-width: 400px) {\n    .stage-wrap { padding: 14px 10px 24px; }\n    .stage h1 { font-size: 20px; }\n    .progress-step { min-width: 64px; font-size: 9px; padding: 6px; }\n    .app-header { padding: 6px 8px; gap: 5px; }\n    /* On tiny phones the company name is the first to go \u2014 the brand\n       logo identifies us already, and the screen real estate is better\n       spent on pills + Save status. The .name still exists in the DOM\n       (and stays visible to screen readers via aria-label on .brand-mark\n       elsewhere) so SR users aren't impacted. */\n    .app-header .brand-mark .name { display: none; }\n    .app-header .brand-mark .logo { width: 24px; height: 24px; }\n    .header-right { max-width: calc(100vw - 44px); gap: 5px; }\n    .total-pill { min-width: 60px; padding: 4px 8px; }\n    .total-pill .amt { font-size: 13px; }\n    .total-pill .lbl { font-size: 7.5px; }\n    /* Save / Jobber pill text \u2192 dot-only on the narrowest phones */\n    .save-pill .save-pill-text,\n    .jobber-pill #jobberPillText { display: none; }\n    .save-pill, .jobber-pill { padding: 5px 6px; gap: 0; min-width: 22px; justify-content: center; }\n    .card-image { height: 150px; }\n    .product-choice-card .prod-image { height: 130px; }\n    .color-grid { grid-template-columns: repeat(2, 1fr) !important; }\n  }\n\n  /* ============ SIDE TRACKER PANEL ============ */\n  /* The header-mounted \"Your Quote\" button was an iframe-era fallback; in\n     the Custom Element build the floating tab on the right edge works fine,\n     so the header button is hidden. */\n  .header-tracker-btn { display: none !important; }\n\n  /* Floating \"Your Quote\" tab \u2014 fixed to the right edge of the viewport,\n     vertically centered. Hidden by default; .visible is toggled on by the\n     renderSidePanel() function once the user has made any meaningful\n     selection. */\n  .side-tracker-tab {\n    position: fixed; right: 0; top: 50%; transform: translateY(-50%);\n    background: var(--green); color: white;\n    padding: 14px 10px; border-radius: 10px 0 0 10px;\n    box-shadow: var(--shadow-md); cursor: pointer;\n    z-index: 999999; display: none;\n    writing-mode: vertical-rl; text-orientation: mixed;\n    font-weight: 700; font-size: 13px; letter-spacing: 0.05em;\n    transition: background 0.15s, padding 0.15s;\n  }\n  .side-tracker-tab:hover { background: var(--green-light); padding-right: 14px; }\n  .side-tracker-tab.visible { display: block; animation: slideTab 0.3s; }\n  /* Hide the floating tab while the side panel itself is open \u2014 otherwise\n     the tab sits on top of the panel at the same right:0 edge. */\n  .side-tracker-tab.hidden-while-open { display: none !important; }\n  @keyframes slideTab {\n    from { transform: translateY(-50%) translateX(100%); }\n    to   { transform: translateY(-50%) translateX(0); }\n  }\n  /* Count chip hidden globally \u2014 the user prefers the tab to read just\n     \"Your Quote\" without the running selection count attached. */\n  .side-tracker-tab .count { display: none !important; }\n\n  .side-tracker {\n    position: fixed; right: 0; top: 0; bottom: 0;\n    width: 360px; max-width: 90vw;\n    background: var(--paper); box-shadow: -8px 0 24px rgba(0,0,0,0.12);\n    z-index: 95; transform: translateX(100%);\n    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n    display: flex; flex-direction: column;\n  }\n  .side-tracker.open { transform: translateX(0); }\n  .side-tracker-header {\n    padding: 16px 20px; border-bottom: 1px solid var(--line);\n    display: flex; align-items: center; justify-content: space-between;\n    background: var(--navy); color: white;\n  }\n  .side-tracker-header h3 { font-size: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin: 0; }\n  .side-tracker-header .close-btn {\n    background: rgba(255,255,255,0.15); color: white;\n    width: 30px; height: 30px; border-radius: 8px;\n    font-size: 18px; font-weight: 700;\n    display: flex; align-items: center; justify-content: center;\n    transition: background 0.15s;\n  }\n  .side-tracker-header .close-btn:hover { background: rgba(255,255,255,0.25); }\n  .side-tracker-body {\n    flex: 1 1 auto; min-height: 0; overflow-y: auto;\n    padding: 12px 16px;\n    touch-action: pan-y;\n    -webkit-overflow-scrolling: touch;\n    overscroll-behavior: contain;\n  }\n  .side-tracker-body .empty-state {\n    text-align: center; padding: 24px 10px; color: var(--slate);\n    font-size: 12px;\n  }\n  .tracker-section { margin-bottom: 14px; }\n  .tracker-section h4 {\n    font-size: 10px; color: var(--slate);\n    text-transform: uppercase; letter-spacing: 0.08em;\n    font-weight: 700; margin-bottom: 6px;\n    padding-bottom: 5px; border-bottom: 1px solid var(--line);\n  }\n  .tracker-row {\n    display: flex; align-items: center; gap: 8px;\n    padding: 6px 0; border-bottom: 1px dashed var(--line);\n    font-size: 12px;\n  }\n  .tracker-row:last-child { border-bottom: none; }\n  .tracker-row .tr-label { color: var(--slate); font-size: 9.5px; font-weight: 600; width: 56px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.04em; }\n  /* Truncate long values (especially emails) with ellipsis so the edit\n     button always stays visible on the right. min-width:0 is required for\n     a flex child to actually shrink below its content width. */\n  .tracker-row .tr-value {\n    flex: 1 1 auto; min-width: 0;\n    color: var(--navy); font-weight: 600;\n    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;\n  }\n  .tracker-row .tr-actions { display: flex; gap: 4px; flex-shrink: 0; }\n  .tracker-row .tr-actions button {\n    width: 24px; height: 24px; border-radius: 5px;\n    font-size: 11px; display: flex; align-items: center; justify-content: center;\n    transition: background 0.12s;\n  }\n  .tracker-row .tr-actions .edit { background: var(--line-soft); color: var(--navy); }\n  .tracker-row .tr-actions .edit:hover { background: var(--green-pale); color: var(--green); }\n  .tracker-row .tr-actions .clear { background: var(--line-soft); color: var(--coral); }\n  .tracker-row .tr-actions .clear:hover { background: var(--coral-pale); }\n  .side-tracker-footer {\n    padding: 10px 14px 12px;\n    border-top: 2px solid var(--green-pale);\n    background: var(--green-pale);\n    display: flex; align-items: center; gap: 10px;\n  }\n  .side-tracker-footer .tot-block {\n    margin-left: auto;\n    display: flex; flex-direction: column;\n    align-items: flex-end; line-height: 1.1;\n  }\n  .side-tracker-footer .tot-label {\n    font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.06em;\n    color: var(--slate); font-weight: 700;\n  }\n  .side-tracker-footer .tot-amt {\n    font-size: 18px; font-weight: 800; color: var(--green); letter-spacing: -0.3px;\n    margin-top: 2px;\n  }\n  .side-tracker-overlay {\n    position: fixed; inset: 0;\n    background: rgba(0,0,0,0.3);\n    z-index: 94; opacity: 0; pointer-events: none;\n    transition: opacity 0.25s;\n  }\n  .side-tracker-overlay.visible { opacity: 1; pointer-events: auto; }\n\n  /* ============ INFO BUTTON + MODAL ============ */\n  .info-btn {\n    display: inline-flex; align-items: center; justify-content: center;\n    width: 18px; height: 18px; border-radius: 50%;\n    background: var(--slate); color: white;\n    font-size: 11px; font-weight: 800; font-family: serif;\n    cursor: pointer; vertical-align: middle;\n    margin-left: 6px; user-select: none;\n    transition: all 0.15s;\n  }\n  .info-btn:hover, .info-btn:focus { background: var(--navy); transform: scale(1.1); outline: none; }\n  /* Native <dialog> \u2014 renders in the browser's top layer via showModal(),\n     escaping any containing-block / transform restrictions imposed by Wix's\n     Custom Element wrapper. The ::backdrop pseudo-element handles the\n     overlay automatically. Explicit fixed centering as a safety net for\n     Shadow-DOM + transformed-ancestor edge cases where the default\n     dialog auto-centering misbehaves. */\n  .info-dialog {\n    background: var(--paper); border-radius: 16px;\n    border: none; padding: 0;\n    max-width: 540px; width: calc(100% - 32px);\n    max-height: 85vh; overflow-y: auto;\n    box-shadow: var(--shadow-lg);\n    color: var(--navy);\n    position: fixed;\n    top: 50%; left: 50%;\n    transform: translate(-50%, -50%);\n    margin: 0;\n  }\n  /* Pricing admin reuses .info-dialog but wants more horizontal room +\n     a vertical layout with sticky tabs and footer. Larger than the\n     stock info modal because Settings has a lot to expose now (tier\n     rates, prep, extras, addons, discounts, DIY knobs, reps, devices). */\n  .pricing-admin-dialog { max-width: 1040px; width: calc(100% - 32px); max-height: 92vh; }\n  .pricing-admin-dialog .pa-tabs {\n    display: flex; gap: 4px;\n    padding: 8px 14px 0;\n    border-bottom: 1px solid var(--line);\n    position: sticky; top: 0;\n    background: var(--paper); z-index: 2;\n  }\n  .pa-tab {\n    background: transparent; border: none;\n    padding: 10px 16px; cursor: pointer;\n    font-size: 13px; font-weight: 600; color: var(--slate);\n    border-bottom: 3px solid transparent;\n    border-radius: 6px 6px 0 0;\n    transition: background 0.12s, color 0.12s, border-color 0.12s;\n  }\n  .pa-tab:hover { background: var(--line-soft); color: var(--navy); }\n  .pa-tab.active { color: var(--navy); border-bottom-color: var(--green); background: var(--line-soft); }\n  .pa-body { padding: 16px 20px; }\n  .pa-section { margin-bottom: 22px; }\n  .pa-section-title {\n    font-size: 13px; font-weight: 700; color: var(--navy);\n    text-transform: uppercase; letter-spacing: 0.06em;\n    margin: 0 0 10px;\n  }\n  .pa-grid {\n    display: grid;\n    grid-template-columns: minmax(120px, 1fr) repeat(3, 110px);\n    gap: 6px 10px; align-items: center;\n  }\n  .pa-grid-head {\n    font-size: 11px; font-weight: 700; color: var(--slate);\n    text-transform: uppercase; letter-spacing: 0.05em;\n    padding-bottom: 4px;\n    text-align: right;\n  }\n  .pa-grid-head:first-child { text-align: left; }\n  .pa-grid-label {\n    font-size: 13px; color: var(--navy); font-weight: 600;\n  }\n  .pa-grid input[type=\"number\"] {\n    width: 100%; padding: 6px 8px;\n    background: var(--paper); color: var(--navy);\n    border: 1px solid var(--line); border-radius: 6px;\n    font-size: 13px; font-family: ui-monospace, monospace;\n    text-align: right;\n    -moz-appearance: textfield;\n  }\n  .pa-grid input[type=\"number\"]:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 2px rgba(64, 156, 105, 0.16); }\n  .pa-grid input[type=\"number\"]::-webkit-outer-spin-button,\n  .pa-grid input[type=\"number\"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }\n  .pa-grid .pa-hint { font-size: 11px; color: var(--slate); grid-column: 1 / -1; margin-top: 2px; }\n  .pa-changed { background: #fff8eb; }\n  /* Read-only value chip \u2014 replaces the editable number input now that\n     pricing is shown for reference rather than tunable from the UI. */\n  .pa-readonly {\n    display: inline-block; width: 100%; box-sizing: border-box;\n    padding: 6px 10px;\n    background: var(--line-soft); color: var(--navy);\n    border: 1px solid var(--line); border-radius: 6px;\n    font-size: 13px; font-family: ui-monospace, monospace;\n    text-align: right; font-weight: 600;\n  }\n  .pa-readonly.muted { color: var(--slate); font-weight: 400; }\n  .pa-input {\n    width: 100%; max-width: 110px; padding: 6px 8px;\n    border: 1.5px solid var(--line); border-radius: 8px;\n    font: inherit; font-size: 13px; font-weight: 600; color: var(--navy);\n    background: var(--paper); box-sizing: border-box;\n  }\n  .pa-input:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(45, 110, 78, 0.12); }\n  /* Gold ring = this cell differs from the code default (an override). */\n  .pa-input.pa-overridden { border-color: var(--gold); background: var(--gold-pale); }\n  .pa-footer {\n    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;\n    padding: 14px 20px;\n    border-top: 1px solid var(--line);\n    position: sticky; bottom: 0;\n    background: var(--paper); z-index: 2;\n  }\n  .pa-meta { flex: 1; font-size: 11px; color: var(--slate); min-width: 140px; }\n  .pa-toast {\n    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);\n    background: var(--navy); color: white;\n    padding: 12px 22px; border-radius: 999px;\n    font-size: 13px; font-weight: 600;\n    box-shadow: var(--shadow-lg);\n    opacity: 0; pointer-events: none;\n    transition: opacity 0.2s, transform 0.2s;\n    z-index: 9999;\n  }\n  .pa-toast.show { opacity: 1; transform: translateX(-50%) translateY(-8px); }\n  @media (max-width: 640px) {\n    /* (No width override here \u2014 the bottom-sheet rule makes the dialog\n       full-width on phones; the old calc(100% - 16px) was fighting it.) */\n    /* Reflow each pricing row for phones: the label takes its own full\n       line, and the three tier fields sit in a 3-up row beneath it. The\n       old fixed 90px columns (label + 270px + gaps) ran off-screen. */\n    .pa-grid { grid-template-columns: repeat(3, 1fr); gap: 4px 8px; font-size: 12px; }\n    .pa-grid .pa-grid-label { grid-column: 1 / -1; margin-top: 10px; font-size: 12.5px; }\n    .pa-grid .pa-grid-head { text-align: center; font-size: 10px; padding-bottom: 0; }\n    /* The \"Project\" corner header has no column of its own anymore. */\n    .pa-grid .pa-grid-head:first-child { display: none; }\n    /* 16px font stops iOS from zoom-jumping into every field (a big part\n       of what made Settings feel broken on a phone). */\n    .pa-input, .pa-grid input[type=\"number\"] {\n      max-width: none; width: 100%;\n      font-size: 16px; padding: 8px 6px;\n      box-sizing: border-box;\n    }\n    .pa-section-title { font-size: 12px; }\n    .pa-preview { font-size: 11.5px; padding: 9px 12px; }\n    .pa-body { padding-bottom: 20px; }\n    .pa-tabs { padding: 6px 6px 0; }\n    .pa-tab { padding: 8px 10px; font-size: 12px; }\n    .pa-footer { padding: 10px 14px; }\n  }\n  .info-dialog[open] { animation: modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }\n  .info-dialog::backdrop { background: rgba(26, 37, 64, 0.55); animation: fadeIn 0.2s; }\n  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }\n  /* Keep the centering translate baked into every keyframe of the\n     pop animation, otherwise the dialog snaps from a corner to center\n     as the animation ends. */\n  /* Keep the centering translate baked into every keyframe of the pop\n     animation, otherwise the dialog snaps from a corner to center as the\n     animation ends. */\n  @keyframes modalPop {\n    from { transform: translate(-50%, -50%) scale(0.92); opacity: 0; }\n    to   { transform: translate(-50%, -50%) scale(1);    opacity: 1; }\n  }\n  .info-modal-header {\n    padding: 18px 22px; border-bottom: 1px solid var(--line);\n    display: flex; justify-content: space-between; align-items: center;\n  }\n  .info-modal-header h3 { margin: 0; font-size: 18px; color: var(--navy); }\n  .info-modal-header .close-x {\n    background: var(--line-soft); color: var(--slate);\n    width: 28px; height: 28px; border-radius: 6px;\n    font-size: 16px; font-weight: 700;\n    display: flex; align-items: center; justify-content: center;\n  }\n  .info-modal-header .close-x:hover { background: var(--coral-pale); color: var(--coral); }\n  .info-modal-body { padding: 20px 22px; font-size: 14px; line-height: 1.6; color: var(--navy); }\n  .info-modal-body p { margin-bottom: 12px; }\n  .info-modal-body strong { color: var(--green); }\n  .info-modal-body ul { margin: 8px 0 12px 20px; }\n  .info-modal-body li { margin-bottom: 6px; }\n  .info-modal-body .info-img {\n    width: 100%; max-height: 200px; object-fit: cover;\n    border-radius: 10px; margin-bottom: 14px;\n  }\n\n  /* AUTH OVERLAY \u2014 full-cover gate shown until the rep signs in.\n     Sits above everything else (z-index 5000+) with its own backdrop\n     so the calc behind it can't be interacted with. */\n  .auth-gate {\n    position: fixed; inset: 0;\n    background: linear-gradient(135deg, #1a2540 0%, #2a3556 100%);\n    z-index: 5000;\n    display: flex; align-items: center; justify-content: center;\n    padding: 20px;\n    -webkit-overflow-scrolling: touch;\n    overflow-y: auto;\n  }\n  .auth-card {\n    background: var(--paper);\n    border-radius: 16px;\n    padding: 32px 28px;\n    max-width: 420px;\n    width: 100%;\n    box-shadow: 0 20px 60px rgba(0,0,0,0.35);\n  }\n  .auth-card .auth-logo {\n    width: 56px; height: 56px; border-radius: 12px;\n    background: var(--navy); color: white;\n    display: flex; align-items: center; justify-content: center;\n    font-size: 22px; font-weight: 800;\n    margin: 0 auto 16px;\n  }\n  .auth-card h2 {\n    text-align: center;\n    margin: 0 0 6px;\n    color: var(--navy);\n    font-size: 20px;\n  }\n  .auth-card .auth-sub {\n    text-align: center;\n    color: var(--slate);\n    font-size: 13px;\n    margin-bottom: 22px;\n  }\n  .auth-card .field { margin-bottom: 14px; }\n  .auth-card .field label {\n    display: block;\n    font-size: 12px; font-weight: 700;\n    color: var(--navy);\n    text-transform: uppercase; letter-spacing: 0.05em;\n    margin-bottom: 6px;\n  }\n  .auth-card .field input {\n    width: 100%; box-sizing: border-box;\n    padding: 12px 14px;\n    border: 1.5px solid var(--line);\n    border-radius: 8px;\n    font-size: 16px;\n    color: var(--navy);\n    background: var(--paper);\n  }\n  .auth-card .field input:focus {\n    outline: none; border-color: var(--green);\n    box-shadow: 0 0 0 3px rgba(64, 156, 105, 0.18);\n  }\n  .auth-card .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }\n  .auth-card .auth-submit {\n    width: 100%; padding: 14px; min-height: 52px;\n    margin-top: 8px;\n    background: var(--green); color: white;\n    border: none; border-radius: 8px;\n    font-size: 15px; font-weight: 700;\n    cursor: pointer; transition: background 0.12s, transform 0.06s;\n  }\n  .auth-card .auth-submit:hover { background: #3a755a; }\n  .auth-card .auth-submit:active { transform: scale(0.99); }\n  .auth-card .auth-submit:disabled { opacity: 0.6; cursor: not-allowed; }\n  .auth-card .auth-error {\n    background: #ffeded;\n    color: #a23636;\n    padding: 10px 14px;\n    border-radius: 8px;\n    font-size: 13px;\n    margin-bottom: 14px;\n    display: none;\n  }\n  .auth-card .auth-error.show { display: block; }\n  .auth-card .auth-bootstrap-banner {\n    background: #fff8eb;\n    border: 1.5px solid #f1d68e;\n    color: #6b4d00;\n    padding: 12px 14px;\n    border-radius: 8px;\n    font-size: 13px;\n    margin-bottom: 16px;\n  }\n  .auth-card .auth-status {\n    display: flex; align-items: center; justify-content: center; gap: 10px;\n    padding: 14px;\n    background: #f5f9ff;\n    border-radius: 8px;\n    font-size: 14px; font-weight: 600;\n    color: var(--navy);\n    margin-bottom: 16px;\n  }\n  .auth-card .auth-status.success {\n    background: #e8f7ee;\n    color: #1f6b3a;\n  }\n  .auth-card .auth-status .spinner {\n    width: 16px; height: 16px;\n    border: 2px solid #d9e3f0;\n    border-top-color: var(--navy);\n    border-radius: 50%;\n    animation: authSpin 0.7s linear infinite;\n  }\n  @keyframes authSpin { to { transform: rotate(360deg); } }\n  .auth-card .auth-help {\n    font-size: 11px;\n    color: var(--slate);\n    text-align: center;\n    margin-top: 18px;\n    line-height: 1.5;\n  }\n\n  /* Header rep chip */\n  .rep-chip {\n    display: inline-flex; align-items: center; gap: 6px;\n    padding: 6px 12px;\n    background: var(--line-soft);\n    border-radius: 999px;\n    font-size: 12px; font-weight: 700;\n    color: var(--navy);\n    cursor: pointer;\n    -webkit-tap-highlight-color: transparent;\n  }\n  .rep-chip:hover { background: var(--line); }\n  .rep-chip .rep-initials {\n    width: 22px; height: 22px;\n    background: var(--navy); color: white;\n    border-radius: 50%;\n    display: inline-flex; align-items: center; justify-content: center;\n    font-size: 10px; font-weight: 800;\n  }\n  .rep-chip-menu {\n    position: absolute;\n    background: var(--paper);\n    border: 1px solid var(--line);\n    border-radius: 8px;\n    box-shadow: var(--shadow-md);\n    min-width: 200px;\n    padding: 6px;\n    z-index: 4000;\n  }\n  .rep-chip-menu button {\n    display: flex; align-items: center; gap: 8px;\n    width: 100%;\n    background: transparent; border: none;\n    padding: 10px 12px;\n    text-align: left;\n    font-size: 13px; color: var(--navy);\n    border-radius: 6px;\n    cursor: pointer;\n  }\n  .rep-chip-menu button:hover { background: var(--line-soft); }\n  .rep-chip-menu .rep-menu-info {\n    padding: 10px 12px;\n    border-bottom: 1px solid var(--line);\n    margin-bottom: 4px;\n    font-size: 12px;\n    color: var(--slate);\n  }";
-  const HTML  = "<!-- AUTH GATE \u2014 covers everything until the rep signs in. JS toggles\n     it via #authGate.style.display and swaps the inner form depending\n     on bootstrap state (no reps yet \u2192 create-first-admin form vs.\n     normal Sign-In form). The whole gate is rendered upfront and\n     hidden via CSS; the JS only flips a single root style. -->\n<!-- Default-VISIBLE: the gate covers the calc until authStatus\n     resolves. Otherwise the dashboard flashes briefly before the\n     gate slides in. JS hides this whenever auth is confirmed. -->\n<div class=\"auth-gate\" id=\"authGate\">\n  <div class=\"auth-card\">\n    <div class=\"auth-logo\">SS</div>\n    <h2 id=\"authTitle\">Loading\u2026</h2>\n    <div class=\"auth-sub\" id=\"authSub\">Checking your session\u2026</div>\n    <div class=\"auth-bootstrap-banner\" id=\"authBootstrapBanner\" style=\"display:none;\">\n      <strong>First-time setup.</strong> No reps exist yet \u2014 the first account you create becomes the admin and can manage everyone else.\n    </div>\n    <div class=\"auth-error\" id=\"authError\"></div>\n    <!-- Status line: shows \"Signing in\u2026\" then \"\u2713 Signed in\" briefly\n         before the gate hides. Hidden by default. -->\n    <div class=\"auth-status\" id=\"authStatusLine\" style=\"display:none;\"></div>\n    <form id=\"authForm\" style=\"display:none;\">\n      <div class=\"auth-bootstrap-fields\" id=\"authBootstrapFields\" style=\"display:none;\">\n        <div class=\"field\">\n          <label>Full name</label>\n          <input type=\"text\" id=\"authDisplayName\" autocomplete=\"name\" placeholder=\"Adrian Gluchowski\">\n        </div>\n        <div class=\"field\">\n          <label>Email <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(optional)</span></label>\n          <input type=\"email\" id=\"authEmail\" autocomplete=\"email\" placeholder=\"rep@superiorstainsolutions.com\">\n        </div>\n      </div>\n      <div class=\"field-row\">\n        <div class=\"field\">\n          <label>Initials</label>\n          <input type=\"text\" id=\"authInitials\" autocomplete=\"username\" inputmode=\"text\" autocapitalize=\"characters\" maxlength=\"6\" placeholder=\"AG\">\n        </div>\n        <div class=\"field\">\n          <label>PIN</label>\n          <input type=\"password\" id=\"authPin\" autocomplete=\"current-password\" inputmode=\"numeric\" pattern=\"[0-9]*\" maxlength=\"12\" placeholder=\"\u2022 \u2022 \u2022 \u2022\">\n        </div>\n      </div>\n      <button type=\"submit\" class=\"auth-submit\" id=\"authSubmit\">Sign in</button>\n    </form>\n    <div class=\"auth-help\" id=\"authHelpLine\" style=\"display:none;\">\n      Forgot your PIN? Ask an admin to reset it from Settings \u2192 Reps. Sessions auto-expire after 7 days of inactivity.\n    </div>\n  </div>\n</div>\n\n<div class=\"app\">\n\n  <header class=\"app-header\">\n    <div class=\"brand-mark\">\n      <div class=\"logo\">SS</div>\n      <div>\n        <div class=\"name\">Superior Stain Solutions</div>\n        <div class=\"sub\">Quote Builder \u00b7 Internal</div>\n      </div>\n    </div>\n    <div class=\"header-right\">\n      <div class=\"quote-id-tag\">Quote <span class=\"quote-num\" id=\"quoteNum\">\u2014</span></div>\n      <span class=\"save-pill hidden\" id=\"savePill\" title=\"Cloud save status\"><span class=\"dot\"></span><span class=\"save-pill-text\">Idle</span></span>\n      <button type=\"button\" class=\"jobber-pill\" id=\"jobberPill\" onclick=\"openJobberPanel()\" title=\"Jobber integration\"><span class=\"jp-dot\"></span><span id=\"jobberPillText\">Jobber</span></button>\n      <div class=\"total-pill secondary\" id=\"activeProjectPill\" style=\"display:none\">\n        <div class=\"lbl\">This Project</div>\n        <div class=\"amt\" id=\"activeProjectAmount\">$0</div>\n      </div>\n      <div class=\"total-pill\" id=\"totalPill\" style=\"display:none\">\n        <div class=\"lbl\">Quote Total</div>\n        <div class=\"amt\" id=\"totalAmount\">$0</div>\n      </div>\n      <button type=\"button\" id=\"headerSideTrackerBtn\" class=\"header-tracker-btn\" onclick=\"openSideTracker()\" style=\"display:none;\">\n        \ud83d\udccb Your Quote <span class=\"header-tracker-count\" id=\"headerSideTrackerCount\">0</span>\n      </button>\n    </div>\n  </header>\n\n  <!-- PROJECT BUBBLES \u2014 shows all projects in this quote, lets employee jump\n       between them. Numbers repeat-types (\"Fence #1\", \"Fence #2\") automatically. -->\n  <div class=\"project-bubbles\" id=\"projectBubbles\" style=\"display:none;\"></div>\n\n  <!-- PROGRESS \u2014 10 steps. Default hidden; refreshProgressBarVisibility()\n       reveals it only when a quote-building stage (1\u201310) is the visible\n       one. Inline display:none beats any timing race where the JS hasn't\n       wired up the visibility logic yet. -->\n  <nav class=\"progress\" id=\"progress\" style=\"display:none;\">\n    <div class=\"progress-step active reachable\" data-stage=\"1\"><span class=\"step-num\">Step 1</span>Customer</div>\n    <div class=\"progress-step\" data-stage=\"2\"><span class=\"step-num\">Step 2</span>Project</div>\n    <div class=\"progress-step\" data-stage=\"3\"><span class=\"step-num\">Step 3</span>Measurements</div>\n    <div class=\"progress-step\" data-stage=\"4\"><span class=\"step-num\">Step 4</span>Condition</div>\n    <div class=\"progress-step\" data-stage=\"5\"><span class=\"step-num\">Step 5</span>Product</div>\n    <div class=\"progress-step\" data-stage=\"6\"><span class=\"step-num\">Step 6</span>Tier</div>\n    <div class=\"progress-step\" data-stage=\"7\"><span class=\"step-num\">Step 7</span>Color</div>\n    <div class=\"progress-step\" data-stage=\"8\"><span class=\"step-num\">Step 8</span>Add-ons</div>\n    <div class=\"progress-step\" data-stage=\"9\"><span class=\"step-num\">Step 9</span>Discounts</div>\n    <div class=\"progress-step\" data-stage=\"10\"><span class=\"step-num\">Step 10</span>Review</div>\n  </nav>\n\n  <main class=\"stage-wrap\">\n\n    <!-- DASHBOARD \u2014 shown first when calculator loads (employee-only).\n         Cloud-synced: drafts, finished, archived, and trashed quotes all\n         live in the EmployeeQuotes Wix collection. localStorage stays as\n         an offline cache. -->\n    <section class=\"stage visible\" id=\"stage-dashboard\">\n      <div class=\"dash-title-row\">\n        <div>\n          <div class=\"stage-title\">Employee Dashboard</div>\n          <h1>Welcome back. Pick up where you left off?</h1>\n          <p class=\"lead\">Your quotes auto-save to the cloud as you work. Search, archive, or resume from anywhere.</p>\n        </div>\n        <!-- Utility actions \u2014 meta operations on the dashboard itself,\n             intentionally pulled out of the primary toolbar so they\n             stop competing with Start-New-Quote and the search bar. -->\n        <div class=\"dash-utility\">\n          <button class=\"dash-util-btn\" onclick=\"refreshDashboardHard()\" title=\"Reload to get the latest version of the calculator + freshest data\" aria-label=\"Refresh\">\n            <span class=\"ico\">\ud83d\udd04</span><span class=\"lbl\">Refresh</span>\n          </button>\n          <button class=\"dash-util-btn\" id=\"bulkSelectToggle\" onclick=\"toggleBulkMode()\" title=\"Select multiple quotes to move, archive, or delete in one go\" aria-label=\"Select multiple\">\n            <span class=\"ico\">\u2611\ufe0f</span><span class=\"lbl\">Select</span>\n          </button>\n          <button class=\"dash-util-btn\" id=\"dashUtilSettings\" onclick=\"openPricingAdmin()\" title=\"Settings \u2014 pricing rules, reps, devices, and more\" aria-label=\"Settings\">\n            <span class=\"ico\">\u2699\ufe0f</span><span class=\"lbl\">Settings</span>\n          </button>\n        </div>\n      </div>\n\n      <div class=\"dash-stats\" id=\"dashStats\">\n        <div class=\"stat-card\" id=\"statCardWeek\" onclick=\"toggleDashDateFilter('week')\" title=\"Click to show only this week's quotes\" role=\"button\" tabindex=\"0\">\n          <div class=\"stat-num\" id=\"statWeekCount\">\u2014</div>\n          <div class=\"stat-sub\" id=\"statWeekTotal\">&nbsp;</div>\n          <div class=\"stat-lbl\">This week</div>\n        </div>\n        <div class=\"stat-card\" id=\"statCardMonth\" onclick=\"toggleDashDateFilter('month')\" title=\"Click to show only this month's quotes\" role=\"button\" tabindex=\"0\">\n          <div class=\"stat-num\" id=\"statMonthCount\">\u2014</div>\n          <div class=\"stat-sub\" id=\"statMonthTotal\">&nbsp;</div>\n          <div class=\"stat-lbl\">This month</div>\n        </div>\n      </div>\n\n      <!-- DASHBOARD TABS \u2014 My Quotes / Customer Leads / Analytics.\n           Everything that used to stack vertically (rep quote folders,\n           then three customer-calc folders bolted on underneath) now\n           lives under its own tab so each area gets the full width. -->\n      <div class=\"dash-tabs\" id=\"dashTabs\" role=\"tablist\">\n        <button class=\"dash-tab active\" id=\"dashTabBtnQuotes\" role=\"tab\" onclick=\"switchDashTab('quotes')\">\ud83d\udccb My Quotes</button>\n        <button class=\"dash-tab\" id=\"dashTabBtnLeads\" role=\"tab\" onclick=\"switchDashTab('leads')\">\ud83c\udf10 Customer Leads <span class=\"tab-count\" id=\"dashTabLeadsCount\" style=\"display:none;\">0</span></button>\n        <button class=\"dash-tab\" id=\"dashTabBtnAnalytics\" role=\"tab\" onclick=\"switchDashTab('analytics')\">\ud83d\udcca Analytics</button>\n      </div>\n\n      <div id=\"dashTabQuotes\">\n      <!-- Recent Jobber Requests panel \u2014 customer-submitted quote\n           requests pulled from Jobber. Click one to start a new quote\n           pre-filled with that customer's info. Hidden when empty\n           (or when not connected to Jobber). -->\n      <details id=\"reqPanel\" class=\"req-panel\" style=\"display:none;\">\n        <summary>\n          <span class=\"chev\">\u25b8</span>\n          <span class=\"rp-title\">\ud83d\udce5 Recent Jobber requests</span>\n          <span id=\"reqPanelCount\" class=\"folder-count\">0</span>\n        </summary>\n        <div class=\"req-panel-toolbar\">\n          <input type=\"search\" id=\"reqSearch\" placeholder=\"Search name, email, phone, city, title\u2026\" aria-label=\"Search requests\">\n        </div>\n        <div id=\"reqPanelBody\" class=\"req-panel-body\"></div>\n      </details>\n\n      <div class=\"dash-toolbar\">\n        <button class=\"btn btn-primary\" id=\"dashNewQuoteBtn\" onclick=\"startNewQuote()\">\uff0b Start New Quote</button>\n        <div class=\"dash-search\">\n          <input type=\"search\" id=\"dashSearch\" placeholder=\"Search name, phone, address, ID\u2026\" aria-label=\"Search quotes\">\n        </div>\n      </div>\n      <div class=\"dash-filter-chip\" id=\"dashFilterChip\" style=\"display:none;\"></div>\n\n      <!-- Bulk-action bar \u2014 slides in when bulkMode is on AND at least\n           one row is selected. Actions adapt to which folders the\n           selected rows live in (e.g. \"Delete Forever\" only when the\n           selection contains trash items). -->\n      <div id=\"bulkActionBar\" class=\"bulk-action-bar\" style=\"display:none;\"></div>\n\n      <div id=\"dashContent\"></div>\n      </div><!-- /dashTabQuotes -->\n\n      <div id=\"dashTabLeads\" style=\"display:none;\">\n      <div id=\"leadsEmptyState\" class=\"folder-empty\" style=\"display:none; padding: 28px 16px; text-align:center;\">No customer-calculator activity yet. Submissions, needs-review items, and abandoned drafts from the public calculators will show up here.</div>\n      <!-- Customer Submissions folder \u2014 reads from the CustomerSubmissions\n           Wix collection (populated by /_functions/submitCustomerEstimate\n           from the public customer calculator). Distinct from the gold\n           \"Recent Jobber requests\" panel above, which surfaces ALL\n           inbound Jobber Requests regardless of source \u2014 this folder is\n           filtered to ONLY rows the customer-calculator created.\n           Sits at the very bottom so it never crowds Drafts/Finished. -->\n      <!-- Customer Submissions \u2014 finished, cleanly-pushed customer-calc\n           submissions (jobberOk:true). Search filters across all of\n           them; the Analytics button opens the aggregate-stats modal. -->\n      <details id=\"custSubsPanel\" class=\"folder cust-subs-folder\" style=\"display:none;\">\n        <summary onclick=\"onCustSubsToggle(event)\">\n          <span class=\"chev\">\u25b8</span>\n          <span class=\"folder-icon\">\ud83d\udce5</span>\n          <span class=\"folder-label\">Customer Submissions</span>\n          <span id=\"custSubsCount\" class=\"folder-count\">0</span>\n        </summary>\n        <div class=\"folder-body\">\n          <div class=\"cust-subs-toolbar\">\n            <input type=\"search\" id=\"custSubsSearch\" placeholder=\"Search name, email, phone, reference\u2026\" aria-label=\"Search customer submissions\">\n            <button type=\"button\" class=\"cust-subs-analytics-btn\" onclick=\"openCustCalcAnalytics()\" title=\"View aggregate stats for the customer calculator\">\ud83d\udcca Analytics</button>\n          </div>\n          <div id=\"custSubsBody\"></div>\n        </div>\n      </details>\n\n      <!-- Submissions \u2014 Needs Review \u2014 customer-calc submissions where\n           the Jobber push didn't go through cleanly (jobberOk:false).\n           These need a rep to manually create the Jobber entries.\n           Sister folder to Customer Submissions, sits directly below.\n           Coral accent so reps can tell at a glance. -->\n      <details id=\"custDraftsPanel\" class=\"folder cust-drafts-folder\" style=\"display:none;\">\n        <summary onclick=\"onCustDraftsToggle(event)\">\n          <span class=\"chev\">\u25b8</span>\n          <span class=\"folder-icon\">\u26a0\ufe0f</span>\n          <span class=\"folder-label\">Submissions \u2014 Needs Review</span>\n          <span id=\"custDraftsCount\" class=\"folder-count\">0</span>\n        </summary>\n        <div class=\"folder-body\">\n          <div class=\"cust-subs-toolbar\">\n            <input type=\"search\" id=\"custDraftsSearch\" placeholder=\"Search needs-review submissions\u2026\" aria-label=\"Search needs-review submissions\">\n          </div>\n          <div id=\"custDraftsBody\"></div>\n        </div>\n      </details>\n\n      <!-- Customer Drafts (abandoned) \u2014 distinct from the rep's own\n           Drafts folder up top. These rows come from CustomerDrafts,\n           populated by the customer-calc on every stage transition\n           after Step 1 contact info is captured. Once the customer\n           submits, the backend deletes the matching draft, so this\n           folder only ever shows real abandoned mid-flow leads. Amber\n           accent + Stage X-of-10 chips on each card. -->\n      <details id=\"custAbandonedPanel\" class=\"folder cust-abandoned-folder\" style=\"display:none;\">\n        <summary onclick=\"onCustAbandonedToggle(event)\">\n          <span class=\"chev\">\u25b8</span>\n          <span class=\"folder-icon\">\u23f3</span>\n          <span class=\"folder-label\">Customer Drafts (abandoned)</span>\n          <span id=\"custAbandonedCount\" class=\"folder-count\">0</span>\n        </summary>\n        <div class=\"folder-body\">\n          <div class=\"cust-subs-toolbar\">\n            <input type=\"search\" id=\"custAbandonedSearch\" placeholder=\"Search abandoned drafts\u2026\" aria-label=\"Search abandoned customer drafts\">\n          </div>\n          <div id=\"custAbandonedBody\"></div>\n        </div>\n      </details>\n      </div><!-- /dashTabLeads -->\n\n      <!-- ANALYTICS TAB \u2014 inline (no more modal hunting). KPI cards,\n           SW-vs-regular source split, weekly volume, project mix, and\n           the abandonment funnel. Data loads lazily on first open. -->\n      <div id=\"dashTabAnalytics\" style=\"display:none;\">\n        <div id=\"dashAnalyticsBody\"><div class=\"skel-stack\"><div class=\"skel\" style=\"width:55%\"></div><div class=\"skel tall\"></div><div class=\"skel\" style=\"width:80%\"></div><div class=\"skel tall\"></div></div></div>\n      </div>\n\n      <!-- MOBILE BOTTOM NAV + FAB \u2014 phones only (CSS-gated). Inside the\n           dashboard section so they vanish automatically on every other\n           stage (.stage display:none hides fixed children too). -->\n      <nav class=\"dash-bottom-nav\" id=\"dashBottomNav\">\n        <button class=\"dbn-btn active\" id=\"dbnQuotes\" onclick=\"switchDashTab('quotes')\"><span class=\"i\">\ud83d\udccb</span>Quotes</button>\n        <button class=\"dbn-btn\" id=\"dbnLeads\" onclick=\"switchDashTab('leads')\"><span class=\"i\">\ud83c\udf10</span>Leads<span class=\"dbn-count\" id=\"dbnLeadsCount\" style=\"display:none;\">0</span></button>\n        <button class=\"dbn-btn\" id=\"dbnAnalytics\" onclick=\"switchDashTab('analytics')\"><span class=\"i\">\ud83d\udcca</span>Analytics</button>\n        <button class=\"dbn-btn\" onclick=\"openPricingAdmin()\"><span class=\"i\">\u2699\ufe0f</span>Settings</button>\n      </nav>\n      <button class=\"dash-fab\" id=\"dashFab\" onclick=\"startNewQuote()\" aria-label=\"Start new quote\" title=\"Start new quote\">\uff0b</button>\n    </section>\n\n    <!-- Customer Calc Analytics modal \u2014 opened from the Customer\n         Submissions folder header. Aggregates 90 days of submissions:\n         volume, conversion (Jobber success), callback rate, project mix,\n         and average estimate dollar value. Out-of-the-way UI: only\n         loads on demand. -->\n    <dialog class=\"info-dialog cust-analytics-dialog\" id=\"custCalcAnalyticsDialog\">\n      <div class=\"info-modal-header\">\n        <h3>\ud83d\udcca Customer Calculator Analytics <span style=\"color:var(--slate); font-weight:500; font-size:13px;\">last 90 days</span></h3>\n        <button class=\"close-x\" onclick=\"closeCustCalcAnalytics()\" aria-label=\"Close\">\u00d7</button>\n      </div>\n      <div class=\"info-modal-body\" id=\"custCalcAnalyticsBody\">\n        <div class=\"skel-stack\"><div class=\"skel\" style=\"width:55%\"></div><div class=\"skel tall\"></div><div class=\"skel\" style=\"width:80%\"></div></div>\n      </div>\n    </dialog>\n\n    <!-- SUBMISSION DETAILS \u2014 full stage-by-stage breakdown of what the\n         customer selected, opened from the \ud83d\udccb Details button on each\n         Customer Submissions / Needs Review card. -->\n    <dialog class=\"info-dialog cust-details-dialog\" id=\"custDetailsDialog\">\n      <div class=\"info-modal-header\">\n        <h3 id=\"custDetailsTitle\">Submission details</h3>\n        <button class=\"close-x\" onclick=\"closeSubmissionDetails()\" aria-label=\"Close\">\u00d7</button>\n      </div>\n      <div class=\"info-modal-body\" id=\"custDetailsBody\"></div>\n    </dialog>\n\n\n    <!-- STAGE 1: CUSTOMER -->\n    <section class=\"stage\" id=\"stage-1\">\n      <div class=\"stage-title\">Step 1 of 10</div>\n      <h1>Let's start with the customer.</h1>\n      <p class=\"lead\">Confirm contact details. If a Jobber job number is open, paste it for reference (the final quote can be pushed to Jobber via Zapier).</p>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83d\udccb</span>\n        <div class=\"tip-body\">\n          <strong>What to expect</strong>\n          This builder walks through every detail of the project step by step \u2014 surface type, measurements, condition, product selection, color, add-ons, and discounts \u2014 so you can see exactly how the price is calculated. The final breakdown at the end is fully adjustable; you can change anything and watch the total update in real time before we send the quote.\n        </div>\n      </div>\n\n      <!-- Existing-customer search \u2014 type-ahead against Jobber clients.\n           Pick a result and the form below fills in. -->\n      <div class=\"cust-search\">\n        <label class=\"cust-search-label\">\ud83d\udd0e Search existing Jobber customer</label>\n        <input type=\"search\" id=\"custSearchInput\" placeholder=\"Name, email, phone, or company\u2026\" autocomplete=\"off\">\n        <div id=\"custSearchPicked\" class=\"cust-search-picked\" style=\"display:none;\"></div>\n        <div id=\"custSearchResults\" class=\"cust-search-results\" style=\"display:none;\"></div>\n      </div>\n\n      <div class=\"form-grid\">\n        <div class=\"field\"><label>Customer Name</label><input type=\"text\" id=\"custName\" placeholder=\"Full name\" autocomplete=\"off\"><div class=\"err\">Required</div></div>\n        <div class=\"field\"><label>Phone Number</label><input type=\"tel\" id=\"custPhone\" placeholder=\"(864) 555-0123\" autocomplete=\"off\"><div class=\"err\">Required</div></div>\n        <div class=\"field\"><label>Email</label><input type=\"email\" id=\"custEmail\" placeholder=\"customer@email.com\" autocomplete=\"off\"><div class=\"err\">Valid email required</div></div>\n        <div class=\"field\"><label>Property Address</label><input type=\"text\" id=\"custAddress\" placeholder=\"123 Main St, City, SC\" autocomplete=\"off\"><div class=\"err\">Required</div></div>\n        <div class=\"field\"><label>Jobber Job Number <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(optional)</span></label><input type=\"text\" id=\"jobberNum\" placeholder=\"Paste from Jobber if available\" autocomplete=\"off\"></div>\n        <div class=\"field\"><label>Quoting Employee <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(optional)</span></label><input type=\"text\" id=\"employeeName\" placeholder=\"Your name\" autocomplete=\"off\"></div>\n      </div>\n\n      <!-- SW-REFERRED CUSTOMER \u2014 flips the oil lineup to the Sherwin-Williams\n           SuperDeck products (same set the public SW calculator shows) and\n           auto-applies the locked 10% SW Referral discount on every project. -->\n      <div class=\"toggle-row\" id=\"swReferralToggle\" onclick=\"toggleSwReferral()\" style=\"margin-top:16px; border: 2px solid #2f6fb0; background: #f3f8fc;\">\n        <span class=\"box\"></span>\n        <span class=\"name\"><strong style=\"color:#2f6fb0;\">\ud83c\udfa8 Sherwin-Williams referred customer</strong><br>\n        <small style=\"color:var(--slate); font-weight:500;\">Shows the SW SuperDeck oil lineup (same products as the SW referral calculator) and auto-applies the 10% SW Referral discount to every project on this quote.</small></span>\n      </div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"cancelNewQuote()\" title=\"Discard this quote and return to the dashboard\">\u2190 Cancel</button>\n        <button class=\"btn btn-primary\" onclick=\"nextStage()\">Next: Project Type <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 2: PROJECT TYPE -->\n    <section class=\"stage\" id=\"stage-2\">\n      <div class=\"stage-title\">Step 2 of 10</div>\n      <h1>What are we staining?</h1>\n      <p class=\"lead\">Pick the surface type. Each project type has its own measurement and pricing logic \u2014 you can bundle multiple projects at the end for 10% off.</p>\n\n      <div id=\"editingBanner\" style=\"display:none\"></div>\n      <div id=\"addingAnotherBanner\" style=\"display:none;\" class=\"alert info\" role=\"status\">\n        <span class=\"ico\">\u2795</span>\n        <div>\n          <strong>Adding another project to this quote</strong>\n          Pick the surface type for the new project. Changed your mind? Use the button on the right to cancel and return to the review screen.\n        </div>\n        <button class=\"btn-cancel-add\" onclick=\"cancelAddProject()\" type=\"button\">Cancel &amp; return to review</button>\n      </div>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83d\udce6</span>\n        <div class=\"tip-body\">\n          <strong>Bundle savings <span class=\"info-btn\" role=\"button\" tabindex=\"0\" data-info=\"bundle_discount\" aria-label=\"More info\">i</span></strong>\n          If you have more than one wood surface that needs staining \u2014 fence + deck, pergola + ceiling, etc. \u2014 you can add multiple projects to a single quote and an automatic <strong>10% bundle discount</strong> applies to the total. Each project is priced individually first, then the bundle discount comes off everything except prep labor.\n        </div>\n      </div>\n\n      <div class=\"card-grid cols-3\" id=\"projectTypeCards\"></div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" id=\"stage2Next\" onclick=\"nextStage()\" disabled>Next: Measurements <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 3: MEASUREMENTS -->\n    <section class=\"stage\" id=\"stage-3\">\n      <div class=\"stage-title\">Step 3 of 10</div>\n      <h1 id=\"measureTitle\">Measurements</h1>\n      <p class=\"lead\">Enter measurements as accurately as possible \u2014 this drives the base price. Not sure of exact numbers? Tap the help link below for tips.</p>\n      <div id=\"measureTip\"></div>\n      <div id=\"measureContainer\"></div>\n\n      <div style=\"margin-top: 12px; text-align: center;\">\n        <button type=\"button\" class=\"btn-link\" onclick=\"openMeasureTutorial()\" style=\"background: none; border: none; color: var(--green); font-weight: 700; font-size: 14px; cursor: pointer; padding: 8px 14px; text-decoration: underline;\">\ud83e\udd14 Don't know the exact measurements? Tap here for tips.</button>\n      </div>\n\n      <!-- WOOD AGE \u2014 3-option selector. Drives the condition recommendation on Step 4\n           and disables incompatible options (e.g. No Wash on 2+ year wood). -->\n      <div class=\"wood-age-section\">\n        <h3 style=\"font-size:16px;color:var(--navy);margin-bottom:6px;margin-top:24px;\">How old is the wood?</h3>\n        <p style=\"font-size:13px;color:var(--slate);margin-bottom:14px;\">Wood that's been exposed to weather more than 6 months has typically picked up surface greying, mildew, or UV damage. This drives the prep recommendation \u2014 and at 2+ years, a restoration wash is required because no-prep staining will fail. <span class=\"info-btn\" role=\"button\" tabindex=\"0\" data-info=\"six_month_rule\" aria-label=\"Why does this matter?\">i</span></p>\n        <div class=\"wood-age-buttons\" id=\"woodAgeButtons\">\n          <button type=\"button\" class=\"wood-age-btn\" data-wood-age=\"new\">\n            <span class=\"wa-ico\">\ud83c\udf31</span>\n            <span class=\"wa-label\">Brand-new<br><small>Under 6 months</small></span>\n          </button>\n          <button type=\"button\" class=\"wood-age-btn\" data-wood-age=\"weathered\">\n            <span class=\"wa-ico\">\ud83c\udf24\ufe0f</span>\n            <span class=\"wa-label\">Weathered<br><small>6 months \u2013 2 years</small></span>\n          </button>\n          <button type=\"button\" class=\"wood-age-btn\" data-wood-age=\"aged\">\n            <span class=\"wa-ico\">\ud83c\udf42</span>\n            <span class=\"wa-label\">Aged<br><small>2+ years old</small></span>\n          </button>\n        </div>\n      </div>\n\n      <!-- WAS PREVIOUSLY STAINED \u2014 moved from Step 5 so it can inform the condition recommendation -->\n      <div class=\"prev-stain-section\">\n        <h3 style=\"font-size:16px;color:var(--navy);margin-bottom:6px;margin-top:24px;\">Has this wood been stained before?</h3>\n        <p style=\"font-size:13px;color:var(--slate);margin-bottom:14px;\">This helps us recommend the right prep for Step 4 and the most compatible product on Step 5.</p>\n        <div class=\"toggle-row\" data-toggle=\"wasStained\">\n          <span class=\"box\"></span>\n          <span class=\"name\">\ud83e\udeb5 Yes, this wood has had stain applied to it before <span class=\"info-btn\" role=\"button\" tabindex=\"0\" data-info=\"why_prev_stain\" style=\"margin-left:8px;\" aria-label=\"More info\">i</span></span>\n        </div>\n\n        <div class=\"info-panel previous\" id=\"prevStainPanel\" style=\"display:none;\">\n          <h3>\ud83e\uddd0 What was previously used?</h3>\n          <p class=\"panel-hint\">Knowing what was used before helps us pick the right stain to recoat with. Switching stain types (oil \u2194 water) requires a full strip, while staying with the same type usually only needs a soft wash.</p>\n          <div class=\"form-grid\">\n            <div class=\"field\">\n              <label>Type Previously Used</label>\n              <select id=\"prevProductType\">\n                <option value=\"\">\u2014 Select type \u2014</option>\n                <option value=\"water\">Water-Based</option>\n                <option value=\"oil\">Oil-Based</option>\n                <option value=\"unsure\">Unsure</option>\n              </select>\n            </div>\n            <div class=\"field\"><label>Condition of existing finish</label>\n              <select id=\"prevCondition\">\n                <option value=\"\">\u2014 Select \u2014</option>\n                <option value=\"intact\">Intact (faded but not peeling)</option>\n                <option value=\"peeling\">Peeling, flaking, or chipping</option>\n                <option value=\"unsure\">Unsure</option>\n              </select>\n            </div>\n            <div class=\"field\"><label>Brand <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(if known)</span></label><select id=\"prevBrand\"><option value=\"\">\u2014 Select brand \u2014</option></select></div>\n            <div class=\"field\"><label>Transparency <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(if known)</span></label><select id=\"prevTransparency\"><option value=\"\">\u2014 Select transparency \u2014</option></select></div>\n            <div class=\"field\"><label>Product Name <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(if known)</span></label><input type=\"text\" id=\"prevProductName\" placeholder=\"e.g. SuperDeck Semi-Trans\" autocomplete=\"off\"></div>\n            <div class=\"field\"><label>Color / Notes <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(optional)</span></label><input type=\"text\" id=\"prevColorNotes\" placeholder=\"e.g. Cedar tone, applied 2020\" autocomplete=\"off\"></div>\n          </div>\n        </div>\n      </div>\n\n      <!-- REFERENCE PHOTOS \u2014 optional, but encouraged. Photos attach to\n           the project's line item in Jobber and show up on the\n           customer-facing quote so the rep + customer are looking at the\n           same wood. iPad camera works directly via the capture attr. -->\n      <div class=\"photos-section\">\n        <h3 style=\"font-size:16px;color:var(--navy);margin-bottom:6px;margin-top:24px;\">\ud83d\udcf7 Reference photos <span style=\"color:var(--slate);font-weight:500;font-size:13px;\">(optional, but recommended)</span></h3>\n        <p style=\"font-size:13px;color:var(--slate);margin-bottom:14px;\">Snap a few photos of the work area. Photos attach to the Jobber quote so the customer sees exactly what we're staining \u2014 and you get a record of pre-stain condition. Up to 8 photos, ~10 MB each.</p>\n        <input type=\"file\" id=\"photoInput\" accept=\"image/*\" capture=\"environment\" multiple style=\"display:none;\">\n        <div class=\"photo-upload-grid\" id=\"photoUploadGrid\"></div>\n        <button type=\"button\" class=\"btn btn-secondary photo-add-btn\" id=\"photoAddBtn\">\ud83d\udcf7 Add photos</button>\n      </div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" id=\"stage3Next\" onclick=\"nextStage()\">Next: Condition <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 4: CONDITION -->\n    <section class=\"stage\" id=\"stage-4\">\n      <div class=\"stage-title\">Step 4 of 10</div>\n      <h1>What's the current condition?</h1>\n      <p class=\"lead\">Prep is the biggest cost driver after measurement, and the condition tells us what kind of stain will work best on this wood.</p>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83d\udccb</span>\n        <div class=\"tip-body\">\n          <strong>Why prep matters</strong>\n          Improper prep is the #1 reason stain jobs fail early. Greyed wood has dead surface fibers and an unbalanced pH \u2014 without a wash and brightener, new stain can't bond properly. Previously stained wood needs the old finish stripped so the new product penetrates fresh wood. Spending an extra $300 on prep can be the difference between re-staining in 2 years vs. 5.\n        </div>\n      </div>\n\n      <!-- Recommendation banner \u2014 explains WHY we recommended this prep\n           level (similar pattern to the product step on Stage 5). -->\n      <div class=\"reco-banner\" id=\"conditionRecoBanner\" style=\"display:none\">\n        <span class=\"reco-ico\">\u2b50</span>\n        <div class=\"reco-content\" id=\"conditionRecoBannerText\"></div>\n      </div>\n\n      <div class=\"card-grid cols-3\" id=\"conditionCards\"></div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" id=\"stage4Next\" onclick=\"nextStage()\" disabled>Next: Product <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 5: PRODUCT + HOA + PREVIOUS STAIN -->\n    <section class=\"stage\" id=\"stage-5\">\n      <div class=\"stage-title\">Step 5 of 10</div>\n      <h1>Pick a product family.</h1>\n      <p class=\"lead\">Water vs. oil-based has a big impact on look, longevity, and compatibility with what's already on the wood. We'll recommend one based on the condition.</p>\n\n      <div class=\"reco-banner\" id=\"recoBanner\" style=\"display:none\">\n        <span class=\"reco-ico\">\u2b50</span>\n        <div class=\"reco-content\" id=\"recoBannerText\"></div>\n      </div>\n\n      <div class=\"product-choice-grid\" id=\"productChoiceCards\"><!-- rendered by renderProductCards() --></div>\n\n      <!-- \"wasStained\" block moved to Step 3 (Measurements) -->\n\n      <div class=\"info-panel highlighted\" id=\"hoaPanel\" style=\"display:none; margin-top:20px;\">\n        <h3>\ud83c\udfd8\ufe0f HOA-Required Color &amp; Product <span class=\"info-btn\" role=\"button\" tabindex=\"0\" data-info=\"hoa_explained\" aria-label=\"More info\">i</span></h3>\n        <p class=\"panel-hint\">Capture every detail of what the HOA requires so there's no dispute later. Your standard color picker will be skipped \u2014 we'll use exactly what they specify.</p>\n        <div class=\"form-grid\">\n          <div class=\"field\"><label>Brand</label><select id=\"hoaBrand\"><option value=\"\">\u2014 Select brand \u2014</option></select></div>\n          <div class=\"field\"><label>Transparency / Product Type</label><select id=\"hoaTransparency\"><option value=\"\">\u2014 Select transparency \u2014</option></select></div>\n          <div class=\"field\"><label>Specific Product Name</label><input type=\"text\" id=\"hoaProductName\" placeholder=\"e.g. SuperDeck Solid SD7-150\" autocomplete=\"off\"></div>\n          <div class=\"field\"><label>Required Color / Code</label><input type=\"text\" id=\"hoaColor\" placeholder=\"e.g. SW 3001 Shagbark\" autocomplete=\"off\"></div>\n        </div>\n        <div class=\"field\"><label>HOA Documentation Reference <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(optional)</span></label><textarea id=\"hoaNotes\" placeholder=\"HOA approval doc # or other reference info\"></textarea></div>\n      </div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" id=\"stage5Next\" onclick=\"nextStage()\" disabled>Next: Tier <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 6: TIER -->\n    <section class=\"stage\" id=\"stage-6\">\n      <div class=\"stage-title\">Step 6 of 10</div>\n      <h1>Pick the tier. <span class=\"info-btn\" role=\"button\" tabindex=\"0\" data-info=\"tier_help\" aria-label=\"More info\" style=\"vertical-align:middle;width:22px;height:22px;font-size:13px;\">i</span></h1>\n      <p class=\"lead\"><strong>Performance is what we recommend for almost every homeowner.</strong> Compare the three side-by-side and notice the cost-per-year \u2014 that's where the value of going up a tier really shows.</p>\n\n      <div class=\"alert info\" id=\"productLockIndicator\"><span class=\"ico\">\ud83d\udca1</span><div id=\"productLockText\"></div></div>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83d\udcca</span>\n        <div class=\"tip-body\">\n          <strong>Reading the cost-per-year number</strong>\n          Each tier card shows a \"cost-per-year amortized\" number \u2014 the total project price divided by the expected lifespan. This is often the most useful way to compare tiers: a higher tier costs more upfront but spreads across more years, so the cost per year is sometimes <em>lower</em> than going cheap and re-doing the work sooner.\n        </div>\n      </div>\n\n      <!-- Previously-stained context \u2014 only renders when prev stain info is set -->\n      <div id=\"prevStainContext\"></div>\n\n      <div class=\"card-grid cols-3\" id=\"tierCards\"></div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" id=\"stage6Next\" onclick=\"nextStage()\" disabled>Next: Color <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 7: COLOR -->\n    <section class=\"stage\" id=\"stage-7\">\n      <div class=\"stage-title\">Step 7 of 10</div>\n      <h1 id=\"colorTitle\">Pick a color.</h1>\n      <p class=\"lead\" id=\"colorLead\">Show the customer the swatches below. Final appearance varies based on wood species and grain.</p>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83c\udfa8</span>\n        <div class=\"tip-body\">\n          <strong>About these colors</strong>\n          The swatches below are manufacturer reference samples on lighter wood. Final appearance varies with your specific wood species, grain, age, and lighting \u2014 a Cedar swatch can look noticeably different on Pressure-Treated Pine vs. older greyed lumber. We recommend looking at physical paint chips or color cards before locking in if you're between options.\n        </div>\n      </div>\n\n      <div class=\"color-grid\" id=\"colorGrid\"></div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" id=\"stage7Next\" onclick=\"nextStage()\" disabled>Next: Add-ons <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 8: ADD-ONS -->\n    <section class=\"stage\" id=\"stage-8\">\n      <div class=\"stage-title\">Step 8 of 10</div>\n      <h1>Any upgrades or add-ons?</h1>\n      <p class=\"lead\">Walk through the relevant options. Anything checked here adds to the running total at the top of the screen \u2014 the customer sees it in real time.</p>\n\n      <div id=\"addonsContainer\"></div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" onclick=\"nextStage()\">Next: Discounts <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 9: DISCOUNTS (NEW) -->\n    <section class=\"stage\" id=\"stage-9\">\n      <div class=\"stage-title\">Step 9 of 10</div>\n      <h1>Discounts &amp; savings.</h1>\n      <p class=\"lead\">Pick any that apply \u2014 most stack. Discounts stack up to <strong>10% off the project</strong>, with the Bundle discount applied separately on top when there are 2+ projects.</p>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83d\udcb8</span>\n        <div class=\"tip-body\">\n          <strong>How discounts work</strong>\n          Project-level discounts stack up to <strong>10% combined</strong>. Some are mutually exclusive \u2014 you can pick veteran <em>or</em> teacher (not both), and referral <em>or</em> repeat customer (not both). The <strong>Bundle discount</strong> (10% when 2+ projects are on the quote) stacks separately on top of everything.\n        </div>\n      </div>\n\n      <div id=\"discountsContainer\"></div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" onclick=\"nextStage()\">Next: Review &amp; Quote <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 10: REVIEW -->\n    <section class=\"stage\" id=\"stage-10\">\n      <div class=\"stage-title\">Step 10 of 10</div>\n      <h1>Final breakdown.</h1>\n      <p class=\"lead\">Walk through this line-by-line with the customer. Adjust anything on the right and the price updates instantly. When they're ready, choose payment and generate the quote.</p>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83d\udcdd</span>\n        <div class=\"tip-body\">\n          <strong>Review your quote</strong>\n          The breakdown below shows every cost line item \u2014 measurements, tier base, prep work, add-ons, and any discount. The panel on the right lets you toggle anything on or off and the total updates instantly. When you're ready, choose a payment option and we'll email you the PDF quote.\n        </div>\n      </div>\n\n      <div id=\"bundleStackBlock\" style=\"display:none\"></div>\n\n      <div class=\"final-grid\">\n        <div>\n          <div class=\"final-main\" id=\"breakdownMain\"></div>\n          <div class=\"action-bar\">\n            <div class=\"left\">\n              <button class=\"btn btn-secondary\" onclick=\"addAnotherProject()\">\uff0b Add Another Project (Bundle 10%)</button>\n            </div>\n            <div class=\"right\">\n              <button class=\"btn btn-primary\" onclick=\"finalizeQuote('upload')\" title=\"Save the quote and push it to Jobber as a Draft \u2014 you can open it from the next screen to send\">\u2713 Generate &amp; Upload to Jobber</button>\n            </div>\n          </div>\n          <div class=\"alert success\" style=\"margin-top:16px\">\n            <span class=\"ico\">\ud83d\udce6</span>\n            <div><strong>Bundle multiple projects?</strong>Click \"Add Another Project\" to start a second project \u2014 bundling 2+ projects automatically applies 10% off (best discount wins, no stacking).</div>\n          </div>\n        </div>\n        <aside class=\"final-side\" id=\"editPanel\"></aside>\n      </div>\n    </section>\n\n    <section class=\"stage\" id=\"stage-success\">\n      <div class=\"success-screen\">\n        <div class=\"success-icon\">\u2713</div>\n        <h1>Quote saved.</h1>\n        <p class=\"lead\" style=\"margin: 12px auto 20px;\">The quote is locked in and saved to your dashboard. It lands in Jobber as a <strong>Draft</strong> so you can see at a glance which quotes still need to be sent. Click <strong>\"\u2197 Open in Jobber\"</strong> below to review and send it to the customer.</p>\n        <div id=\"successJobberBlock\" style=\"max-width: 460px; margin: 0 auto 24px;\"></div>\n        <div style=\"display:flex; gap:12px; justify-content:center; flex-wrap:wrap;\">\n          <button class=\"btn btn-primary\" onclick=\"returnToDashboard()\">\u2190 Return to Dashboard</button>\n          <button class=\"btn btn-secondary\" onclick=\"resendCurrentQuoteFromSuccess()\">\ud83d\udd04 Re-send to Jobber</button>\n          <button class=\"btn btn-secondary\" onclick=\"resetQuote()\">\uff0b Start New Quote</button>\n        </div>\n      </div>\n    </section>\n\n    <!-- READ-ONLY VIEW \u2014 for finished, archived, or trashed quotes opened\n         from the dashboard. Sending locks the quote so concurrent edits\n         can't silently overwrite each other; reps can still duplicate\n         to edit a fresh copy. -->\n    <section class=\"stage\" id=\"stage-view\">\n      <div class=\"stage-title\" id=\"stageViewLabel\">VIEWING QUOTE</div>\n      <h1 id=\"stageViewTitle\">Quote summary</h1>\n      <p class=\"lead\" id=\"stageViewLead\">This quote is read-only. Duplicate it to make a new editable copy.</p>\n\n      <div class=\"view-actions\">\n        <button class=\"btn btn-primary\" onclick=\"returnToDashboard()\">\u2190 Return to Dashboard</button>\n        <button class=\"btn btn-secondary\" onclick=\"resendCurrentViewedToJobber()\">\ud83d\udd04 Re-send to Jobber</button>\n        <button class=\"btn btn-secondary\" onclick=\"duplicateCurrentForEdit()\">\ud83d\udccb Duplicate to edit</button>\n        <button class=\"btn btn-secondary\" onclick=\"generatePDF()\">\ud83d\udcc4 Download PDF</button>\n      </div>\n\n      <div id=\"viewSummary\" class=\"view-summary\"></div>\n    </section>\n\n  </main>\n</div>\n\n<!-- SIDE TRACKER PANEL -->\n<div class=\"side-tracker-tab\" id=\"sideTrackerTab\" onclick=\"openSideTracker()\">\n  Your Quote <div class=\"count\" id=\"sideTrackerCount\">0</div>\n</div>\n<div class=\"side-tracker-overlay\" id=\"sideTrackerOverlay\" onclick=\"closeSideTracker()\"></div>\n<aside class=\"side-tracker\" id=\"sideTracker\" aria-label=\"Quote progress tracker\">\n  <div class=\"side-tracker-header\">\n    <h3>\ud83d\udccb Your Quote</h3>\n    <button class=\"close-btn\" onclick=\"closeSideTracker()\" aria-label=\"Close\">\u00d7</button>\n  </div>\n  <div class=\"side-tracker-body\" id=\"sideTrackerBody\"></div>\n\n  <!-- Quote-level notes \u2014 between the items list and the footer. The\n       textarea starts compact (one line) and grows on focus / when typed\n       into so it doesn't dominate the panel when empty. -->\n  <div class=\"side-tracker-notes\">\n    <label for=\"quoteNotesField\">\ud83d\udcdd Quote notes</label>\n    <textarea id=\"quoteNotesField\" placeholder=\"Type notes here\u2026\"></textarea>\n  </div>\n\n  <div class=\"side-tracker-footer\">\n    <button class=\"btn-save-exit\" onclick=\"saveAndReturnToDashboard()\" title=\"Save this draft and return to the dashboard\">\ud83d\udcbe Save &amp; Exit</button>\n    <div class=\"tot-block\">\n      <span class=\"tot-label\">Running Total</span>\n      <span class=\"tot-amt\" id=\"sideTrackerTotal\">$0</span>\n    </div>\n  </div>\n</aside>\n\n<!-- INFO MODAL \u2014 uses native <dialog> so showModal() puts it in the browser's\n     top layer, escaping any containing-block / transform restrictions from\n     Wix's Custom Element wrapper. The ::backdrop pseudo-element handles the\n     overlay automatically. -->\n<dialog class=\"info-dialog\" id=\"infoModalDialog\">\n  <div class=\"info-modal-header\">\n    <h3 id=\"infoModalTitle\">Info</h3>\n    <button class=\"close-x\" onclick=\"closeInfoModal()\" aria-label=\"Close\">\u00d7</button>\n  </div>\n  <div class=\"info-modal-body\" id=\"infoModalBody\"></div>\n</dialog>\n\n<!-- MEASUREMENT TUTORIAL MODAL \u2014 same dialog approach -->\n<dialog class=\"info-dialog measure-dialog\" id=\"measureTutorialDialog\">\n  <div class=\"info-modal-header\">\n    <h3 id=\"measureTutorialTitle\">How to estimate measurements</h3>\n    <button class=\"close-x\" onclick=\"closeMeasureTutorial()\" aria-label=\"Close\">\u00d7</button>\n  </div>\n  <div class=\"info-modal-body\" id=\"measureTutorialBody\"></div>\n  <div style=\"padding: 12px 24px 20px; text-align: right; border-top: 1px solid var(--line);\">\n    <button class=\"btn btn-primary\" onclick=\"closeMeasureTutorial()\" style=\"padding: 10px 20px; font-size: 14px;\">Got it</button>\n  </div>\n</dialog>\n\n<!-- JOBBER INTEGRATION PANEL \u2014 connect / refresh / disconnect from\n     the OAuth-protected Jobber API. Opens via the small \"Jobber\" pill\n     in the header. -->\n<dialog class=\"info-dialog\" id=\"jobberPanelDialog\">\n  <div class=\"info-modal-header\">\n    <h3>Jobber integration</h3>\n    <button class=\"close-x\" onclick=\"closeJobberPanel()\" aria-label=\"Close\">\u00d7</button>\n  </div>\n  <div class=\"info-modal-body\" id=\"jobberPanelBody\">\n    <div id=\"jobberStatusBlock\" style=\"margin-bottom: 16px;\">Loading\u2026</div>\n    <div id=\"jobberActionsBlock\" style=\"display: flex; flex-direction: column; gap: 8px;\"></div>\n    <p style=\"margin-top: 18px; font-size: 12px; color: var(--slate); line-height: 1.5;\">\n      Once connected, sent quotes will push to Jobber automatically as new estimates.\n      The connection refreshes itself \u2014 you only need to use \"Refresh\" if something\n      looks stuck.\n    </p>\n  </div>\n</dialog>\n\n<!-- PROJECT-SWITCH CONFIRMATION \u2014 fires when the rep clicks a different\n     project type on Step 2 after meaningful data has been entered on\n     the current project. Defaults the primary action to \"Add as another\n     project\" so the safe path is one tap away. -->\n<dialog class=\"info-dialog\" id=\"projectSwitchDialog\">\n  <div class=\"info-modal-header\">\n    <h3>Switch project or add another?</h3>\n    <button class=\"close-x\" onclick=\"closeProjectSwitchDialog()\" aria-label=\"Close\">\u00d7</button>\n  </div>\n  <div class=\"info-modal-body\" id=\"projectSwitchBody\"></div>\n  <div class=\"project-switch-actions\">\n    <button class=\"btn btn-secondary\" onclick=\"closeProjectSwitchDialog()\">Cancel</button>\n    <button class=\"btn btn-ghost-danger\" onclick=\"confirmSwitchProject()\">Switch &amp; discard</button>\n    <button class=\"btn btn-primary\" onclick=\"confirmAddAnotherProject()\">\uff0b Add as another project</button>\n  </div>\n</dialog>\n\n<!-- PRICING ADMIN \u2014 edit tier rates, prep rates, bundle %, minimum job,\n     and per-discount rates. Saves to Wix Data (PricingRules collection)\n     and overrides are applied on top of the built-in defaults next\n     time the calc boots (or immediately, via in-memory merge below). -->\n<dialog class=\"info-dialog pricing-admin-dialog\" id=\"pricingAdminDialog\">\n  <div class=\"info-modal-header pa-header\">\n    <h3>\u2699\ufe0f Settings</h3>\n    <button class=\"close-x\" onclick=\"closePricingAdmin()\" aria-label=\"Close\">\u00d7</button>\n  </div>\n    <div class=\"pa-groups\">\n    <button class=\"pa-group-btn active\" id=\"paGroupPricing\" onclick=\"switchPaGroup('pricing')\">\ud83d\udcb2 Pricing</button>\n    <button class=\"pa-group-btn\" id=\"paGroupTeam\" onclick=\"switchPaGroup('team')\">\ud83d\udc65 Team</button>\n  </div>\n  <div class=\"pa-tabs\" id=\"pricingAdminTabs\">\n    <button class=\"pa-tab active\" data-pa-tab=\"tiers\">Tier rates</button>\n    <button class=\"pa-tab\" data-pa-tab=\"prep\">Prep rates</button>\n    <button class=\"pa-tab\" data-pa-tab=\"extras\">Extras</button>\n    <button class=\"pa-tab\" data-pa-tab=\"addons\">Add-ons</button>\n    <button class=\"pa-tab\" data-pa-tab=\"discounts\">Discounts</button>\n    <button class=\"pa-tab\" data-pa-tab=\"diy\">DIY compare</button>\n    <button class=\"pa-tab\" data-pa-tab=\"quote\">Quote rules</button>\n    <button class=\"pa-tab\" data-pa-tab=\"sw\">SW Edition</button>\n    <button class=\"pa-tab\" data-pa-tab=\"reps\">Reps</button>\n    <button class=\"pa-tab\" data-pa-tab=\"devices\">Devices</button>\n  </div>\n  <div class=\"info-modal-body pa-body\" id=\"pricingAdminBody\">Loading\u2026</div>\n  <div class=\"pa-footer\">\n    <div class=\"pa-meta\" id=\"pricingAdminMeta\">\n      <small style=\"color:var(--slate);\">Changes save to the cloud and apply to the employee, customer, and SW calculators on their next load.</small>\n    </div>\n    <button class=\"btn btn-secondary\" id=\"paResetBtn\" onclick=\"resetPricingAdmin()\" title=\"Wipe all overrides \u2014 every calculator falls back to the built-in defaults\">Reset to defaults</button>\n    <button class=\"btn btn-primary\" id=\"paSaveBtn\" onclick=\"savePricingAdmin()\" title=\"Save \u2014 applies to all three calculators on their next load\">\ud83d\udcbe Save</button>\n    <button class=\"btn btn-secondary\" onclick=\"closePricingAdmin()\">Close</button>\n  </div>\n</dialog>";
+  const STYLE = ":host { display: block; width: 100%; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1a2540; line-height: 1.5; -webkit-font-smoothing: antialiased; }\n:host {\n    --navy: #1a2540; --navy-light: #2d3d5f;\n    --green: #2d6e4e; --green-light: #5a8d68; --green-pale: #e8f3eb;\n    --gold: #c89b3c; --gold-pale: #fef9ed;\n    --coral: #c84d3a; --coral-pale: #fde0d8;\n    --slate: #5a6378; --cream: #f7f5f1;\n    --paper: #ffffff; --line: #ece9e3; --line-soft: #f0ede7;\n    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);\n    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);\n    --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);\n    --radius: 12px; --radius-lg: 16px;\n  }\n  * { box-sizing: border-box; margin: 0; padding: 0; }\n  :host {\n    font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif;\n    background: var(--cream); color: var(--navy); line-height: 1.5;\n    -webkit-font-smoothing: antialiased;\n  }\n  /* Auto-resize iframe model: the calculator grows to fit its content and\n     the parent Wix page handles scrolling. Works consistently across phone,\n     tablet, and desktop without per-device tuning \u2014 at the cost of being\n     unable to pin elements (steps bar, sidebar) to the user's viewport. */\n  :host { overflow: visible; }\n  button { font-family: inherit; cursor: pointer; border: none; background: none; }\n  /* Block iOS double-tap-zoom on all interactive surfaces. `manipulation`\n     still allows scroll/pan gestures but prevents the browser from\n     interpreting two taps as a zoom-in, which is another way users can\n     get accidentally zoomed-in without an obvious way to zoom back out. */\n  button, .selectable-card, .tier-card, .condition-card, .product-choice-card,\n  .color-swatch, .toggle-row, .radio-row, .wood-age-btn,\n  .progress-step, .project-bubble, .draft-card,\n  .mini-tier-row, .mini-toggle { touch-action: manipulation; }\n  /* Allow native browser scroll. Iframe touch-capture on iOS still\n     sometimes \"catches\" on cards but at least normal scrolling works. */\n  :host, :host * { touch-action: pan-y; }\n  .progress { touch-action: pan-x !important; }\n  input, textarea, select { touch-action: auto !important; }\n\n  /* Remove the iOS tap-highlight blue flash on every interactive element \u2014\n     it lingers briefly on touchstart and can make scroll feel \"stuck\"\n     because the visual feedback fires before the drag is interpreted. */\n  * { -webkit-tap-highlight-color: transparent; }\n\n  /* Disable accidental text selection on drag everywhere EXCEPT inputs.\n     On iOS, a finger drag across card text sometimes triggers the system's\n     text-selection mode instead of scrolling \u2014 disabling user-select on\n     non-input surfaces forces the gesture to be interpreted as scroll. */\n  :host { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }\n  input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }\n  input, select { font-family: inherit; font-size: inherit; }\n\n  /* Disable hover-state transforms on touch-primary devices. On tablets the\n     browser briefly applies :hover when a finger lands on a card, then the\n     transform shifts the element under the finger and can confuse the scroll\n     gesture. (hover:none) targets touch-primary devices that don't truly hover. */\n  @media (hover: none), (pointer: coarse) {\n    .selectable-card:hover,\n    .tier-card:hover,\n    .condition-card:hover,\n    .product-choice-card:hover,\n    .color-swatch:hover,\n    .toggle-row:hover,\n    .radio-row:hover,\n    .wood-age-btn:hover,\n    .project-bubble:hover,\n    .draft-card:hover,\n    .mini-tier-row:hover,\n    .mini-toggle:hover { transform: none !important; box-shadow: var(--shadow-sm) !important; }\n  }\n\n  .app {\n    min-height: 100vh; display: flex; flex-direction: column;\n    /* Defensive: never let the app extend wider than the viewport so\n       horizontal scroll can't happen when the tablet flips orientation.\n       Individual wide elements (progress bar, side tracker) get their\n       own horizontal-scroll containers below. */\n    max-width: 100vw;\n    overflow-x: hidden;\n  }\n\n  /* HEADER \u2014 scrolls away so the step nav (below) can pin to the top.\n     Wraps on narrow screens so the right-side pills (quote ID, save\n     status, Jobber, totals) flow onto a second row instead of running\n     off the edge when iPad is rotated to portrait. */\n  .app-header {\n    background: var(--paper); border-bottom: 1px solid var(--line);\n    padding: 14px 28px; display: flex; align-items: center; gap: 20px;\n    box-shadow: var(--shadow-sm);\n    flex-wrap: wrap;\n    row-gap: 10px;\n  }\n  .brand-mark { display: flex; align-items: center; gap: 10px; min-width: 0; }\n  .brand-mark .logo {\n    width: 40px; height: 40px;\n    background: transparent url('https://static.wixstatic.com/media/6616da_4aa22f2adc3c42938a4f5ec0b8d67969~mv2.png') center / contain no-repeat;\n    flex-shrink: 0;\n    /* Keep the SS text content for screen readers but visually replace it\n       with the brush image. No green square \u2014 brush sits on whatever\n       header background color is behind it. */\n    text-indent: -9999px;\n    overflow: hidden;\n  }\n  .brand-mark .name {\n    font-weight: 700; font-size: 14px; color: var(--navy);\n    min-width: 0;\n  }\n  .brand-mark .sub { font-size: 11px; color: var(--slate); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }\n  .header-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }\n  .quote-id-tag { font-size: 12px; color: var(--slate); }\n  .quote-id-tag span { font-family: ui-monospace, monospace; color: var(--navy); font-weight: 600; }\n  .total-pill {\n    background: var(--green); color: white;\n    padding: 8px 16px; border-radius: 100px;\n    display: flex; flex-direction: column; align-items: flex-start;\n    min-width: 110px; transition: transform 0.3s, background 0.3s;\n  }\n  .total-pill .lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.85; font-weight: 700; line-height: 1; }\n  .total-pill .amt { font-size: 17px; font-weight: 800; line-height: 1.1; margin-top: 2px; }\n  .total-pill.pulse { animation: pulse 0.6s; }\n  .total-pill.secondary { background: var(--paper); color: var(--navy); border: 1.5px solid var(--line); padding: 7px 14px; }\n  .total-pill.secondary .lbl { color: var(--slate); }\n  @keyframes pulse {\n    0%, 100% { transform: scale(1); }\n    50% { transform: scale(1.06); background: var(--green-light); }\n  }\n\n  /* PROJECT BUBBLES \u2014 multi-project navigator above the step progress bar */\n  .project-bubbles {\n    background: var(--cream); padding: 10px 28px;\n    border-bottom: 1px solid var(--line);\n    display: flex; gap: 10px; align-items: center; overflow-x: auto;\n  }\n  .project-bubbles-label {\n    font-size: 11px; font-weight: 700; color: var(--slate);\n    text-transform: uppercase; letter-spacing: 0.08em;\n    margin-right: 6px; flex-shrink: 0;\n  }\n  .project-bubble {\n    display: inline-flex; align-items: center; gap: 8px;\n    padding: 8px 14px; background: var(--paper);\n    border: 2px solid var(--line); border-radius: 100px;\n    font-size: 13px; font-weight: 600; color: var(--navy);\n    cursor: pointer; transition: all 0.15s;\n    flex-shrink: 0; white-space: nowrap;\n  }\n  .project-bubble:hover { border-color: var(--green-light); }\n  .project-bubble.active {\n    background: var(--navy); color: white; border-color: var(--navy);\n    box-shadow: 0 2px 8px rgba(26, 37, 64, 0.2);\n  }\n  .project-bubble .pb-ico { font-size: 16px; }\n  .project-bubble .pb-price { font-size: 11px; opacity: 0.75; }\n  .project-bubble.add-new {\n    background: transparent; border-style: dashed; color: var(--green);\n    font-weight: 700;\n  }\n  .project-bubble.add-new:hover { background: var(--green-pale); border-color: var(--green); }\n\n  /* PROGRESS \u2014 sticks to the top of the iframe viewport so the customer\n     always sees which step they're on as the body scrolls underneath. */\n  .progress {\n    background: var(--paper); padding: 14px 28px;\n    border-bottom: 1px solid var(--line);\n    display: flex; gap: 6px; overflow-x: auto;\n    position: sticky; top: 0; z-index: 80;\n    box-shadow: var(--shadow-sm);\n    /* Smooth scroll for the auto-scroll-to-active animation + finger swipe\n       support on mobile. Scrollbar visually hidden on mobile but the bar\n       remains scrollable. */\n    scroll-behavior: smooth;\n    -webkit-overflow-scrolling: touch;\n    scrollbar-width: thin;\n  }\n  .progress::-webkit-scrollbar { height: 4px; }\n  .progress::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }\n  .progress-step {\n    /* Default desktop / iPad-landscape: steps flex-grow to fill the bar\n       so the strip spans full width. min-width keeps labels readable.\n       Narrow viewports (iPad portrait, phones) override below to\n       flex: 0 0 auto so the bar scrolls horizontally instead of\n       cramming everything together. */\n    flex: 1 1 auto; min-width: 90px;\n    padding: 8px 10px; background: var(--line-soft); border-radius: 8px;\n    font-size: 11px; font-weight: 600; color: var(--slate);\n    text-align: center; transition: background 0.18s, color 0.18s, border-color 0.18s, opacity 0.18s;\n    cursor: not-allowed; user-select: none; border: 2px solid transparent;\n    opacity: 0.55;\n    white-space: nowrap;\n  }\n  .progress-step.reachable { cursor: pointer; opacity: 1; }\n  .progress-step.reachable:hover { background: var(--line); }\n  .progress-step .step-num { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px; opacity: 0.7; }\n  .progress-step.active { background: var(--navy); color: white; border-color: var(--navy); opacity: 1; cursor: pointer; }\n  .progress-step.done { background: var(--green-pale); color: var(--green); border-color: var(--green); opacity: 1; cursor: pointer; }\n  .progress-step.done::before { content: \"\u2713 \"; }\n  .progress-step.skipped {\n    background: var(--line-soft); color: var(--slate);\n    opacity: 0.55; cursor: not-allowed; text-decoration: line-through;\n  }\n\n  /* Generous side padding on stage-wrap = there's always a finger-width strip\n     of empty space on the left and right where a touch drag definitely\n     scrolls the page instead of landing on a card. */\n  .stage-wrap { flex: 1; padding: 32px 44px 60px; max-width: 1400px; margin: 0 auto; width: 100%; }\n  .stage { display: none; animation: fadeUp 0.4s cubic-bezier(0.4, 0, 0.2, 1); }\n  .stage.visible { display: block; }\n  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }\n  .stage-title { color: var(--green); font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px; }\n  .stage h1 { font-size: 30px; font-weight: 700; color: var(--navy); margin-bottom: 8px; letter-spacing: -0.5px; }\n  .stage .lead { color: var(--slate); font-size: 15px; margin-bottom: 28px; max-width: 720px; }\n\n  /* CARDS */\n  /* Gap bumped from 14px to 22px \u2014 every gap pixel is a \"scroll-safe\" zone\n     between cards where a finger drag isn't on a card and definitely passes\n     through to the parent Wix page for scrolling. Has been the most effective\n     iframe-scroll improvement we've tried. */\n  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 22px; margin-bottom: 28px; }\n  .card-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }\n  .card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }\n  .card-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }\n  .card-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }\n  @media (max-width: 1100px) { .card-grid.cols-5, .card-grid.cols-4 { grid-template-columns: repeat(2, 1fr); } }\n  @media (max-width: 760px) { .card-grid.cols-3, .card-grid.cols-2, .card-grid.cols-4, .card-grid.cols-5 { grid-template-columns: 1fr; } }\n\n  .selectable-card {\n    background: var(--paper); border: 2px solid var(--line);\n    border-radius: var(--radius); text-align: left;\n    transition: all 0.2s; position: relative; overflow: hidden; padding: 0;\n    /* Flex column so the image stays a fixed size at the top and the\n       body fills any extra height the grid stretches the card to \u2014\n       prevents the \"white bar\" effect on shorter cards. */\n    display: flex; flex-direction: column;\n  }\n  .selectable-card .card-image { flex: 0 0 auto; }\n  .selectable-card .card-body { flex: 1 1 auto; display: flex; flex-direction: column; }\n  .selectable-card:hover { border-color: var(--green-light); transform: translateY(-2px); box-shadow: var(--shadow-md); }\n  .selectable-card.selected { border-color: var(--green); box-shadow: 0 0 0 4px rgba(45, 110, 78, 0.12); }\n  .selectable-card.selected::after {\n    content: \"\u2713\"; position: absolute; top: 12px; right: 12px;\n    width: 28px; height: 28px; background: var(--green); color: white;\n    border-radius: 50%; display: flex; align-items: center; justify-content: center;\n    font-weight: 700; font-size: 14px; z-index: 2;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.2);\n  }\n\n  .card-image {\n    width: 100%; height: 220px;\n    background-size: cover; background-position: center center;\n    background-color: var(--line-soft);\n    background-repeat: no-repeat;\n    border-bottom: 1px solid var(--line);\n    position: relative;\n  }\n  .card-image::after {\n    content: ''; position: absolute; inset: 0;\n    background: linear-gradient(180deg, transparent 75%, rgba(0,0,0,0.12));\n  }\n  .selectable-card.selected .card-image {\n    box-shadow: inset 0 0 0 3px var(--green-pale);\n  }\n  .card-body { padding: 18px 22px 22px; }\n  .card-body .title { font-size: 19px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }\n  .card-body .desc { font-size: 14px; color: var(--slate); line-height: 1.5; }\n  .card-body .badge {\n    display: inline-block; margin-top: 10px;\n    padding: 3px 8px; background: var(--green-pale); color: var(--green);\n    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;\n    text-transform: uppercase; border-radius: 4px;\n    /* .card-body is a flex column with default align-items:stretch, which\n       would otherwise stretch this inline-block to fill the full card\n       width. align-self:flex-start keeps it sized to its content only. */\n    align-self: flex-start;\n  }\n\n  /* TIER CARDS */\n  .tier-card {\n    background: var(--paper); border: 2px solid var(--line);\n    border-radius: var(--radius-lg); padding: 24px; text-align: left;\n    transition: all 0.25s; display: flex; flex-direction: column; position: relative;\n  }\n  .tier-card:hover { border-color: var(--green-light); transform: translateY(-4px); box-shadow: var(--shadow-lg); }\n  .tier-card.selected { border-color: var(--green); box-shadow: 0 0 0 4px rgba(45, 110, 78, 0.12), var(--shadow-md); }\n  .tier-card.recommended { border-color: var(--gold); background: linear-gradient(180deg, var(--gold-pale) 0%, var(--paper) 60%); }\n  .tier-card.recommended.selected { border-color: var(--green); }\n  .tier-card .reco-flag {\n    position: absolute; top: -10px; left: 20px;\n    background: var(--gold); color: white;\n    font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 100px;\n    letter-spacing: 0.1em; text-transform: uppercase;\n    box-shadow: 0 2px 6px rgba(0,0,0,0.18);\n  }\n  /* Color-coded feature badges (oil tiers): green = budget value,\n     blue = most color options, gold = longest-lasting premium. */\n  .tier-card .reco-flag.flag-green { background: var(--green); }\n  .tier-card .reco-flag.flag-blue  { background: #2f6fb0; }\n  .tier-card .reco-flag.flag-gold  { background: var(--gold); }\n  .tier-card .tier-name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--slate); margin-bottom: 4px; }\n  .tier-card .tier-product { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 8px; line-height: 1.25; }\n  .tier-card .tier-tagline { font-size: 12px; color: var(--slate); font-style: italic; margin-bottom: 10px; min-height: 32px; }\n  /* Desktop: tighten the dead space under the tagline. The 32px reserve\n     fits two lines, but most taglines are one line, leaving a big gap\n     above the price. Mobile keeps the taller reserve for wrapping. */\n  @media (min-width: 641px) {\n    .tier-card .tier-tagline { min-height: 18px; margin-bottom: 6px; }\n  }\n  .tier-card .tier-price { font-size: 30px; font-weight: 800; color: var(--green); margin: 8px 0 2px; letter-spacing: -0.5px; }\n  .tier-card .tier-cost-per-year { font-size: 12px; color: var(--slate); font-weight: 500; }\n  .tier-card .tier-life {\n    font-size: 12px; color: var(--gold); font-weight: 700;\n    margin: 8px 0 14px; text-transform: uppercase; letter-spacing: 0.06em;\n    padding: 6px 10px; background: var(--gold-pale); border-radius: 6px; display: inline-block;\n    cursor: help; position: relative;\n  }\n  .tier-card .tier-life::after {\n    content: ' \u24d8'; font-size: 10px; opacity: 0.7;\n  }\n  /* Tooltip on hover/focus over the lifespan badge */\n  .tier-life-tooltip {\n    position: absolute; bottom: calc(100% + 8px); left: 50%;\n    transform: translateX(-50%);\n    background: var(--navy); color: white;\n    padding: 10px 14px; border-radius: 8px;\n    font-size: 12px; font-weight: 500; line-height: 1.5;\n    letter-spacing: 0; text-transform: none;\n    width: 280px; max-width: 90vw;\n    box-shadow: 0 8px 24px rgba(0,0,0,0.25);\n    opacity: 0; pointer-events: none;\n    transition: opacity 0.18s, transform 0.18s;\n    z-index: 50; text-align: left;\n  }\n  .tier-life-tooltip::after {\n    content: ''; position: absolute; top: 100%; left: 50%;\n    transform: translateX(-50%);\n    border: 6px solid transparent; border-top-color: var(--navy);\n  }\n  .tier-card .tier-life:hover .tier-life-tooltip,\n  .tier-card .tier-life:focus-within .tier-life-tooltip {\n    opacity: 1; transform: translateX(-50%) translateY(-2px);\n  }\n  .tier-card .tier-pros { list-style: none; margin: 0 0 12px; }\n  .tier-card .tier-pros li { font-size: 13px; color: var(--navy); padding: 5px 0 5px 22px; position: relative; }\n  .tier-card .tier-pros li::before { content: \"\u2713\"; position: absolute; left: 0; color: var(--green); font-weight: 700; }\n  .tier-card .tier-pros li.standout { font-weight: 700; color: var(--gold); }\n  .tier-card .tier-pros li.standout::before { color: var(--gold); content: \"\u2605\"; }\n  .tier-card .tier-cons { list-style: none; margin: 8px 0 0; padding-top: 10px; border-top: 1px dashed var(--line); }\n  .tier-card .tier-cons li { font-size: 12px; color: var(--slate); padding: 4px 0 4px 22px; position: relative; }\n  .tier-card .tier-cons li::before { content: \"\u2014\"; position: absolute; left: 4px; color: var(--slate); }\n  .tier-card .best-for {\n    margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line);\n    font-size: 12px; color: var(--slate);\n  }\n  .tier-card .best-for strong { color: var(--navy); display: block; margin-bottom: 2px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }\n  /* What's Included footer on tier cards */\n  .tier-card .whats-included {\n    margin: 12px 0 16px; padding: 12px;\n    background: var(--green-pale); border-radius: 8px;\n    border: 1px solid rgba(45, 110, 78, 0.2);\n  }\n  .tier-card .whats-included-label {\n    font-size: 10px; font-weight: 700;\n    color: var(--green); text-transform: uppercase;\n    letter-spacing: 0.1em; margin-bottom: 6px;\n  }\n  .tier-card .whats-included ul { list-style: none; margin: 0; padding: 0; }\n  .tier-card .whats-included li {\n    font-size: 12px; color: #1f4d36;\n    line-height: 1.5; padding: 2px 0;\n  }\n  /* Risk reversal box on Review screen */\n  .risk-reversal-box {\n    background: linear-gradient(135deg, var(--green-pale) 0%, #f0f7f3 100%);\n    border: 1px solid var(--green);\n    border-radius: var(--radius);\n    padding: 18px 22px; margin-top: 18px;\n  }\n  .risk-reversal-box h4 {\n    color: var(--green); font-size: 13px; font-weight: 700;\n    text-transform: uppercase; letter-spacing: 0.08em;\n    margin-bottom: 8px;\n  }\n  .risk-reversal-box ul { list-style: none; margin: 0; padding: 0; }\n  .risk-reversal-box li {\n    font-size: 13px; color: #1f4d36; line-height: 1.6;\n    padding: 3px 0; padding-left: 22px; position: relative;\n  }\n  .risk-reversal-box li::before {\n    content: \"\u2713\"; position: absolute; left: 0; top: 3px;\n    color: var(--green); font-weight: 800; font-size: 14px;\n  }\n  /* Side-tracker notes section \u2014 compact by default, expands on focus/use */\n  .side-tracker-notes {\n    padding: 8px 14px 10px; border-top: 1px solid var(--line);\n    background: var(--cream);\n  }\n  .side-tracker-notes label {\n    display: block; color: var(--slate); font-size: 11px;\n    font-weight: 700; margin-bottom: 4px;\n    text-transform: uppercase; letter-spacing: 0.06em;\n  }\n  .side-tracker-notes textarea {\n    width: 100%; min-height: 30px; height: 30px; resize: none;\n    background: var(--paper); color: var(--navy);\n    border: 1.5px solid var(--line); border-radius: 6px;\n    padding: 6px 10px; font-size: 12px; line-height: 1.4;\n    font-family: inherit;\n    transition: height 0.18s ease, box-shadow 0.15s, border-color 0.15s;\n    overflow: hidden;\n  }\n  .side-tracker-notes textarea::placeholder { color: var(--slate); opacity: 0.65; }\n  /* Grow when focused so the user has typing room. Also grow when the\n     textarea has content (the .has-content class is toggled by JS so the\n     expanded height persists after blur if notes were entered). */\n  .side-tracker-notes textarea:focus,\n  .side-tracker-notes textarea.has-content {\n    min-height: 96px; height: 96px;\n    outline: none; border-color: var(--green);\n    box-shadow: 0 0 0 3px rgba(45, 110, 78, 0.2);\n    resize: vertical;\n    overflow: auto;\n  }\n  /* \"Save & Exit\" button in side-tracker footer \u2014 compact so it doesn't crowd the total */\n  .btn-save-exit {\n    padding: 6px 12px;\n    background: rgba(200, 155, 60, 0.2); color: var(--gold);\n    border: 1px solid var(--gold);\n    border-radius: 7px;\n    font-weight: 600; font-size: 12px; cursor: pointer;\n    transition: all 0.15s; white-space: nowrap;\n  }\n  .btn-save-exit:hover {\n    background: var(--gold); color: white;\n  }\n\n  /* Notes panel on Review screen */\n  .review-notes-box {\n    margin-top: 18px; padding: 16px 20px;\n    background: var(--cream); border-left: 4px solid var(--gold);\n    border-radius: 8px;\n  }\n  .review-notes-box h4 {\n    font-size: 12px; color: var(--gold); font-weight: 700;\n    text-transform: uppercase; letter-spacing: 0.08em;\n    margin-bottom: 6px;\n  }\n  .review-notes-box p {\n    font-size: 14px; color: var(--navy); line-height: 1.55;\n    white-space: pre-wrap; /* preserve customer's line breaks */\n  }\n\n  /* DIY cost comparison on Review */\n  .diy-comparison {\n    margin-top: 16px;\n    padding: 18px 22px;\n    background: var(--paper);\n    border: 1px dashed var(--slate);\n    border-radius: var(--radius);\n  }\n  .diy-comparison h4 {\n    font-size: 13px; color: var(--slate);\n    text-transform: uppercase; letter-spacing: 0.08em;\n    font-weight: 700; margin-bottom: 4px;\n  }\n  .diy-comparison .diy-blurb {\n    font-size: 13px; color: var(--slate); margin-bottom: 14px;\n  }\n  .diy-comparison .diy-row {\n    display: flex; justify-content: space-between;\n    padding: 8px 0; border-bottom: 1px dashed var(--line);\n    font-size: 13px; color: var(--navy);\n  }\n  .diy-comparison .diy-row.diy-total {\n    border-bottom: none; padding-top: 10px; margin-top: 4px;\n    font-weight: 700; font-size: 15px;\n    border-top: 2px solid var(--navy);\n  }\n  /* \"SW List Price\" pill shown on the Timber Oil stain line in the DIY\n     comparison \u2014 signals the figure is Sherwin-Williams' published\n     per-gallon list price, not a contractor rate. */\n  .diy-comparison .diy-tag {\n    display: inline-block;\n    background: #2f6fb0; color: #fff !important;\n    font-size: 9.5px; font-weight: 700;\n    text-transform: uppercase; letter-spacing: 0.06em;\n    padding: 2px 7px; border-radius: 100px;\n    margin-left: 6px; vertical-align: middle;\n    white-space: nowrap;\n    text-decoration: none; cursor: pointer;\n    transition: background 0.12s;\n  }\n  .diy-comparison .diy-tag:hover { background: #24598f; text-decoration: none; }\n  .diy-comparison .diy-conclusion {\n    margin-top: 14px; padding: 12px 14px;\n    background: var(--gold-pale); border-radius: 8px;\n    font-size: 13px; color: #5a4a1f; line-height: 1.55;\n  }\n  .diy-comparison .diy-conclusion strong { color: var(--navy); }\n\n  /* Quote expiration banner */\n  .quote-expiry-banner {\n    background: var(--navy); color: white;\n    padding: 12px 18px; border-radius: 8px;\n    margin-bottom: 16px; display: flex; align-items: center;\n    gap: 12px; font-size: 13px;\n  }\n  .quote-expiry-banner .icon { font-size: 18px; }\n  .quote-expiry-banner strong { color: var(--gold); }\n  /* Stackable discount checkbox + summary line */\n  .radio-row .dot-outer.square {\n    border-radius: 5px;\n  }\n  .radio-row .dot-outer.square::after {\n    content: '\u2713'; width: auto; height: auto; background: transparent;\n    color: white; font-size: 14px; font-weight: 800; line-height: 1;\n    border-radius: 0;\n  }\n  .radio-row.checked .dot-outer.square {\n    background: var(--green); border-color: var(--green);\n  }\n  .discount-sum-line {\n    display: flex; justify-content: space-between; align-items: center;\n    background: var(--navy); color: white;\n    padding: 16px 20px; border-radius: 12px; margin-top: 14px;\n    font-size: 14px;\n  }\n  .discount-sum-line strong { display: block; margin-bottom: 2px; }\n  .discount-sum-line #discountSumText { font-size: 12px; opacity: 0.85; }\n  .discount-sum-rate {\n    color: var(--gold); font-size: 22px; font-weight: 800;\n    letter-spacing: -0.5px;\n  }\n\n  /* Grouped color sections */\n  .color-group { margin-bottom: 28px; }\n  .color-group-label {\n    font-size: 14px; font-weight: 700; color: var(--navy);\n    text-transform: uppercase; letter-spacing: 0.08em;\n    margin-bottom: 12px; padding-bottom: 6px;\n    border-bottom: 1px solid var(--line);\n  }\n  .color-group-label small {\n    font-weight: 500; color: var(--slate);\n    text-transform: none; letter-spacing: 0; font-size: 12px;\n  }\n  .color-swatch.custom-swatch .chip {\n    background-image: linear-gradient(135deg, transparent 0%, transparent 45%, var(--gold) 45%, var(--gold) 55%, transparent 55%) !important;\n    background-color: var(--cream) !important;\n    border: 2px dashed var(--gold) !important;\n  }\n  .custom-color-entry {\n    display: none; padding: 18px; margin-top: 14px;\n    background: var(--gold-pale);\n    border: 2px solid var(--gold); border-radius: 12px;\n  }\n  .custom-color-entry.visible { display: block; }\n\n  /* LARGER add-on cards \u2014 easier to see product images */\n  .toggle-row .addon-img {\n    width: 96px !important; height: 96px !important;\n    border-radius: 12px;\n  }\n  .addon-section .toggle-row {\n    padding: 16px 18px;\n    gap: 14px;\n    min-height: 116px;\n  }\n  .toggle-row .addon-desc .ad-name { font-size: 16px; font-weight: 700; }\n  .toggle-row .addon-desc .ad-sub { font-size: 13px; margin-top: 4px; line-height: 1.5; }\n  .toggle-row .price { font-size: 15px; }\n  /* Single-column for the stain-product-upgrades section so the images get even more room */\n  .addon-section:first-of-type .addon-grid {\n    grid-template-columns: 1fr;\n  }\n\n  /* Confetti animation overlay */\n  .confetti-piece {\n    position: fixed; width: 10px; height: 14px;\n    pointer-events: none; z-index: 999;\n    animation: confetti-fall 1.6s ease-out forwards;\n  }\n  @keyframes confetti-fall {\n    0% { transform: translateY(0) rotate(0); opacity: 1; }\n    100% { transform: translateY(120vh) rotate(720deg); opacity: 0; }\n  }\n\n  /* Bigger bundle savings celebration */\n  .bundle-savings-pill {\n    display: inline-flex; align-items: center; gap: 8px;\n    background: linear-gradient(135deg, var(--green) 0%, var(--green-light) 100%);\n    color: white; padding: 10px 18px;\n    border-radius: 100px; font-weight: 700; font-size: 15px;\n    margin-bottom: 16px;\n    box-shadow: 0 4px 12px rgba(45, 110, 78, 0.3);\n    animation: bundle-celebrate 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);\n  }\n  @keyframes bundle-celebrate {\n    0% { transform: scale(0.5); opacity: 0; }\n    60% { transform: scale(1.1); }\n    100% { transform: scale(1); opacity: 1; }\n  }\n  .tier-card.disabled {\n    opacity: 0.5; cursor: not-allowed; background: var(--line-soft);\n    filter: grayscale(70%);\n  }\n  .tier-card.disabled:hover { transform: none; box-shadow: none; border-color: var(--line); }\n\n  /* PRODUCT CHOICE CARDS */\n  .product-choice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }\n  @media (max-width: 980px) { .product-choice-grid { grid-template-columns: 1fr; } }\n  .product-choice-card {\n    background: var(--paper); border: 2px solid var(--line);\n    border-radius: var(--radius); padding: 0;\n    cursor: pointer; transition: all 0.2s;\n    position: relative; text-align: left;\n    display: flex; flex-direction: column;\n    overflow: hidden;\n  }\n  .product-choice-card:hover { border-color: var(--green-light); transform: translateY(-2px); box-shadow: var(--shadow-md); }\n  .product-choice-card.selected { border-color: var(--green); box-shadow: 0 0 0 4px rgba(45, 110, 78, 0.12); }\n  .product-choice-card.selected::after {\n    content: \"\u2713\"; position: absolute; top: 12px; right: 12px;\n    width: 28px; height: 28px; background: var(--green); color: white;\n    border-radius: 50%; display: flex; align-items: center; justify-content: center;\n    font-weight: 700; font-size: 14px; z-index: 2;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.2);\n  }\n  .product-choice-card.recommended { border-color: var(--gold); }\n  .product-choice-card.recommended.selected { border-color: var(--green); }\n  .product-choice-card .reco-flag {\n    position: absolute; top: 12px; left: 12px;\n    background: var(--gold); color: white;\n    font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 100px;\n    letter-spacing: 0.1em; text-transform: uppercase; z-index: 2;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.2);\n  }\n  .product-choice-card .prod-image {\n    width: 100%; height: 200px;\n    background-size: cover; background-position: center 50%;\n    background-color: var(--line-soft); border-bottom: 1px solid var(--line);\n    background-repeat: no-repeat;\n    position: relative;\n  }\n  /* HOA image is wide-angle of rooftops with lots of sky \u2014 anchor to bottom so the houses show */\n  .product-choice-card[data-product=\"hoa\"] .prod-image { background-position: center 85%; }\n  .product-choice-card .prod-image::after {\n    content: ''; position: absolute; inset: 0;\n    background: linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.2));\n  }\n  .product-choice-card .prod-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 6px; flex: 1; }\n  .product-choice-card .icon { font-size: 24px; }\n  .product-choice-card .h { font-size: 18px; font-weight: 700; color: var(--navy); }\n  .product-choice-card .d { font-size: 13px; color: var(--slate); line-height: 1.5; }\n  .product-choice-card .pros { font-size: 12px; color: var(--green); font-weight: 600; margin-top: auto; padding-top: 6px; }\n  /* Pros / cons bullet lists inside product family cards */\n  .product-choice-card .prod-pros, .product-choice-card .prod-cons {\n    list-style: none; margin: 8px 0 0; padding: 0;\n  }\n  .product-choice-card .prod-pros li {\n    font-size: 12.5px; color: var(--navy); line-height: 1.45;\n    padding: 4px 0 4px 20px; position: relative;\n  }\n  .product-choice-card .prod-pros li::before {\n    content: \"\u2713\"; position: absolute; left: 2px; top: 4px;\n    color: var(--green); font-weight: 700; font-size: 13px;\n  }\n  .product-choice-card .prod-cons {\n    margin-top: 8px; padding-top: 8px;\n    border-top: 1px dashed var(--line);\n  }\n  .product-choice-card .prod-cons li {\n    font-size: 12px; color: var(--slate); line-height: 1.45;\n    padding: 3px 0 3px 20px; position: relative;\n  }\n  .product-choice-card .prod-cons li::before {\n    content: \"\u2014\"; position: absolute; left: 6px; top: 3px;\n    color: var(--slate); font-weight: 700;\n  }\n  .product-choice-card .prod-recommend-note {\n    /* margin-top:auto pushes this box to the bottom of the flex column so all\n       three product cards have their \"When to pick this\" boxes aligned on the\n       same baseline regardless of how long the pros/cons lists are. */\n    margin-top: auto; padding: 10px 12px;\n    background: var(--cream); border-left: 3px solid var(--gold);\n    border-radius: 6px;\n    font-size: 12px; line-height: 1.5; color: var(--navy);\n  }\n  /* Ensure the pros/cons block leaves room above the bottom-pinned note */\n  .product-choice-card .prod-cons { margin-bottom: 8px; }\n  .product-choice-card .prod-recommend-note strong {\n    color: var(--gold); display: block; margin-bottom: 2px;\n    font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;\n  }\n  .product-choice-card.recommended .prod-recommend-note {\n    background: var(--gold-pale);\n  }\n\n  /* COLOR SWATCHES \u2014 now with images */\n  .color-grid {\n    display: grid;\n    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));\n    gap: 14px; margin-bottom: 24px;\n  }\n  .color-swatch {\n    background: var(--paper); border: 3px solid var(--line);\n    border-radius: var(--radius); padding: 10px;\n    cursor: pointer; transition: all 0.18s;\n    text-align: center; user-select: none;\n  }\n  .color-swatch:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--green-light); }\n  .color-swatch.selected { border-color: var(--green); box-shadow: 0 0 0 4px rgba(45, 110, 78, 0.15); }\n  .color-swatch .chip {\n    width: 100%; aspect-ratio: 1 / 1; border-radius: 8px;\n    border: 1px solid rgba(0,0,0,0.12);\n    background-size: cover; background-position: center;\n    background-color: var(--line-soft);\n    margin-bottom: 8px;\n  }\n  /* Hex fallback (used when no image URL) */\n  .color-swatch .chip.hex-only {\n    box-shadow: inset 0 -8px 12px rgba(0,0,0,0.15), inset 0 8px 12px rgba(255,255,255,0.08);\n  }\n  .color-swatch .name { font-size: 13px; font-weight: 700; color: var(--navy); line-height: 1.2; }\n  .color-swatch .code { font-size: 10px; color: var(--slate); margin-top: 2px; font-family: ui-monospace, monospace; }\n\n  /* FORMS */\n  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }\n  @media (max-width: 760px) { .form-grid { grid-template-columns: 1fr; } }\n  .form-grid.full { grid-template-columns: 1fr; }\n  .field label { display: block; font-size: 12px; font-weight: 700; color: var(--slate); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }\n  .field input, .field select, .field textarea {\n    width: 100%; background: var(--paper);\n    border: 2px solid var(--line); border-radius: 10px;\n    padding: 12px 14px; font-size: 15px; color: var(--navy);\n    transition: border-color 0.15s, box-shadow 0.15s;\n  }\n  .field textarea { min-height: 70px; resize: vertical; font-family: inherit; }\n  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(45, 110, 78, 0.12); }\n  .field .hint { font-size: 12px; color: var(--slate); margin-top: 4px; }\n  .field .err { font-size: 12px; color: var(--coral); margin-top: 4px; font-weight: 600; display: none; }\n  .field.invalid input, .field.invalid select {\n    border-color: var(--coral) !important;\n    background: var(--coral-pale) !important;\n    box-shadow: 0 0 0 3px rgba(200, 77, 58, 0.18);\n    animation: shake 0.4s cubic-bezier(.36,.07,.19,.97);\n  }\n  .field.invalid .err {\n    display: block; color: var(--coral); font-weight: 700;\n    font-size: 12px; margin-top: 6px;\n  }\n  .field.invalid label { color: var(--coral); }\n  @keyframes shake {\n    0%, 100% { transform: translateX(0); }\n    20%, 60% { transform: translateX(-6px); }\n    40%, 80% { transform: translateX(6px); }\n  }\n\n  /* TOGGLES */\n  .toggle-row {\n    display: flex; align-items: center; gap: 12px;\n    padding: 12px 14px; background: var(--paper);\n    border: 2px solid var(--line); border-radius: 10px;\n    cursor: pointer; transition: all 0.15s; margin-bottom: 8px; user-select: none;\n  }\n  .toggle-row:hover { border-color: var(--green-light); }\n  .toggle-row.checked { background: var(--green-pale); border-color: var(--green); }\n  .toggle-row .box {\n    width: 20px; height: 20px; border: 2px solid var(--line); border-radius: 5px;\n    background: var(--paper); flex-shrink: 0;\n    display: flex; align-items: center; justify-content: center;\n    color: white; font-weight: 700; font-size: 12px; transition: all 0.15s;\n  }\n  .toggle-row.checked .box { background: var(--green); border-color: var(--green); }\n  .toggle-row.checked .box::after { content: \"\u2713\"; }\n  .toggle-row .name { flex: 1; font-size: 14px; font-weight: 600; color: var(--navy); }\n  .toggle-row .name .restr { font-size: 10px; color: var(--coral); font-weight: 700; text-transform: uppercase; margin-left: 6px; letter-spacing: 0.05em; }\n  .toggle-row .price { color: var(--green); font-weight: 700; font-size: 14px; white-space: nowrap; }\n  .toggle-row .qty-input { width: 70px; padding: 4px 6px; font-size: 12px; border: 1px solid var(--line); border-radius: 6px; margin-right: 8px; }\n\n  /* RADIO ROW (for discounts \u2014 single-select) */\n  .radio-row {\n    display: flex; align-items: center; gap: 14px;\n    padding: 12px 16px 12px 12px; background: var(--paper);\n    border: 2px solid var(--line); border-radius: 12px;\n    cursor: pointer; transition: all 0.15s; margin-bottom: 10px;\n  }\n  .radio-row:hover { border-color: var(--green-light); transform: translateY(-1px); }\n  .radio-row.checked { background: var(--green-pale); border-color: var(--green); }\n  .radio-row .disc-img {\n    width: 76px; height: 76px; border-radius: 10px;\n    background-size: cover; background-position: center;\n    background-color: var(--line-soft);\n    flex-shrink: 0; border: 1px solid var(--line);\n  }\n  .radio-row.no-img { padding-left: 16px; }\n  .radio-row .dot-outer {\n    width: 22px; height: 22px; border: 2px solid var(--line); border-radius: 50%;\n    flex-shrink: 0; display: flex; align-items: center; justify-content: center;\n    transition: all 0.15s;\n  }\n  .radio-row.checked .dot-outer { border-color: var(--green); }\n  .radio-row .dot-outer::after {\n    content: ''; width: 10px; height: 10px; border-radius: 50%;\n    background: var(--green); opacity: 0; transition: opacity 0.15s;\n  }\n  .radio-row.checked .dot-outer::after { opacity: 1; }\n  .radio-row .label { flex: 1; }\n  .radio-row .label .head { font-size: 14px; font-weight: 700; color: var(--navy); }\n  .radio-row .label .sub { font-size: 12px; color: var(--slate); margin-top: 2px; line-height: 1.4; }\n  .radio-row .value { color: var(--green); font-weight: 700; font-size: 16px; white-space: nowrap; }\n  /* Informational rows (e.g. cash payment) \u2014 neutral palette so it doesn't read as a percentage discount */\n  .radio-row.informational .value { color: var(--navy); font-size: 13px; }\n  .radio-row.informational.checked { background: var(--cream); border-color: var(--navy); }\n  .radio-row.informational.checked .dot-outer.square { background: var(--navy); border-color: var(--navy); }\n\n  /* INFO PANELS */\n  .info-panel { background: var(--paper); border: 2px solid var(--line); border-radius: var(--radius-lg); padding: 22px; margin-bottom: 20px; }\n  .info-panel.highlighted { border-color: var(--gold); background: linear-gradient(180deg, var(--gold-pale) 0%, var(--paper) 50%); }\n  .info-panel.previous { border-color: #3a7095; background: linear-gradient(180deg, #e6f0f7 0%, var(--paper) 50%); }\n  .info-panel h3 { font-size: 15px; color: var(--navy); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }\n  .info-panel .panel-hint { font-size: 13px; color: var(--slate); margin-bottom: 16px; }\n\n  /* RECOMMENDATION BANNER */\n  .reco-banner {\n    background: linear-gradient(135deg, var(--gold-pale) 0%, #fff7e0 100%);\n    border-left: 4px solid var(--gold);\n    border-radius: var(--radius); padding: 14px 18px;\n    margin-bottom: 20px; display: flex; align-items: flex-start; gap: 12px;\n  }\n  .reco-banner .reco-ico { font-size: 20px; flex-shrink: 0; }\n  .reco-banner .reco-content { flex: 1; font-size: 13px; color: #5a4a1f; line-height: 1.5; }\n  .reco-banner .reco-content strong { color: var(--navy); display: block; margin-bottom: 2px; }\n\n  /* TIP BOXES (employee-facing scripts) */\n  .tip-box {\n    background: linear-gradient(135deg, #fff 0%, #f7fbf8 100%);\n    border-left: 4px solid var(--green);\n    border-radius: 10px;\n    padding: 14px 16px; margin-bottom: 16px;\n    font-size: 13px; line-height: 1.55;\n    display: flex; gap: 12px; align-items: flex-start;\n  }\n  .tip-box .tip-ico { font-size: 18px; flex-shrink: 0; line-height: 1.3; }\n  .tip-box .tip-body { flex: 1; color: var(--navy); }\n  .tip-box .tip-body strong { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--green); margin-bottom: 4px; }\n  .tip-box .tip-body em { font-style: italic; color: var(--slate); }\n  /* (Script tip variant removed \u2014 all tips are now customer-facing facts) */\n\n  /* Wood-age 3-button selector on Step 3 */\n  .wood-age-buttons {\n    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;\n  }\n  @media (max-width: 760px) { .wood-age-buttons { grid-template-columns: 1fr; } }\n  .wood-age-btn {\n    display: flex; align-items: center; gap: 12px;\n    padding: 14px 16px; background: var(--paper);\n    border: 2px solid var(--line); border-radius: 12px;\n    cursor: pointer; transition: all 0.15s;\n    text-align: left;\n  }\n  .wood-age-btn:hover { border-color: var(--green-light); transform: translateY(-1px); }\n  .wood-age-btn.selected {\n    border-color: var(--green); background: var(--green-pale);\n    box-shadow: 0 0 0 3px rgba(45, 110, 78, 0.15);\n  }\n  .wood-age-btn .wa-ico { font-size: 28px; flex-shrink: 0; }\n  .wood-age-btn .wa-label { font-size: 14px; font-weight: 700; color: var(--navy); line-height: 1.25; }\n  .wood-age-btn .wa-label small { display: block; font-weight: 500; color: var(--slate); margin-top: 2px; font-size: 11px; }\n  .wood-age-btn.selected .wa-label small { color: var(--green); }\n  /* Fence height selector \u2014 6 ft / 8 ft / Other segmented buttons. */\n  .height-select { display: flex; gap: 8px; flex-wrap: wrap; }\n  .height-opt {\n    flex: 1 1 0; min-width: 60px; padding: 12px 10px; background: var(--paper);\n    border: 2px solid var(--line); border-radius: 10px; cursor: pointer;\n    font-size: 14px; font-weight: 700; color: var(--navy); text-align: center;\n    transition: all 0.15s;\n  }\n  .height-opt:hover { border-color: var(--green-light); }\n  .height-opt.selected { border-color: var(--green); background: var(--green-pale); color: var(--green); box-shadow: 0 0 0 3px rgba(45, 110, 78, 0.15); }\n\n  /* Disabled condition cards (gated by wood age) */\n  .condition-card.locked {\n    opacity: 0.45; cursor: not-allowed; filter: grayscale(70%);\n    pointer-events: none;\n  }\n  .condition-card.locked .reco-flag,\n  .condition-card.locked.recommended { background: var(--line-soft); border-color: var(--line); }\n  .condition-card .locked-badge {\n    position: absolute; top: 12px; left: 12px;\n    background: var(--slate); color: white; z-index: 2;\n    font-size: 10px; font-weight: 700; padding: 4px 10px;\n    border-radius: 100px; letter-spacing: 0.08em; text-transform: uppercase;\n    box-shadow: 0 2px 6px rgba(0,0,0,0.2);\n  }\n\n  /* MEASUREMENTS */\n  .measure-section { background: var(--paper); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-sm); margin-bottom: 16px; }\n  .measure-section h3 { font-size: 16px; color: var(--navy); margin-bottom: 4px; }\n  .measure-section .section-hint { font-size: 13px; color: var(--slate); margin-bottom: 16px; }\n\n  /* REFERENCE PHOTOS \u2014 grid of square thumbs with a Remove overlay.\n     Lives on the Measurements step. Each card stays a stable 100\u00d7100\n     so the layout doesn't reflow as photos finish uploading. */\n  .photos-section { margin-top: 16px; }\n  .photo-upload-grid {\n    display: grid;\n    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));\n    gap: 10px;\n    margin-bottom: 12px;\n  }\n  .photo-upload-grid:empty { display: none; }\n  .photo-card {\n    position: relative;\n    aspect-ratio: 1 / 1;\n    background: var(--line-soft);\n    border: 1px solid var(--line);\n    border-radius: 10px;\n    overflow: hidden;\n  }\n  .photo-card img {\n    width: 100%; height: 100%; object-fit: cover;\n    display: block;\n  }\n  .photo-card .photo-remove {\n    position: absolute; top: 4px; right: 4px;\n    background: rgba(26, 37, 64, 0.85); color: white;\n    width: 26px; height: 26px; border-radius: 999px;\n    display: flex; align-items: center; justify-content: center;\n    font-size: 14px; font-weight: 700;\n    cursor: pointer; user-select: none;\n    border: none;\n    -webkit-tap-highlight-color: transparent;\n  }\n  .photo-card.uploading::after {\n    content: 'Uploading\u2026';\n    position: absolute; inset: 0;\n    display: flex; align-items: center; justify-content: center;\n    background: rgba(0,0,0,0.5); color: white;\n    font-size: 11px; font-weight: 600;\n  }\n  .photo-card.failed::after {\n    content: '\u26a0 Upload failed';\n    position: absolute; inset: 0;\n    display: flex; align-items: center; justify-content: center;\n    background: rgba(193, 74, 74, 0.78); color: white;\n    font-size: 11px; font-weight: 600;\n    text-align: center; padding: 6px;\n  }\n  .photo-add-btn { display: inline-flex; align-items: center; gap: 6px; }\n  @media (max-width: 640px) {\n    .photo-upload-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }\n  }\n\n  /* ALERTS */\n  .alert { padding: 14px 18px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 12px; }\n  .alert .ico { font-size: 18px; line-height: 1.2; flex-shrink: 0; }\n  .alert.info { background: #e6f0f7; border-left: 4px solid #3a7095; color: #234862; }\n  .alert.warn { background: var(--gold-pale); border-left: 4px solid var(--gold); color: #5a4a1f; }\n  .alert.success { background: var(--green-pale); border-left: 4px solid var(--green); color: #1f4d36; }\n  .alert.error { background: var(--coral-pale); border-left: 4px solid var(--coral); color: #5a2519; }\n  .alert strong { display: block; margin-bottom: 2px; }\n\n  /* CONDITION CARDS \u2014 image-based */\n  .condition-card {\n    background: var(--paper); border: 2px solid var(--line);\n    border-radius: var(--radius);\n    cursor: pointer; transition: all 0.2s;\n    text-align: left; display: flex; flex-direction: column;\n    padding: 0; overflow: hidden;\n    position: relative;\n  }\n  .condition-card:hover { border-color: var(--green-light); transform: translateY(-2px); box-shadow: var(--shadow-md); }\n  .condition-card.selected { border-color: var(--green); box-shadow: 0 0 0 4px rgba(45, 110, 78, 0.12); }\n  .condition-card.selected::after {\n    content: \"\u2713\"; position: absolute; top: 10px; right: 10px;\n    width: 26px; height: 26px; background: var(--green); color: white;\n    border-radius: 50%; display: flex; align-items: center; justify-content: center;\n    font-weight: 700; font-size: 13px; z-index: 2;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.2);\n  }\n  .condition-card .card-image { height: 130px; }\n  .condition-card .cond-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }\n  .condition-card .cond-name { font-size: 15px; font-weight: 700; color: var(--navy); }\n  .condition-card .cond-prep { color: var(--slate); font-size: 12px; line-height: 1.45; }\n  .condition-card .cond-add {\n    font-size: 15px; color: var(--coral); font-weight: 700;\n    padding-top: 10px; border-top: 1px dashed var(--line);\n  }\n  /* Footer wrapper that keeps the timing badge + the prep cost line glued\n     to the bottom of every condition card, so all three cards line up\n     uniformly even when their bullet lists are different lengths. */\n  .condition-card .cond-card-footer {\n    margin-top: auto;\n    display: flex; flex-direction: column; gap: 8px;\n    width: 100%;\n  }\n  .condition-card.selected .cond-add { color: var(--green); }\n  .condition-card.recommended {\n    border-color: var(--gold);\n    background: linear-gradient(180deg, var(--gold-pale) 0%, var(--paper) 25%);\n  }\n  .condition-card.recommended .reco-flag {\n    position: absolute; top: 12px; left: 12px;\n    background: var(--gold); color: white;\n    font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 100px;\n    letter-spacing: 0.1em; text-transform: uppercase;\n    z-index: 2; box-shadow: 0 2px 8px rgba(0,0,0,0.2);\n  }\n  .condition-card.recommended.selected { border-color: var(--green); }\n\n  /* Bullet point sections inside condition cards */\n  .cond-bullets-group { margin-top: 10px; }\n  .cond-bullets-label {\n    font-size: 10px; font-weight: 700; color: var(--slate);\n    text-transform: uppercase; letter-spacing: 0.08em;\n    margin-bottom: 4px;\n  }\n  .cond-bullets { list-style: none; margin: 0 0 6px 0; padding: 0; }\n  .cond-bullets li {\n    font-size: 12px; color: var(--navy); line-height: 1.4;\n    padding: 3px 0 3px 18px; position: relative;\n  }\n  .cond-bullets li::before {\n    content: \"\u2022\"; position: absolute; left: 4px; color: var(--green); font-weight: 700;\n  }\n  .cond-bullets.process li::before { content: \"\u2192\"; color: var(--gold); font-size: 11px; }\n  .cond-timing {\n    font-size: 11px; color: var(--gold); font-weight: 700;\n    background: var(--gold-pale); padding: 4px 8px;\n    border-radius: 6px; margin-top: 8px;\n    display: inline-block; text-transform: uppercase; letter-spacing: 0.04em;\n  }\n\n  /* Service-includes section \u2014 checkmarked-by-default, never billable, never togglable */\n  .service-includes-section { background: linear-gradient(180deg, var(--green-pale) 0%, var(--paper) 80%); border: 1px solid rgba(45, 110, 78, 0.25); }\n  .service-includes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }\n  @media (max-width: 760px) { .service-includes-grid { grid-template-columns: 1fr; } }\n  .service-include-row {\n    display: flex; align-items: center; gap: 12px;\n    padding: 12px 14px; background: var(--paper);\n    border: 1.5px solid rgba(45, 110, 78, 0.25);\n    border-radius: 10px;\n  }\n  .service-include-row .check {\n    width: 28px; height: 28px; flex-shrink: 0;\n    background: var(--green); color: white;\n    border-radius: 50%;\n    display: flex; align-items: center; justify-content: center;\n    font-weight: 800; font-size: 14px;\n  }\n  .service-include-row .addon-desc { flex: 1; }\n  .service-include-row .addon-desc .ad-name { font-size: 14px; font-weight: 700; color: var(--navy); }\n  .service-include-row .addon-desc .ad-sub { font-size: 12px; color: var(--slate); margin-top: 2px; line-height: 1.45; }\n  .service-include-row .price { color: var(--green); font-weight: 700; font-size: 12px; letter-spacing: 0.06em; }\n\n  /* ADD-ONS */\n  .addon-section { background: var(--paper); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 14px; box-shadow: var(--shadow-sm); }\n  .addon-section h4 { font-size: 14px; color: var(--navy); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }\n  .addon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }\n  @media (max-width: 760px) { .addon-grid { grid-template-columns: 1fr; } }\n  .toggle-row .addon-img {\n    width: 44px; height: 44px; border-radius: 8px;\n    background-size: cover; background-position: center;\n    background-color: var(--line-soft); flex-shrink: 0;\n    border: 1px solid var(--line);\n  }\n  .toggle-row .addon-desc {\n    flex: 1; display: flex; flex-direction: column;\n  }\n  .toggle-row .addon-desc .ad-name { font-size: 14px; font-weight: 600; color: var(--navy); }\n  .toggle-row .addon-desc .ad-sub { font-size: 11px; color: var(--slate); margin-top: 2px; line-height: 1.4; }\n  .toggle-row .addon-desc .ad-name .restr { font-size: 10px; color: var(--coral); font-weight: 700; text-transform: uppercase; margin-left: 6px; letter-spacing: 0.05em; }\n  /* Custom addon button */\n  .custom-add-btn {\n    background: var(--navy); color: white;\n    padding: 6px 12px; border-radius: 6px;\n    font-size: 12px; font-weight: 600;\n  }\n  .custom-add-btn:hover { background: var(--navy-light); }\n  .custom-add-form {\n    background: var(--cream); padding: 14px;\n    border-radius: 10px; margin-top: 12px;\n    border: 1px dashed var(--slate);\n  }\n  .custom-add-form .form-row { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 8px; align-items: end; }\n  @media (max-width: 760px) { .custom-add-form .form-row { grid-template-columns: 1fr; } }\n  .custom-add-form input, .custom-add-form select {\n    width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px;\n    font-size: 13px; background: white;\n  }\n  .custom-add-form label { font-size: 11px; color: var(--slate); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; display: block; }\n  .custom-add-form .btn-save { background: var(--green); color: white; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 13px; }\n  .custom-add-form .btn-cancel { background: transparent; color: var(--slate); padding: 8px 8px; font-size: 13px; }\n  .custom-item-row {\n    display: flex; align-items: center; gap: 12px;\n    padding: 10px 14px; background: #fff7e6;\n    border: 1.5px dashed var(--gold); border-radius: 10px;\n    margin-bottom: 6px;\n  }\n  .custom-item-row .name { flex: 1; font-size: 14px; font-weight: 600; color: var(--navy); }\n  .custom-item-row .price { color: var(--green); font-weight: 700; font-size: 14px; margin-right: 8px; }\n  .custom-item-row .remove-btn { color: var(--coral); font-size: 18px; padding: 2px 8px; }\n  .employee-badge {\n    display: inline-block;\n    /* Match the size & shape of the adjacent \"+ Add Custom Item\" button\n       but with a warm coral palette so it reads as \"internal/heads-up\"\n       rather than another action button. */\n    background: var(--coral-pale); color: var(--coral);\n    border: 1px solid var(--coral);\n    padding: 6px 12px; border-radius: 6px;\n    font-size: 12px; font-weight: 700;\n    letter-spacing: 0.06em; text-transform: uppercase;\n    line-height: 1;\n  }\n\n  /* STAGE NAV */\n  .stage-nav { display: flex; gap: 12px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); }\n  .btn { padding: 14px 28px; border-radius: 10px; font-size: 15px; font-weight: 700; transition: all 0.15s; display: inline-flex; align-items: center; gap: 8px; }\n  .btn-primary { background: var(--green); color: white; }\n  .btn-primary:hover { background: var(--green-light); transform: translateY(-1px); box-shadow: var(--shadow-md); }\n  .btn-primary:disabled { background: var(--line); color: var(--slate); cursor: not-allowed; transform: none; box-shadow: none; }\n  .btn-secondary { background: transparent; color: var(--navy); border: 2px solid var(--line); }\n  .btn-secondary:hover { border-color: var(--navy); background: var(--paper); }\n  .btn-ghost { background: transparent; color: var(--slate); }\n  .btn-ghost:hover { color: var(--navy); }\n  .btn .arr-l { margin-right: -2px; }\n  .btn .arr-r { margin-left: -2px; }\n\n  /* BUNDLE */\n  .saved-projects { background: var(--paper); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 18px; border: 1px solid var(--line); }\n  .bundle-stack-title { font-size: 12px; color: var(--slate); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; margin-bottom: 8px; }\n  .saved-project-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px dashed var(--line); gap: 10px; }\n  .saved-project-row:last-child { border-bottom: none; }\n  .saved-project-row .ico { font-size: 22px; }\n  .saved-project-row .meta { flex: 1; padding-left: 4px; }\n  .saved-project-row .meta .nm { font-weight: 700; color: var(--navy); font-size: 14px; }\n  .saved-project-row .meta .det { font-size: 12px; color: var(--slate); margin-top: 2px; }\n  .saved-project-row .amt { color: var(--green); font-weight: 700; font-size: 16px; margin-right: 6px; }\n  .saved-project-row .row-actions { display: flex; gap: 6px; }\n  .saved-project-row .row-actions button { padding: 6px 12px; border-radius: 7px; font-size: 12px; font-weight: 600; transition: all 0.12s; }\n  .saved-project-row .row-actions .edit-btn { background: var(--navy); color: white; }\n  .saved-project-row .row-actions .edit-btn:hover { background: var(--navy-light); }\n  .saved-project-row .row-actions .remove-btn { background: transparent; color: var(--coral); border: 1px solid var(--coral); }\n  .saved-project-row .row-actions .remove-btn:hover { background: var(--coral-pale); }\n\n  /* FINAL BREAKDOWN */\n  .final-grid { display: grid; grid-template-columns: 1fr 380px; gap: 24px; align-items: start; }\n  @media (max-width: 980px) { .final-grid { grid-template-columns: 1fr; } }\n  .final-main { background: var(--paper); border-radius: var(--radius-lg); padding: 28px; box-shadow: var(--shadow-md); }\n  .final-main h3 { font-size: 14px; color: var(--green); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; margin-bottom: 16px; }\n  .breakdown-line { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--line); gap: 12px; }\n  .breakdown-line:last-child { border-bottom: none; }\n  .breakdown-line .desc { font-size: 14px; color: var(--navy); font-weight: 500; }\n  .breakdown-line .desc small { display: block; font-size: 12px; color: var(--slate); font-weight: 400; margin-top: 2px; }\n  .breakdown-line .val { font-weight: 700; color: var(--navy); white-space: nowrap; }\n  .breakdown-line.discount .val { color: var(--green); }\n  .breakdown-line.minimum { background: var(--gold-pale); margin: 4px -12px; padding: 10px 12px; border-radius: 6px; border: none; }\n  .breakdown-line.minimum .desc { color: #5a4a1f; }\n  .breakdown-line.minimum .val { color: var(--gold); }\n  .breakdown-section { margin-bottom: 18px; padding-bottom: 12px; border-bottom: 2px solid var(--line); }\n  .breakdown-section h4 { font-size: 12px; color: var(--slate); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; margin-bottom: 6px; }\n  .breakdown-section:last-child { border-bottom: none; }\n\n  .color-pill { display: inline-flex; align-items: center; gap: 8px; background: var(--cream); padding: 4px 10px; border-radius: 100px; font-size: 12px; font-weight: 600; color: var(--navy); margin-top: 4px; }\n  .color-pill .dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.15); background-size: cover; background-position: center; }\n  .color-pill.hoa { background: var(--gold-pale); color: #5a4a1f; }\n  .color-pill.hoa .dot { background: var(--gold); border-color: #8e6e26; }\n\n  .grand-total { margin-top: 12px; padding: 18px 20px; background: var(--navy); border-radius: var(--radius); color: white; display: flex; justify-content: space-between; align-items: center; }\n  .grand-total .label { font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; opacity: 0.85; max-width: 50%; }\n  .grand-total .amount { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; display: block; }\n  .grand-total .grand-total-amount-block { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }\n  .grand-total .grand-total-savings {\n    display: block; font-size: 12px; color: var(--gold);\n    font-weight: 600; margin-top: 4px; letter-spacing: 0;\n    text-transform: none;\n  }\n  /* Math walk-through \u2014 explicit calculation lines above Grand Total */\n  .math-walk {\n    margin-top: 14px; padding: 14px 18px;\n    background: var(--cream); border: 1px solid var(--line);\n    border-radius: 10px;\n  }\n  .math-walk h4 {\n    font-size: 11px; color: var(--slate);\n    text-transform: uppercase; letter-spacing: 0.08em;\n    font-weight: 700; margin-bottom: 10px;\n  }\n  .math-walk-row {\n    display: flex; justify-content: space-between;\n    padding: 5px 0; font-size: 13px; color: var(--navy);\n  }\n  .math-walk-row.math-walk-subtotal {\n    border-top: 1px solid var(--line); margin-top: 4px; padding-top: 8px;\n    font-weight: 700;\n  }\n  .math-walk-row.math-walk-discount {\n    color: var(--green); font-weight: 600;\n  }\n  .math-walk-row.math-walk-total-savings {\n    border-top: 1px dashed var(--line); margin-top: 4px; padding-top: 8px;\n    color: var(--green); font-weight: 800; font-size: 14px;\n  }\n  /* Collapse-project button on the active breakdown header */\n  .breakdown-header-row {\n    display: flex; justify-content: space-between; align-items: center;\n    gap: 12px; margin-bottom: 16px;\n  }\n  .breakdown-header-row h3 {\n    flex: 1; min-width: 0;\n  }\n  .btn-collapse-project {\n    background: transparent; color: var(--slate);\n    border: 1px solid var(--line); border-radius: 7px;\n    padding: 6px 12px; font-size: 12px; font-weight: 600;\n    cursor: pointer; transition: all 0.15s;\n    white-space: nowrap; flex-shrink: 0;\n  }\n  .btn-collapse-project:hover {\n    border-color: var(--navy); color: var(--navy);\n    background: var(--cream);\n  }\n\n  /* Project Total \u2014 sits in the middle of the breakdown; less prominent than the bottom Grand Total */\n  .project-total {\n    margin-top: 12px; padding: 14px 18px;\n    background: var(--cream); border: 1.5px solid var(--navy);\n    border-radius: 10px; color: var(--navy);\n    display: flex; justify-content: space-between; align-items: center;\n  }\n  .project-total .label {\n    font-size: 12px; text-transform: uppercase;\n    letter-spacing: 0.1em; font-weight: 700; color: var(--slate);\n  }\n  .project-total .amount {\n    font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: var(--navy);\n  }\n  /* DIY per-project breakdown (when multiple projects in the quote) */\n  .diy-project-list {\n    background: var(--cream); border-radius: 8px;\n    padding: 10px 14px; margin-bottom: 12px;\n    border: 1px dashed var(--line);\n  }\n  .diy-project-item {\n    display: flex; justify-content: space-between;\n    padding: 5px 0; font-size: 12px; color: var(--slate);\n    border-bottom: 1px dashed rgba(0,0,0,0.06);\n  }\n  .diy-project-item:last-child { border-bottom: none; }\n\n  .final-side { background: var(--paper); border-radius: var(--radius-lg); padding: 22px; box-shadow: var(--shadow-md); position: sticky; top: 90px; }\n  .final-side h3 { font-size: 14px; color: var(--navy); margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }\n  /* Collapsible Adjust & Recalculate panel \u2014 full-width header acts as the\n     toggle button. On mobile this defaults collapsed; on desktop it defaults\n     expanded. The state persists across re-renders. */\n  .edit-panel-toggle {\n    width: 100%; display: flex; justify-content: space-between; align-items: center;\n    background: transparent; border: none; padding: 0; margin-bottom: 14px;\n    padding-bottom: 8px; border-bottom: 1px solid var(--line);\n    cursor: pointer; user-select: none;\n  }\n  .edit-panel-toggle h3 {\n    margin: 0; padding: 0; border: none;\n    font-size: 14px; color: var(--navy);\n  }\n  .edit-panel-arrow {\n    font-size: 14px; color: var(--slate);\n    transition: transform 0.2s ease;\n  }\n  .edit-panel-collapsed .edit-panel-toggle { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }\n  .edit-panel-collapsed .edit-panel-arrow { transform: rotate(-90deg); }\n  .edit-panel-collapsed .edit-panel-body { display: none; }\n  .side-section { margin-bottom: 18px; }\n  .side-section h4 { font-size: 11px; color: var(--slate); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; font-weight: 700; }\n  .mini-tier-row { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; transition: all 0.15s; font-size: 13px; }\n  .mini-tier-row:hover { border-color: var(--green-light); }\n  .mini-tier-row.active { border-color: var(--green); background: var(--green-pale); font-weight: 700; }\n  .mini-tier-row .label { font-weight: 600; color: var(--navy); }\n  .mini-tier-row .price { color: var(--green); font-weight: 700; }\n\n  .mini-toggle { display: flex; align-items: center; gap: 8px; padding: 6px 10px; cursor: pointer; border-radius: 6px; transition: background 0.12s; font-size: 13px; }\n  .mini-toggle:hover { background: var(--line-soft); }\n  .mini-toggle.checked { background: var(--green-pale); color: var(--green); }\n  .mini-toggle .check { width: 16px; height: 16px; border: 1.5px solid var(--line); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; }\n  .mini-toggle.checked .check { background: var(--green); border-color: var(--green); }\n  .mini-toggle.checked .check::after { content: \"\u2713\"; }\n  .mini-toggle .name { flex: 1; }\n  .mini-toggle .price { color: var(--green); font-weight: 600; font-size: 12px; }\n  .mini-toggle .mini-qty-input {\n    width: 48px; padding: 3px 6px; font-size: 12px;\n    border: 1px solid var(--line); border-radius: 4px;\n    text-align: center; margin-right: 6px;\n    background: white;\n  }\n  .mini-toggle .mini-qty-input:focus { outline: none; border-color: var(--green); }\n\n  .payment-pill { display: inline-flex; align-items: center; gap: 6px; background: var(--gold-pale); color: #5a4a1f; padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: 700; margin-left: 8px; }\n\n  .action-bar { margin-top: 28px; padding: 24px; background: var(--paper); border-radius: var(--radius-lg); display: flex; gap: 12px; box-shadow: var(--shadow-md); flex-wrap: wrap; justify-content: space-between; align-items: center; }\n  .action-bar .left { display: flex; gap: 8px; flex-wrap: wrap; }\n  .action-bar .right { display: flex; gap: 10px; flex-wrap: wrap; }\n\n  .success-screen { text-align: center; padding: 48px 24px; background: var(--paper); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }\n  .jobber-push-row {\n    display: flex; align-items: flex-start; gap: 10px;\n    padding: 12px 16px; border-radius: 10px;\n    font-size: 14px; text-align: left;\n  }\n  .jobber-push-row.pending { background: #fff5e6; color: #6b5d2a; }\n  .jobber-push-row.success { background: #e6f5ec; color: #2d6e4e; }\n  .jobber-push-row.error   { background: var(--coral-pale); color: var(--coral); }\n  .jobber-push-row .ico { font-size: 18px; flex-shrink: 0; }\n  /* Diagnostic <pre> blocks inside the error row \u2014 wrap long lines\n     (Jobber's encoded IDs are 50+ chars and were causing horizontal\n     overflow) and constrain height with vertical scroll. */\n  .jobber-push-row .err-pre {\n    margin: 6px 0 0;\n    padding: 8px 10px;\n    background: #fff;\n    color: var(--navy);\n    border-radius: 6px;\n    font-size: 11px; line-height: 1.4;\n    white-space: pre-wrap;\n    word-break: break-word;\n    overflow-wrap: anywhere;\n    max-height: 200px;\n    overflow-y: auto;\n    text-align: left;\n    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;\n  }\n  .jobber-push-row details summary { color: inherit; }\n  .success-icon { width: 72px; height: 72px; background: var(--green); border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 20px; animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }\n  @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }\n\n  /* Project-switch dialog action row */\n  .project-switch-actions {\n    padding: 14px 20px 18px;\n    display: flex; flex-wrap: wrap; gap: 8px;\n    justify-content: flex-end;\n    border-top: 1px solid var(--line);\n  }\n  .project-switch-actions .btn { min-height: 44px; padding: 10px 16px; font-size: 14px; }\n  @media (max-width: 640px) {\n    .project-switch-actions { flex-direction: column-reverse; }\n    .project-switch-actions .btn { width: 100%; }\n  }\n\n  /* Read-only view (finished/archived/trashed) */\n  .view-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 18px 0 24px; }\n  .view-summary { background: var(--paper); border: 1.5px solid var(--line); border-radius: 12px; padding: 22px; }\n  .view-summary h3 { font-size: 13px; font-weight: 700; color: var(--slate); text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 10px; }\n  .view-summary h3:not(:first-child) { margin-top: 22px; }\n  .view-summary .vs-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }\n  .view-summary .vs-row:last-of-type { border-bottom: none; }\n  .view-summary .vs-row .lbl { color: var(--slate); }\n  .view-summary .vs-row .val { color: var(--navy); font-weight: 600; text-align: right; }\n  .view-summary .vs-proj { padding: 12px 14px; background: #fafaf7; border-radius: 8px; margin-bottom: 10px; }\n  .view-summary .vs-proj-head { display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }\n  .view-summary .vs-proj-meta { font-size: 12px; color: var(--slate); }\n  /* Jobber status block inside the read-only summary */\n  .view-summary .vs-jobber {\n    margin: 16px 0 0; padding: 14px 16px;\n    border-radius: 10px;\n    display: flex; flex-wrap: wrap; gap: 10px;\n    align-items: center; justify-content: space-between;\n  }\n  .view-summary .vs-jobber.success { background: #e6f5ec; color: #2d6e4e; }\n  .view-summary .vs-jobber.error   { background: var(--coral-pale); color: var(--coral); }\n  .view-summary .vs-jobber.pending { background: #fff5e6; color: #6b5d2a; }\n  .view-summary .vs-jobber-status { display: flex; align-items: center; gap: 8px; font-size: 14px; flex: 1; min-width: 200px; }\n  .view-summary .vs-jobber-status .ico { font-size: 18px; }\n  .view-summary .vs-jobber-btn { font-size: 13px; padding: 8px 14px; min-height: 38px; }\n  @media (max-width: 640px) {\n    .view-summary .vs-jobber { flex-direction: column; align-items: stretch; }\n    .view-summary .vs-jobber-btn { width: 100%; }\n  }\n\n  .view-summary .vs-total { margin-top: 18px; padding-top: 16px; border-top: 2px solid var(--green); display: flex; justify-content: space-between; align-items: center; }\n  .view-summary .vs-total .lbl { font-size: 14px; color: var(--slate); text-transform: uppercase; letter-spacing: 0.06em; }\n  .view-summary .vs-total .val { font-size: 24px; font-weight: 800; color: var(--green); }\n  .view-status-pill { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-left: 10px; }\n  .view-status-pill.finished { background: #e6f5ec; color: #2d6e4e; }\n  .view-status-pill.archived { background: #f0ece0; color: #6b5d2a; }\n  .view-status-pill.trashed  { background: var(--coral-pale); color: var(--coral); }\n  @media (max-width: 640px) {\n    .view-actions .btn { flex: 1; min-height: 44px; font-size: 13px; }\n    .view-summary { padding: 16px 14px; }\n    .view-summary .vs-row { font-size: 13px; }\n    .view-summary .vs-total .val { font-size: 20px; }\n  }\n\n  .editing-banner { background: var(--gold-pale); border-left: 4px solid var(--gold); padding: 10px 16px; border-radius: 8px; font-size: 13px; color: #5a4a1f; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }\n  .editing-banner strong { color: var(--navy); }\n  .editing-banner button { font-size: 12px; padding: 4px 10px; border-radius: 6px; background: var(--navy); color: white; font-weight: 600; }\n  /* Cancel-add button inside the \"Adding another project\" banner */\n  .btn-cancel-add {\n    margin-left: auto; padding: 8px 14px;\n    background: var(--paper); color: var(--navy);\n    border: 1.5px solid var(--navy); border-radius: 8px;\n    font-size: 12px; font-weight: 700; cursor: pointer;\n    transition: all 0.15s; white-space: nowrap;\n  }\n  .btn-cancel-add:hover { background: var(--navy); color: white; }\n\n  @media print { .app-header, .progress, .stage-nav, .action-bar, .final-side, .side-tracker, .side-tracker-tab, .info-dialog { display: none !important; } }\n\n  /* ---- Customer search on Step 1 (Jobber type-ahead) ---- */\n  .cust-search {\n    position: relative;\n    margin: 0 0 20px;\n    padding: 14px 16px;\n    background: #f0f5f1;\n    border: 1.5px solid #d2e6d6;\n    border-radius: 12px;\n  }\n  .cust-search-label {\n    display: block; font-size: 12px; font-weight: 700;\n    color: var(--green); text-transform: uppercase;\n    letter-spacing: 0.06em; margin-bottom: 8px;\n  }\n  .cust-search input {\n    width: 100%; padding: 12px 14px;\n    border: 1.5px solid var(--line); border-radius: 10px;\n    font-size: 16px;\n    background: var(--paper); color: var(--navy);\n    -webkit-appearance: none;\n    transition: border-color 0.12s;\n  }\n  .cust-search input:focus { outline: none; border-color: var(--green); }\n  .cust-search-results {\n    position: absolute; left: 16px; right: 16px; top: 100%;\n    background: var(--paper); border: 1.5px solid var(--line);\n    border-radius: 10px; box-shadow: var(--shadow-lg);\n    margin-top: 4px;\n    max-height: 320px; overflow-y: auto;\n    z-index: 20;\n  }\n  .cust-result {\n    padding: 10px 14px; border-bottom: 1px solid var(--line);\n    cursor: pointer; transition: background 0.12s;\n    -webkit-tap-highlight-color: transparent;\n  }\n  .cust-result:last-child { border-bottom: none; }\n  .cust-result:hover, .cust-result.kbd-active { background: #eaf3ec; }\n  .cust-result .cr-name { font-size: 14px; font-weight: 700; color: var(--navy); }\n  .cust-result .cr-meta {\n    font-size: 12px; color: var(--slate); margin-top: 2px;\n    display: flex; gap: 8px; flex-wrap: wrap;\n  }\n  .cust-result .cr-meta .sep { opacity: 0.5; }\n  .cust-search-empty, .cust-search-loading {\n    padding: 12px 14px; font-size: 13px; color: var(--slate);\n    text-align: center; font-style: italic;\n  }\n  .cust-search-picked {\n    margin-top: 8px;\n    padding: 8px 12px;\n    background: #e6f5ec; color: #2d6e4e;\n    border-radius: 8px; font-size: 13px;\n    display: flex; align-items: center; justify-content: space-between;\n    gap: 10px;\n  }\n  .cust-search-picked .pck-clear {\n    background: transparent; border: none; color: var(--coral);\n    font-size: 12px; font-weight: 700; cursor: pointer;\n    text-decoration: underline;\n    -webkit-tap-highlight-color: transparent;\n  }\n  @media (max-width: 640px) {\n    .cust-search { padding: 12px; }\n    .cust-search input { font-size: 16px; }\n    .cust-search-results { left: 12px; right: 12px; max-height: 280px; }\n    .cust-result { padding: 12px; }\n  }\n\n  /* DASHBOARD */\n  .dashboard-actions {\n    display: flex; gap: 12px; flex-wrap: wrap;\n    margin-bottom: 24px; padding-bottom: 24px;\n    border-bottom: 1px solid var(--line);\n  }\n  .draft-card {\n    display: flex; align-items: center; gap: 16px;\n    padding: 18px 22px; background: var(--paper);\n    border: 1.5px solid var(--line); border-radius: 12px;\n    margin-bottom: 12px; transition: all 0.15s;\n  }\n  .draft-card:hover { border-color: var(--green-light); transform: translateY(-1px); box-shadow: var(--shadow-md); }\n  .draft-card-main { flex: 1; }\n  .draft-customer { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }\n  .draft-meta {\n    display: flex; gap: 6px; flex-wrap: wrap; align-items: center;\n    font-size: 12px; color: var(--slate);\n  }\n  .quote-id-mono { font-family: ui-monospace, monospace; color: var(--navy); font-weight: 600; }\n  .draft-running-total {\n    color: var(--green); font-weight: 700; font-size: 14px; margin-top: 6px;\n  }\n  .draft-card-actions { display: flex; gap: 8px; align-items: center; }\n  .btn-ghost-danger {\n    background: transparent; color: var(--coral);\n    border: 1px solid var(--coral); padding: 10px 12px;\n    border-radius: 8px; font-size: 14px; cursor: pointer;\n    transition: all 0.12s;\n  }\n  .btn-ghost-danger:hover { background: var(--coral-pale); }\n  .empty-drafts {\n    text-align: center; padding: 48px 24px;\n    background: var(--paper); border-radius: 12px;\n    border: 1px dashed var(--line); margin-top: 16px;\n  }\n  .empty-drafts .empty-icon { font-size: 48px; opacity: 0.5; margin-bottom: 12px; }\n  .empty-drafts h3 { color: var(--navy); margin-bottom: 6px; }\n  .empty-drafts p { color: var(--slate); font-size: 14px; max-width: 400px; margin: 0 auto; }\n\n  /* ---- Recent Jobber Requests panel ---- */\n  .req-panel {\n    background: #fff8eb;\n    border: 1.5px solid #f1d68e;\n    border-radius: 12px;\n    margin: 0 0 18px;\n    overflow: hidden;\n  }\n  .req-panel summary {\n    list-style: none; cursor: pointer;\n    padding: 14px 16px;\n    display: flex; align-items: center; gap: 10px;\n    user-select: none; -webkit-tap-highlight-color: transparent;\n    min-height: 48px;\n  }\n  .req-panel summary::-webkit-details-marker { display: none; }\n  .req-panel summary .chev {\n    font-size: 12px; color: #a66400; transition: transform 0.15s;\n    width: 14px; text-align: center;\n  }\n  .req-panel[open] summary .chev { transform: rotate(90deg); }\n  .req-panel .rp-title {\n    flex: 1;\n    font-size: 13px; font-weight: 700; color: #a66400;\n    text-transform: uppercase; letter-spacing: 0.06em;\n  }\n  .req-panel summary .folder-count {\n    background: #f1d68e; color: #6b4d00;\n    padding: 2px 10px; border-radius: 999px;\n    font-size: 12px; font-weight: 700;\n  }\n  .req-panel-toolbar { padding: 0 12px 10px; }\n  .req-panel-toolbar input[type=\"search\"] {\n    width: 100%; box-sizing: border-box;\n    padding: 10px 14px; min-height: 40px;\n    background: var(--paper);\n    border: 1.5px solid #f1d68e; border-radius: 8px;\n    font-size: 14px; color: var(--navy);\n    -webkit-appearance: none;\n  }\n  .req-panel-toolbar input[type=\"search\"]:focus {\n    outline: none; border-color: #d4a72c;\n    box-shadow: 0 0 0 3px rgba(212, 167, 44, 0.18);\n  }\n  .req-panel-body { padding: 0 12px 12px; max-height: 460px; overflow-y: auto; }\n  .req-card {\n    display: flex; align-items: center; gap: 12px;\n    padding: 14px;\n    background: var(--paper);\n    border: 1px solid #f1d68e; border-radius: 10px;\n    margin-bottom: 8px;\n    transition: border-color 0.12s, transform 0.12s;\n    -webkit-tap-highlight-color: transparent;\n  }\n  .req-card:hover { border-color: #d4a72c; }\n  .req-card-main { flex: 1; min-width: 0; }\n  .req-card-cust { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 3px; word-break: break-word; }\n  .req-card-title { font-size: 13px; color: var(--navy); margin-bottom: 4px; }\n  .req-card-meta {\n    display: flex; gap: 6px; flex-wrap: wrap; align-items: center;\n    font-size: 12px; color: var(--slate);\n  }\n  .req-card-meta .sep { opacity: 0.5; }\n  .req-card-status {\n    display: inline-block; padding: 1px 8px; border-radius: 999px;\n    font-size: 10px; font-weight: 700; text-transform: uppercase;\n    letter-spacing: 0.04em;\n    background: #fff5e6; color: #a66400;\n  }\n  .req-card-actions { display: flex; gap: 6px; flex-shrink: 0; }\n  .req-card-actions .btn { padding: 8px 14px; font-size: 13px; min-height: 36px; }\n  .req-empty, .req-error {\n    padding: 14px; color: var(--slate); font-size: 13px;\n    text-align: center; font-style: italic;\n  }\n  .req-error { color: var(--coral); }\n  @media (max-width: 640px) {\n    .req-card { flex-direction: column; align-items: stretch; }\n    .req-card-actions { justify-content: stretch; }\n    .req-card-actions .btn { flex: 1; min-height: 42px; }\n    .req-panel summary { padding: 12px; min-height: 52px; }\n  }\n\n  /* ---- NEW DASHBOARD CHROME ---- */\n  .dash-stats {\n    display: flex; gap: 12px; flex-wrap: wrap;\n    margin: 12px 0 18px;\n  }\n  .stat-card {\n    flex: 1 1 140px; min-width: 140px;\n    background: var(--paper); border: 1.5px solid var(--line);\n    border-radius: 12px; padding: 14px 16px;\n  }\n  .stat-card .stat-num { font-size: 22px; font-weight: 800; color: var(--navy); line-height: 1.1; }\n  .stat-card .stat-sub { font-size: 12px; color: var(--slate); margin-top: 4px; }\n  .stat-card .stat-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--slate); margin-top: 8px; }\n\n  .dash-toolbar {\n    display: flex; gap: 12px; flex-wrap: wrap; align-items: center;\n    margin-bottom: 18px; padding-bottom: 18px;\n    border-bottom: 1px solid var(--line);\n  }\n  .dash-search {\n    flex: 1; min-width: 220px; position: relative;\n  }\n  .dash-search input {\n    width: 100%; padding: 12px 14px 12px 42px;\n    border: 1.5px solid var(--line); border-radius: 10px;\n    font-size: 16px; /* 16px on mobile to prevent iOS autozoom */\n    background: var(--paper); color: var(--navy);\n    transition: border-color 0.12s;\n    -webkit-appearance: none;\n  }\n  .dash-search input::placeholder {\n    color: var(--slate); opacity: 0.6;\n  }\n  .dash-search input:focus { outline: none; border-color: var(--green); }\n  .dash-search::before {\n    content: '\ud83d\udd0e'; position: absolute; left: 14px; top: 50%;\n    transform: translateY(-50%); font-size: 13px; opacity: 0.55;\n    pointer-events: none;\n  }\n\n  .recent-strip { margin: 8px 0 24px; }\n  .recent-strip h3,\n  .folder summary .folder-label {\n    font-size: 13px; font-weight: 700; color: var(--slate);\n    text-transform: uppercase; letter-spacing: 0.08em;\n  }\n  .recent-strip h3 { margin: 0 0 10px; }\n\n  .folder {\n    background: var(--paper); border: 1.5px solid var(--line);\n    border-radius: 12px; margin-bottom: 10px;\n    overflow: hidden;\n  }\n  .folder summary {\n    list-style: none; cursor: pointer;\n    padding: 14px 16px; display: flex; align-items: center; gap: 10px;\n    user-select: none; -webkit-tap-highlight-color: transparent;\n    min-height: 48px;\n  }\n  .folder summary::-webkit-details-marker { display: none; }\n  .folder summary .chev {\n    font-size: 12px; color: var(--slate); transition: transform 0.15s;\n    width: 14px; text-align: center;\n  }\n  .folder[open] summary .chev { transform: rotate(90deg); }\n  .folder summary .folder-icon { font-size: 18px; }\n  .folder summary .folder-label { flex: 1; }\n  .folder summary .folder-count {\n    background: var(--line-soft); color: var(--navy);\n    padding: 2px 10px; border-radius: 999px;\n    font-size: 12px; font-weight: 700;\n  }\n  .folder-body { padding: 0 12px 12px; }\n  .folder-empty {\n    padding: 14px 4px; color: var(--slate); font-size: 13px;\n    text-align: center;\n  }\n\n  /* ---- Dashboard tabs (My Quotes / Customer Leads / Analytics) ---- */\n  .dash-tabs {\n    display: flex; gap: 4px; margin: 18px 0 16px;\n    border-bottom: 2px solid var(--line);\n    overflow-x: auto; -webkit-overflow-scrolling: touch;\n    scrollbar-width: none;\n    /* Stays pinned while long lists scroll under it. */\n    position: sticky; top: 0; z-index: 30;\n    background: var(--cream);\n  }\n  /* ---- Tappable stat cards (click = filter the quote list) ---- */\n  .stat-card { cursor: pointer; transition: border-color 0.12s, box-shadow 0.12s; -webkit-tap-highlight-color: transparent; }\n  .stat-card:hover { border-color: var(--green-light); }\n  .stat-card.active { border-color: var(--green); box-shadow: 0 0 0 3px rgba(45, 110, 78, 0.15); }\n  .dash-filter-chip { margin: -6px 0 12px; }\n  .dash-filter-chip .chip {\n    display: inline-flex; align-items: center; gap: 8px;\n    background: var(--green-pale); color: var(--green);\n    border: 1px solid var(--green-light); border-radius: 999px;\n    padding: 5px 12px; font-size: 12px; font-weight: 700;\n  }\n  .dash-filter-chip .chip b { cursor: pointer; font-size: 15px; line-height: 1; }\n  /* ---- Skeleton loaders ---- */\n  .skel-stack { padding: 8px 0; }\n  .skel {\n    height: 14px; border-radius: 7px; margin-bottom: 10px;\n    background: linear-gradient(90deg, var(--line-soft) 25%, #e7e2d8 37%, var(--line-soft) 63%);\n    background-size: 400% 100%;\n    animation: skelShimmer 1.3s ease infinite;\n  }\n  .skel.tall { height: 52px; border-radius: 10px; }\n  @keyframes skelShimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }\n  /* ---- Settings: Pricing | Team segmented control + live preview ---- */\n  .pa-groups { display: flex; gap: 6px; padding: 14px 14px 4px; }\n  .pa-group-btn {\n    appearance: none; border: 1.5px solid var(--line); background: var(--paper);\n    border-radius: 999px; padding: 7px 16px; font-family: inherit;\n    font-size: 13px; font-weight: 700; color: var(--slate); cursor: pointer;\n  }\n  .pa-group-btn.active { border-color: var(--green); background: var(--green-pale); color: var(--green); }\n  .pa-preview {\n    background: var(--green-pale); border: 1px solid var(--green-light);\n    border-radius: 10px; padding: 10px 14px; margin-bottom: 14px;\n    font-size: 12.5px; color: #1f4d36; line-height: 1.6;\n  }\n  /* ---- Mobile bottom nav + FAB (dashboard only \u2014 lives inside the\n     dashboard <section>, so it auto-hides on every other stage) ---- */\n  .dash-bottom-nav { display: none; }\n  .dash-fab { display: none; }\n  @media (max-width: 640px) {\n    /* The bottom bar replaces the top tab strip AND the \u2699\ufe0f utility\n       button on phones \u2014 no point showing the same nav twice. Refresh\n       and Select stay up top (they're not in the bar). */\n    .dash-tabs { display: none; }\n    #dashUtilSettings { display: none; }\n    .dash-bottom-nav {\n      display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 600;\n      background: var(--paper); border-top: 1px solid var(--line);\n      padding: 3px 6px calc(3px + env(safe-area-inset-bottom, 0px));\n      box-shadow: 0 -4px 16px rgba(26, 37, 64, 0.10);\n    }\n    .dbn-btn {\n      position: relative;\n      flex: 1; appearance: none; background: none; border: none; font-family: inherit;\n      font-size: 8.5px; font-weight: 700; color: var(--slate);\n      display: flex; flex-direction: column; align-items: center; gap: 1px;\n      padding: 2px; cursor: pointer; -webkit-tap-highlight-color: transparent;\n    }\n    .dbn-btn .i { font-size: 14px; line-height: 1; }\n    .dbn-btn.active { color: var(--green); }\n    .dbn-count {\n      position: absolute; top: -2px; right: 22%;\n      background: var(--green); color: #fff; border-radius: 999px;\n      font-size: 8px; font-weight: 800; line-height: 1.4;\n      padding: 0 4px; min-width: 13px; text-align: center;\n    }\n    .dash-fab {\n      display: flex; align-items: center; justify-content: center;\n      position: fixed; right: 14px; bottom: calc(48px + env(safe-area-inset-bottom, 0px)); z-index: 599;\n      width: 48px; height: 48px; border-radius: 50%;\n      background: var(--green); color: #fff; font-size: 26px; border: none;\n      box-shadow: 0 6px 20px rgba(45, 110, 78, 0.45); cursor: pointer;\n    }\n    .dash-fab:active { transform: scale(0.94); }\n    /* Breathing room so the fixed nav never covers the last rows. */\n    #stage-dashboard { padding-bottom: 64px; }\n    /* The FAB replaces the big Start-New-Quote button on phones. */\n    #dashNewQuoteBtn { display: none; }\n    /* Big dialogs present as bottom sheets on phones. */\n    /* Bottom sheets must fully override the base .info-dialog centering\n       (top/left 50% + translate(-50%,-50%)). Leaving those in place while\n       the sheetUp animation replaces the transform shoved the dialog half\n       off the right/bottom edge of the screen. */\n    dialog.cust-details-dialog, dialog.cust-analytics-dialog, dialog.pricing-admin-dialog,\n    dialog.pipe-dialog {\n      position: fixed;\n      top: auto; left: 0; right: 0; bottom: 0;\n      transform: none;\n      margin: 0;\n      width: 100%; max-width: 100%; min-width: 0;\n      border-radius: 16px 16px 0 0; max-height: 88vh;\n      box-sizing: border-box;\n      animation: sheetUp 0.22s ease;\n    }\n    /* Analytics KPI cards scroll horizontally with snap. */\n    .dan-kpis { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 10px; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }\n    .dan-kpis .dan-kpi { flex: 0 0 42%; scroll-snap-align: start; }\n    .dan-split { grid-template-columns: 1fr; }\n  }\n  @keyframes sheetUp { from { transform: translateY(48px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } }\n  .dash-tabs::-webkit-scrollbar { display: none; }\n  .dash-tab {\n    appearance: none; background: none; border: none;\n    border-bottom: 3px solid transparent; margin-bottom: -2px;\n    padding: 10px 16px; font-weight: 700; font-size: 14px;\n    color: var(--slate); cursor: pointer; white-space: nowrap;\n    font-family: inherit; transition: color 0.15s, border-color 0.15s;\n  }\n  .dash-tab:hover { color: var(--navy); }\n  .dash-tab.active { color: var(--navy); border-bottom-color: var(--green); }\n  .dash-tab .tab-count {\n    display: inline-block; min-width: 18px; padding: 1px 6px; margin-left: 4px;\n    background: var(--green); color: white; border-radius: 999px;\n    font-size: 11px; font-weight: 800; text-align: center;\n  }\n  @media (max-width: 640px) {\n    .dash-tab { padding: 10px 12px; font-size: 13px; }\n  }\n  /* ---- Pipeline tab ----------------------------------------------\n     Kanban board fed by Jobber requests/quotes/jobs + our own\n     PipelineCards. Cards auto-sort by \"who needs attention\" \u2014 no\n     manual ordering, which keeps drag-and-drop to column moves only. */\n  .pipe-head {\n    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;\n    margin-bottom: 12px;\n  }\n  .pipe-head .spacer { flex: 1; }\n  .pipe-sync-pill {\n    font-size: 11.5px; color: var(--slate); background: var(--paper);\n    border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px;\n    display: inline-flex; align-items: center; gap: 6px;\n  }\n  .pipe-sync-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }\n  .pipe-sync-pill .dot.off { background: var(--coral); }\n  .pipe-btn {\n    appearance: none; border: 1.5px solid var(--line); background: var(--paper);\n    border-radius: 999px; padding: 7px 14px; font-family: inherit;\n    font-size: 13px; font-weight: 700; color: var(--navy); cursor: pointer;\n    transition: border-color 0.12s, background 0.12s;\n  }\n  .pipe-btn:hover { border-color: var(--green-light); }\n  .pipe-btn.primary { background: var(--green); border-color: var(--green); color: #fff; }\n  .pipe-btn.ghost { color: var(--slate); }\n  .pipe-btn.ghost.on { border-color: var(--green); color: var(--green); background: var(--green-pale); }\n  .pipe-btn.mini { padding: 5px 10px; font-size: 11.5px; }\n  #pipeSearch {\n    font: inherit; font-size: 13px; color: var(--navy);\n    background: var(--paper); border: 1.5px solid var(--line);\n    border-radius: 999px; padding: 6px 13px; width: 210px; max-width: 46vw;\n    -webkit-appearance: none;\n  }\n  #pipeSearch:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(45,110,78,0.10); }\n  /* Insight chips */\n  .pipe-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }\n  .pipe-stat {\n    background: var(--paper); border: 1px solid var(--line); border-radius: 10px;\n    padding: 8px 12px; min-width: 118px;\n  }\n  .pipe-stat .v { font-size: 17px; font-weight: 800; color: var(--navy); line-height: 1.2; }\n  .pipe-stat .l { font-size: 11px; font-weight: 700; color: var(--slate); text-transform: uppercase; letter-spacing: 0.04em; }\n  .pipe-stat.hot { background: var(--coral-pale); border-color: #eec4b8; }\n  .pipe-stat.hot .v { color: var(--coral); }\n  .pipe-stat.money .v { color: var(--green); }\n  /* \"Next up\" focus strip \u2014 the top 3 most-urgent cards */\n  .pipe-next {\n    background: var(--gold-pale); border: 1px solid #ecd9a8; border-radius: 12px;\n    padding: 10px 12px; margin-bottom: 14px;\n  }\n  .pipe-next-title { font-size: 11px; font-weight: 800; color: #8a6a1f; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }\n  .pipe-next-row {\n    display: flex; align-items: center; gap: 8px; width: 100%;\n    background: none; border: none; padding: 6px 4px; cursor: pointer;\n    font-family: inherit; text-align: left; border-radius: 8px;\n  }\n  .pipe-next-row:hover { background: rgba(200, 155, 60, 0.12); }\n  .pipe-next-row .who { font-size: 13px; font-weight: 700; color: var(--navy); white-space: nowrap; }\n  .pipe-next-row .act { font-size: 12.5px; color: var(--slate); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }\n  .pipe-next-row .go { color: var(--gold); font-weight: 800; }\n  /* Board */\n  .pipe-board {\n    display: flex; gap: 10px; align-items: flex-start;\n    overflow-x: auto; -webkit-overflow-scrolling: touch;\n    padding: 2px 2px 14px; scroll-snap-type: x proximity;\n    /* The app-wide `:host * { touch-action: pan-y }` rule (iOS scroll\n       fix) would eat horizontal swipes on this board \u2014 tablets could\n       never reach the Won/Lost columns. Allow both axes here, same\n       pattern as the .progress bar override. */\n    touch-action: pan-x pan-y !important;\n  }\n  .pipe-col {\n    flex: 0 0 248px; min-width: 248px; scroll-snap-align: start;\n    background: var(--line-soft); border-radius: 12px; padding: 8px;\n  }\n  .pipe-col.drag-over { outline: 2px dashed var(--green); outline-offset: -2px; }\n  .pipe-col-head {\n    display: flex; align-items: baseline; gap: 6px;\n    padding: 2px 4px 8px; font-size: 12.5px; font-weight: 800; color: var(--navy);\n  }\n  .pipe-col-head .n {\n    background: var(--paper); border: 1px solid var(--line); border-radius: 999px;\n    font-size: 10.5px; padding: 0 7px; color: var(--slate);\n  }\n  .pipe-col-head .sum { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--green); }\n  .pipe-col.won .pipe-col-head { color: var(--green); }\n  .pipe-col.lost .pipe-col-head { color: var(--slate); }\n  .pipe-cards { display: flex; flex-direction: column; gap: 8px; min-height: 24px; }\n  .pipe-card {\n    background: var(--paper); border: 1px solid var(--line); border-left: 3px solid var(--line);\n    border-radius: 10px; padding: 9px 10px; cursor: pointer;\n    box-shadow: var(--shadow-sm); transition: border-color 0.12s, box-shadow 0.12s;\n  }\n  .pipe-card:hover { border-color: var(--green-light); box-shadow: var(--shadow-md); }\n  .pipe-card.u1 { border-left-color: var(--gold); }\n  .pipe-card.u2 { border-left-color: var(--coral); }\n  .pipe-card.is-won { border-left-color: var(--green); }\n  .pipe-card.is-lost { opacity: 0.62; }\n  .pipe-card .top { display: flex; align-items: center; gap: 6px; }\n  .pipe-card .nm { font-size: 13.5px; font-weight: 700; color: var(--navy); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\n  .pipe-card .amt { font-size: 12.5px; font-weight: 800; color: var(--green); white-space: nowrap; }\n  .pipe-card .ttl { font-size: 11.5px; color: var(--slate); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\n  .pipe-card .act { font-size: 11.5px; margin-top: 6px; color: var(--slate); display: flex; align-items: center; gap: 5px; }\n  .pipe-card.u2 .act { color: var(--coral); font-weight: 600; }\n  .pipe-card.u1 .act { color: #8a6a1f; font-weight: 600; }\n  .pipe-card .chips { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }\n  .pipe-chip {\n    font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em;\n    background: var(--cream); border: 1px solid var(--line); border-radius: 999px;\n    padding: 1px 7px; color: var(--slate);\n  }\n  .pipe-chip.q { background: var(--green-pale); border-color: var(--green-light); color: var(--green); }\n  .pipe-chip.j { background: #e8effa; border-color: #c2d4f0; color: #2d548f; }\n  .pipe-chip.note { background: var(--gold-pale); border-color: #ecd9a8; color: #8a6a1f; }\n  .pipe-empty-col { font-size: 11.5px; color: var(--slate); text-align: center; padding: 10px 4px; }\n  .pipe-empty {\n    background: var(--paper); border: 1.5px dashed var(--line); border-radius: 12px;\n    padding: 26px 18px; text-align: center; color: var(--slate); font-size: 13.5px;\n  }\n  /* Detail dialog */\n  .pipe-dialog { max-width: 560px; }\n  .pipe-d-head { display: flex; align-items: center; gap: 10px; padding: 16px 18px 10px; border-bottom: 1px solid var(--line-soft); }\n  .pipe-d-head h3 { font-size: 17px; margin: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\n  .pipe-d-body { padding: 14px 18px 18px; }\n  .pipe-stage-chip {\n    font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;\n    background: var(--cream); border: 1px solid var(--line); border-radius: 999px;\n    padding: 2px 9px; color: var(--slate); white-space: nowrap;\n  }\n  .pipe-insight {\n    border-radius: 10px; padding: 9px 12px; font-size: 13px; font-weight: 600;\n    margin-bottom: 12px; background: var(--green-pale); color: #1f4d36;\n    border: 1px solid var(--green-light);\n  }\n  .pipe-insight.u1 { background: var(--gold-pale); color: #8a6a1f; border-color: #ecd9a8; }\n  .pipe-insight.u2 { background: var(--coral-pale); color: var(--coral); border-color: #eec4b8; }\n  .pipe-contact { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }\n  .pipe-contact a, .pipe-contact .row { font-size: 13.5px; color: var(--navy); text-decoration: none; display: flex; gap: 8px; align-items: baseline; }\n  .pipe-contact a:hover { color: var(--green); text-decoration: underline; }\n  .pipe-contact .ico { width: 18px; text-align: center; flex: 0 0 18px; }\n  .pipe-links { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }\n  .pipe-link-pill {\n    display: inline-flex; align-items: center; gap: 5px;\n    font-size: 11.5px; font-weight: 700; color: var(--navy); text-decoration: none;\n    background: var(--cream); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px;\n  }\n  .pipe-link-pill:hover { border-color: var(--green-light); color: var(--green); }\n  .pipe-link-pill .st { font-weight: 600; color: var(--slate); font-size: 10.5px; }\n  .pipe-sec { font-size: 11px; font-weight: 800; color: var(--slate); text-transform: uppercase; letter-spacing: 0.05em; margin: 12px 0 6px; }\n  .pipe-stages { display: flex; gap: 5px; flex-wrap: wrap; }\n  .pipe-stage-btn {\n    appearance: none; font-family: inherit; cursor: pointer;\n    font-size: 11.5px; font-weight: 700; color: var(--slate);\n    background: var(--paper); border: 1.5px solid var(--line); border-radius: 999px; padding: 5px 11px;\n  }\n  .pipe-stage-btn.on { background: var(--green); border-color: var(--green); color: #fff; }\n  .pipe-stage-btn.won-btn.on { background: var(--green); }\n  .pipe-stage-btn.lost-btn.on { background: var(--slate); border-color: var(--slate); }\n  .pipe-fu-row { display: flex; align-items: center; gap: 8px; }\n  .pipe-fu-row input[type=\"date\"] {\n    font: inherit; font-size: 13.5px; padding: 7px 10px; color: var(--navy);\n    border: 1.5px solid var(--line); border-radius: 10px; background: var(--paper);\n  }\n  .pipe-notes { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }\n  .pipe-note-item { background: var(--cream); border: 1px solid var(--line-soft); border-radius: 10px; padding: 7px 10px; }\n  .pipe-note-item .meta { font-size: 10.5px; color: var(--slate); margin-bottom: 2px; }\n  .pipe-note-item .txt { font-size: 13px; color: var(--navy); white-space: pre-wrap; }\n  .pipe-note-add textarea {\n    width: 100%; min-height: 54px; resize: vertical; font: inherit; font-size: 13.5px;\n    border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 10px; color: var(--navy);\n  }\n  .pipe-note-add textarea:focus { outline: none; border-color: var(--green); }\n  .pipe-note-foot { display: flex; align-items: center; gap: 10px; margin-top: 6px; flex-wrap: wrap; }\n  .pipe-note-foot label { font-size: 12px; color: var(--slate); display: inline-flex; align-items: center; gap: 5px; }\n  .pipe-d-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; border-top: 1px solid var(--line-soft); padding-top: 12px; }\n  .pipe-lost-reasons { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }\n  /* Add-lead dialog fields */\n  .pipe-field { margin-bottom: 10px; }\n  .pipe-field label { display: block; font-size: 11.5px; font-weight: 700; color: var(--slate); margin-bottom: 3px; }\n  .pipe-field input, .pipe-field select {\n    width: 100%; font: inherit; font-size: 15px; padding: 9px 12px; color: var(--navy);\n    border: 1.5px solid var(--line); border-radius: 10px; background: var(--paper);\n    -webkit-appearance: none;\n  }\n  .pipe-field input:focus, .pipe-field select:focus { outline: none; border-color: var(--green); }\n  @media (max-width: 640px) {\n    .pipe-col { flex: 0 0 228px; min-width: 228px; }\n    .pipe-stat { min-width: calc(50% - 8px); flex: 1; }\n    .pipe-stats { margin-bottom: 10px; }\n    /* iOS Safari zooms the page when a focused input's font-size is\n       under 16px \u2014 keep every pipeline input at 16px on phones. */\n    .pipe-note-add textarea, .pipe-fu-row input[type=\"date\"],\n    .pipe-field input, .pipe-field select, #pipeSearch {\n      font-size: 16px;\n    }\n    #pipeSearch { max-width: 60vw; }\n  }\n  /* ---- Inline analytics tab ---- */\n  .dan-kpis {\n    display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));\n    gap: 10px; margin-bottom: 18px;\n  }\n  .dan-kpi {\n    background: var(--paper); border: 1px solid var(--line); border-radius: 10px;\n    padding: 14px 14px 12px;\n  }\n  .dan-kpi .num { font-size: 24px; font-weight: 800; color: var(--navy); line-height: 1.1; }\n  .dan-kpi .lbl { font-size: 11px; font-weight: 700; color: var(--slate); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; }\n  .dan-kpi .sub { font-size: 11px; color: var(--slate); margin-top: 2px; }\n  .dan-section { margin-bottom: 20px; }\n  .dan-section > h4 { font-size: 13px; font-weight: 800; color: var(--navy); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px; }\n  .dan-cols { display: flex; align-items: flex-end; gap: 4px; height: 110px; padding: 0 2px; }\n  .dan-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; min-width: 0; }\n  .dan-col .dan-col-bar { width: 100%; max-width: 36px; background: var(--green); border-radius: 4px 4px 0 0; min-height: 2px; transition: height 0.3s; }\n  .dan-col .dan-col-num { font-size: 10px; font-weight: 700; color: var(--navy); margin-bottom: 2px; }\n  .dan-col .dan-col-lbl { font-size: 9px; color: var(--slate); margin-top: 4px; white-space: nowrap; }\n  .dan-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }\n  .dan-bar-row .name { flex: 0 0 110px; font-size: 12px; font-weight: 600; color: var(--navy); text-align: right; }\n  .dan-bar-row .bar { flex: 1; height: 14px; background: var(--line-soft); border-radius: 7px; overflow: hidden; }\n  .dan-bar-row .bar-fill { height: 100%; background: var(--green); border-radius: 7px; }\n  .dan-bar-row.funnel .bar-fill { background: #2f6fb0; }\n  .dan-bar-row .count { flex: 0 0 36px; font-size: 12px; font-weight: 700; color: var(--navy); }\n  .dan-split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }\n  .dan-split .dan-kpi.sw { border-color: #2f6fb0; background: #f3f8fc; }\n  .dan-note { font-size: 11px; color: var(--slate); font-style: italic; margin-top: 8px; }\n  .dan-toolbar { display: flex; justify-content: flex-end; margin-bottom: 10px; }\n\n  /* ---- Customer Submissions folder (bottom-of-dashboard) ----\n     Soft blue accent so the customer-calc inbound queue is visually\n     distinct from both the gold \"Recent Jobber requests\" panel above\n     (which surfaces ALL Jobber Requests) and from the rep's own\n     Drafts/Finished/Archived/Trash folders. */\n  .cust-subs-folder {\n    background: #eef4fb;\n    border-color: #c8d8ec;\n    margin-top: 18px;     /* breathing room below Trash */\n  }\n  .cust-subs-folder summary .chev { color: #2c6da7; }\n  .cust-subs-folder summary .folder-label { color: #2c6da7; }\n  .cust-subs-folder summary .folder-count {\n    background: #c8d8ec; color: #1e4978;\n  }\n\n  /* Customer Drafts / Needs Review folder \u2014 coral accent so it's\n     visually obvious these rows need rep action. Sits directly below\n     the regular Customer Submissions folder. */\n  .cust-drafts-folder {\n    background: #fdf2ed;\n    border-color: #f1c4a8;\n    margin-top: 10px;\n  }\n  .cust-drafts-folder summary .chev { color: #a14820; }\n  .cust-drafts-folder summary .folder-label { color: #a14820; }\n  .cust-drafts-folder summary .folder-count {\n    background: #f1c4a8; color: #6d2f0c;\n  }\n  .cust-drafts-folder .cust-subs-toolbar input[type=\"search\"] {\n    border-color: #f1c4a8;\n  }\n  .cust-drafts-folder .cust-subs-toolbar input[type=\"search\"]:focus {\n    border-color: #a14820;\n    box-shadow: 0 0 0 3px rgba(161, 72, 32, 0.18);\n  }\n  .cust-drafts-folder .cust-subs-card { border-color: #f1c4a8; }\n  .cust-drafts-folder .cust-subs-card:hover { border-color: #a14820; }\n\n  /* Customer Drafts (abandoned) folder \u2014 amber accent so it's visually\n     distinct from the coral 'Needs Review' folder above. These are\n     mid-flow leads we want to follow up on, not failures we need to\n     fix. */\n  .cust-abandoned-folder {\n    background: #fdf6e3;\n    border-color: #efe0a8;\n    margin-top: 10px;\n  }\n  .cust-abandoned-folder summary .chev { color: #8a6515; }\n  .cust-abandoned-folder summary .folder-label { color: #8a6515; }\n  .cust-abandoned-folder summary .folder-count {\n    background: #efe0a8; color: #5a3f00;\n  }\n  .cust-abandoned-folder .cust-subs-toolbar input[type=\"search\"] {\n    border-color: #efe0a8;\n  }\n  .cust-abandoned-folder .cust-subs-toolbar input[type=\"search\"]:focus {\n    border-color: #8a6515;\n    box-shadow: 0 0 0 3px rgba(138, 101, 21, 0.18);\n  }\n  .cust-abandoned-folder .cust-subs-card { border-color: #efe0a8; }\n  .cust-abandoned-folder .cust-subs-card:hover { border-color: #8a6515; }\n  .cust-abandoned-folder .cust-subs-card-tag.stage {\n    background: #efe0a8; color: #5a3f00;\n  }\n  /* Generic dismiss button \u2014 used on every card in the Customer\n     Submissions / Needs Review / Abandoned folders. Coral-tinted so\n     it reads as a destructive action without competing with the\n     primary 'Open in Jobber' / 'Client Hub' actions next to it.\n     Per-folder rules below override the color tint to match each\n     folder's accent palette. */\n  .cust-subs-card-actions .btn-dismiss {\n    background: transparent; color: var(--coral); border: 1px solid var(--coral-pale);\n    padding: 8px 12px; font-size: 12.5px; font-weight: 700;\n    border-radius: 6px; cursor: pointer;\n    transition: background 0.12s, border-color 0.12s;\n  }\n  .cust-subs-card-actions .btn-dismiss:hover {\n    background: var(--coral-pale); border-color: var(--coral);\n  }\n  /* Abandoned folder uses amber instead of coral. */\n  .cust-abandoned-folder .cust-subs-card-actions .btn-dismiss {\n    color: #8a6515; border-color: #efe0a8;\n  }\n  .cust-abandoned-folder .cust-subs-card-actions .btn-dismiss:hover {\n    background: #efe0a8; border-color: #8a6515;\n  }\n  .cust-subs-toolbar {\n    padding: 4px 0 10px;\n    display: flex; gap: 8px; align-items: center;\n  }\n  .cust-subs-toolbar input[type=\"search\"] {\n    flex: 1; box-sizing: border-box;\n    padding: 10px 14px; min-height: 40px;\n    background: var(--paper);\n    border: 1.5px solid #c8d8ec; border-radius: 8px;\n    font-size: 14px; color: var(--navy);\n    -webkit-appearance: none;\n  }\n  .cust-subs-toolbar input[type=\"search\"]:focus {\n    outline: none; border-color: #2c6da7;\n    box-shadow: 0 0 0 3px rgba(44, 109, 167, 0.18);\n  }\n  .cust-subs-analytics-btn {\n    flex-shrink: 0;\n    padding: 8px 14px; min-height: 40px;\n    background: var(--paper);\n    border: 1.5px solid #c8d8ec; border-radius: 8px;\n    color: #2c6da7; font-size: 13px; font-weight: 700;\n    cursor: pointer;\n    transition: background 0.12s, border-color 0.12s;\n  }\n  .cust-subs-analytics-btn:hover { background: #c8d8ec; border-color: #2c6da7; }\n  @media (max-width: 640px) {\n    .cust-subs-toolbar { flex-direction: column; align-items: stretch; }\n    .cust-subs-analytics-btn { width: 100%; }\n  }\n\n  /* Customer Calc Analytics modal. Mirrors the info-dialog visual\n     pattern used elsewhere for measurement tutorials / info modals. */\n  .cust-analytics-dialog { max-width: 720px; }\n  .cust-analytics-loading {\n    padding: 30px; text-align: center; color: var(--slate);\n    font-size: 14px;\n  }\n  .cust-analytics-error {\n    padding: 18px; background: var(--coral-pale); color: var(--coral);\n    border-radius: 8px; font-size: 14px;\n  }\n  .cust-analytics-empty {\n    padding: 30px; text-align: center; color: var(--slate);\n    font-size: 14px; font-style: italic;\n  }\n  .cust-analytics-grid {\n    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;\n    margin-bottom: 18px;\n  }\n  .cust-analytics-card {\n    background: var(--paper); border: 1px solid var(--line);\n    border-radius: 10px; padding: 14px 16px;\n  }\n  .cust-analytics-card .lbl {\n    font-size: 11px; color: var(--slate); font-weight: 700;\n    text-transform: uppercase; letter-spacing: 0.06em;\n    margin-bottom: 4px;\n  }\n  .cust-analytics-card .val {\n    font-size: 22px; font-weight: 800; color: var(--navy);\n    line-height: 1.15;\n  }\n  .cust-analytics-card .sub {\n    font-size: 11px; color: var(--slate); margin-top: 2px;\n  }\n  .cust-analytics-section {\n    background: var(--paper); border: 1px solid var(--line);\n    border-radius: 10px; padding: 14px 16px; margin-bottom: 12px;\n  }\n  .cust-analytics-section h4 {\n    margin: 0 0 10px; font-size: 13px; color: var(--slate);\n    font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;\n  }\n  .cust-analytics-bar-row {\n    display: flex; align-items: center; gap: 10px;\n    padding: 5px 0;\n    font-size: 13px; color: var(--navy);\n  }\n  .cust-analytics-bar-row .name { width: 110px; flex-shrink: 0; }\n  .cust-analytics-bar-row .bar {\n    flex: 1; height: 8px; background: var(--line-soft); border-radius: 999px;\n    overflow: hidden;\n  }\n  .cust-analytics-bar-row .bar-fill {\n    display: block; height: 100%;\n    background: linear-gradient(90deg, #2c6da7, #4d8bc0);\n  }\n  .cust-analytics-bar-row .count {\n    width: 40px; text-align: right; font-weight: 700;\n    color: var(--slate); font-size: 12px;\n  }\n  @media (max-width: 640px) {\n    .cust-analytics-grid { grid-template-columns: 1fr 1fr; }\n    .cust-analytics-card .val { font-size: 18px; }\n  }\n  /* Card = swipe viewport; .cust-subs-card-inner is the translatable\n     surface. Actions live behind a \u22ef menu + a swipe-to-reveal delete. */\n  .cust-subs-card {\n    position: relative; overflow: hidden;\n    background: var(--paper);\n    border: 1px solid #c8d8ec; border-radius: 10px;\n    margin-bottom: 8px;\n    transition: border-color 0.12s;\n    -webkit-tap-highlight-color: transparent;\n  }\n  .cust-subs-card-inner {\n    display: flex; align-items: center; gap: 12px;\n    padding: 12px 14px;\n    background: var(--paper);\n    position: relative; z-index: 1;\n    will-change: transform;\n  }\n  .cust-subs-card-side {\n    display: flex; align-items: center; gap: 8px; flex-shrink: 0;\n  }\n  .cust-subs-card-side .cust-subs-card-total { margin: 0; white-space: nowrap; }\n  .lead-menu-btn {\n    appearance: none; border: 1px solid var(--line); background: var(--paper);\n    border-radius: 8px; width: 34px; height: 34px; min-height: 34px;\n    font-size: 18px; font-weight: 800; color: var(--slate); cursor: pointer;\n    display: flex; align-items: center; justify-content: center; line-height: 1;\n  }\n  .lead-menu-btn:hover { border-color: var(--navy); color: var(--navy); }\n  .swipe-del {\n    position: absolute; top: 0; bottom: 0; right: 0; width: 88px;\n    display: flex; align-items: center; justify-content: center;\n    background: #c0392b; z-index: 0;\n  }\n  .swipe-del .btn-dismiss {\n    background: transparent; border: none; color: #fff; font-weight: 800;\n    font-size: 12px; cursor: pointer; width: 100%; height: 100%;\n  }\n  .cust-subs-card:hover { border-color: #2c6da7; }\n  .cust-subs-card-main { flex: 1; min-width: 0; }\n  .cust-subs-card-cust { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 3px; word-break: break-word; }\n  .cust-subs-card-meta {\n    display: flex; gap: 6px; flex-wrap: wrap; align-items: center;\n    font-size: 12px; color: var(--slate); margin-top: 4px;\n  }\n  .cust-subs-card-meta .sep { opacity: 0.5; }\n  .cust-subs-card-total {\n    font-size: 15px; font-weight: 700; color: var(--green);\n    margin-top: 4px;\n  }\n  .cust-subs-card-tag {\n    display: inline-block; padding: 1px 8px; border-radius: 999px;\n    font-size: 10px; font-weight: 700; text-transform: uppercase;\n    letter-spacing: 0.04em;\n    background: #c8d8ec; color: #1e4978;\n  }\n  .cust-subs-card-tag.callback { background: #fde8e0; color: #a14820; }\n  .cust-subs-card-tag.failed   { background: #fde0e0; color: #a12020; }\n  .cust-subs-card-actions { display: flex; gap: 6px; flex-shrink: 0; }\n  .cust-subs-card-actions .btn { padding: 8px 14px; font-size: 13px; min-height: 36px; }\n\n  /* ---- Submission Details modal ---- */\n  .cust-details-dialog { max-width: 640px; width: calc(100vw - 32px); }\n  .cust-details-head { padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }\n  .cust-details-name { font-size: 18px; font-weight: 800; color: var(--navy); }\n  .cust-details-tags { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }\n  .cust-details-contact { margin-top: 8px; font-size: 13px; color: var(--ink); }\n  .cust-details-meta { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--slate); align-items: center; }\n  .cust-details-total { font-weight: 700; color: var(--navy); }\n  .cust-details-proj { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; background: #fcfbf9; }\n  .cust-details-proj-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 8px; }\n  .cust-details-proj-title { font-size: 15px; font-weight: 700; color: var(--navy); }\n  .cust-details-proj-sub { font-size: 14px; font-weight: 700; color: var(--green); white-space: nowrap; }\n  .cust-details-desc {\n    margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;\n    font-size: 12px; line-height: 1.55; color: var(--ink);\n    white-space: pre-wrap; word-break: break-word;\n  }\n  .cust-details-notes { margin-top: 4px; padding: 10px 12px; background: #fff8ec; border: 1px solid #f0e2c0; border-radius: 8px; font-size: 13px; color: var(--ink); }\n\n  /* Dashboard title row \u2014 pairs the welcome copy with a compact\n     cluster of utility buttons (Refresh, Select, Pricing). These are\n     intentionally low-contrast icon+label pills so they don't compete\n     with Start-New-Quote in the primary toolbar below. */\n  .dash-title-row {\n    display: flex; align-items: flex-start; justify-content: space-between;\n    gap: 16px; flex-wrap: wrap;\n    margin-bottom: 4px;\n  }\n  .dash-title-row > div:first-child { flex: 1; min-width: 240px; }\n  .dash-utility {\n    display: flex; gap: 6px; flex-wrap: wrap;\n    padding-top: 6px;\n  }\n  .dash-util-btn {\n    display: inline-flex; align-items: center; gap: 6px;\n    padding: 8px 12px; min-height: 38px;\n    background: var(--paper); color: var(--slate);\n    border: 1px solid var(--line); border-radius: 999px;\n    font-size: 12px; font-weight: 600;\n    cursor: pointer; transition: background 0.12s, color 0.12s, border-color 0.12s;\n    -webkit-tap-highlight-color: transparent;\n  }\n  .dash-util-btn:hover { background: var(--line-soft); color: var(--navy); border-color: var(--navy); }\n  .dash-util-btn .ico { font-size: 14px; line-height: 1; }\n  .dash-util-btn.active {\n    background: var(--navy); color: white; border-color: var(--navy);\n  }\n  @media (max-width: 640px) {\n    .dash-utility { width: 100%; justify-content: flex-end; }\n    .dash-util-btn .lbl { display: none; }\n    .dash-util-btn { padding: 8px 10px; min-width: 40px; justify-content: center; }\n    .dash-util-btn .ico { font-size: 16px; }\n  }\n\n  /* Bulk-select toggle + action bar.\n     When bulkMode is on, the dashboard's data-bulk attribute flips\n     and every .qrow shifts to expose its leading checkbox. */\n  #bulkSelectToggle.active {\n    background: var(--navy); color: white; border-color: var(--navy);\n  }\n  .bulk-action-bar {\n    position: sticky; top: 0; z-index: 30;\n    margin: 0 0 14px;\n    padding: 12px 14px;\n    background: var(--navy); color: white;\n    border-radius: 10px;\n    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;\n    box-shadow: var(--shadow-md);\n  }\n  .bulk-action-bar .bulk-count {\n    font-weight: 700; font-size: 14px;\n    padding: 4px 10px; background: rgba(255,255,255,0.18);\n    border-radius: 999px;\n  }\n  .bulk-action-bar .bulk-actions { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; justify-content: flex-end; }\n  .bulk-action-bar .btn {\n    padding: 7px 14px; font-size: 12px; min-height: 36px;\n    background: rgba(255,255,255,0.15); color: white;\n    border: 1px solid rgba(255,255,255,0.35);\n  }\n  .bulk-action-bar .btn:hover { background: rgba(255,255,255,0.28); }\n  .bulk-action-bar .btn-danger {\n    background: var(--coral); color: white; border-color: var(--coral);\n  }\n  .bulk-action-bar .btn-danger:hover { background: #c14a4a; }\n  .qrow-checkbox {\n    display: none;\n    width: 22px; height: 22px;\n    flex-shrink: 0; cursor: pointer;\n  }\n  #dashContent.bulk-mode .qrow-checkbox { display: block; }\n  #dashContent.bulk-mode .qrow.selected {\n    border-color: var(--navy);\n    background: linear-gradient(0deg, rgba(26,37,64,0.04), rgba(26,37,64,0.04)), var(--paper);\n  }\n\n  /* Cloud row card \u2014 denser & cleaner than the old draft-card */\n  .qrow {\n    display: flex; align-items: center; gap: 12px;\n    padding: 14px 14px; background: var(--paper);\n    border: 1px solid var(--line); border-radius: 10px;\n    margin-bottom: 8px; transition: border-color 0.12s, transform 0.12s;\n    -webkit-tap-highlight-color: transparent;\n  }\n  .qrow:hover { border-color: var(--green-light); }\n  .qrow-main { flex: 1; min-width: 0; }\n  .qrow-cust { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 3px; word-break: break-word; }\n  .qrow-meta {\n    display: flex; gap: 6px; flex-wrap: wrap; align-items: center;\n    font-size: 12px; color: var(--slate);\n  }\n  .qrow-meta .sep { opacity: 0.5; }\n  .qrow-total {\n    color: var(--green); font-weight: 700; font-size: 13px;\n    margin-top: 4px;\n  }\n  .qrow-actions { display: flex; gap: 6px; flex-shrink: 0; }\n  .qrow-actions .btn { padding: 8px 14px; font-size: 13px; min-height: 36px; }\n  /* Project chips on row cards \u2014 compact summary of what's in the quote */\n  .qrow-chips, .qrow-chips-row {\n    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;\n    align-items: center;\n  }\n  .proj-chip {\n    display: inline-block;\n    font-size: 11px; font-weight: 600;\n    color: var(--green); background: #eaf3ec;\n    padding: 2px 8px; border-radius: 999px;\n    white-space: nowrap;\n  }\n  /* Rep-quoting-by chip on each dashboard row. Small avatar circle\n     + name, mirrors the header rep chip style so the eye recognizes\n     it instantly. */\n  .qrow-rep-chip {\n    display: inline-flex; align-items: center; gap: 5px;\n    padding: 2px 8px 2px 2px;\n    background: var(--line-soft);\n    border-radius: 999px;\n    font-size: 11px; font-weight: 600;\n    color: var(--navy);\n    white-space: nowrap;\n    max-width: 220px;\n  }\n  .qrow-rep-avatar {\n    width: 20px; height: 20px;\n    background: var(--navy); color: white;\n    border-radius: 50%;\n    display: inline-flex; align-items: center; justify-content: center;\n    font-size: 9px; font-weight: 800;\n    flex-shrink: 0;\n  }\n  .qrow-rep-name {\n    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\n  }\n  .qrow-addr {\n    /* Truncate long addresses on a single line in the meta row */\n    max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\n    display: inline-block; vertical-align: bottom;\n  }\n  .qrow-actions .ico-btn {\n    width: 38px; height: 38px; border-radius: 8px;\n    background: var(--line-soft); color: var(--slate);\n    display: flex; align-items: center; justify-content: center;\n    font-size: 18px; cursor: pointer; border: none;\n    transition: background 0.12s;\n    -webkit-tap-highlight-color: transparent;\n  }\n  .qrow-actions .ico-btn:hover { background: var(--line); color: var(--navy); }\n\n  /* Inline action menu \u2014 replaces native dropdown for mobile-friendliness */\n  .row-menu {\n    position: absolute; z-index: 100;\n    background: var(--paper); border: 1.5px solid var(--line);\n    border-radius: 10px; box-shadow: var(--shadow-lg);\n    padding: 6px; min-width: 180px;\n  }\n  .row-menu button {\n    display: block; width: 100%; text-align: left;\n    background: transparent; border: none; cursor: pointer;\n    padding: 10px 12px; border-radius: 6px; font-size: 14px;\n    color: var(--navy); transition: background 0.1s;\n    -webkit-tap-highlight-color: transparent;\n    min-height: 40px;\n  }\n  .row-menu button:hover { background: var(--line-soft); }\n  .row-menu button.danger { color: var(--coral); }\n  .row-menu button.danger:hover { background: var(--coral-pale); }\n  .row-menu hr { border: none; border-top: 1px solid var(--line); margin: 4px 0; }\n\n  /* Status pill in header \u2014 shows save state for the current draft */\n  .save-pill {\n    display: inline-flex; align-items: center; gap: 6px;\n    padding: 4px 10px; border-radius: 999px;\n    font-size: 11px; font-weight: 700;\n    background: var(--line-soft); color: var(--slate);\n    transition: background 0.15s, color 0.15s;\n    white-space: nowrap;\n  }\n  .save-pill.saving { background: #fff5e6; color: #a66400; }\n  .save-pill.saved  { background: #e6f5ec; color: #2d6e4e; }\n  .save-pill.failed { background: var(--coral-pale); color: var(--coral); cursor: pointer; }\n  .save-pill.hidden { display: none; }\n  .save-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }\n  .save-pill.saving .dot { animation: pulse 1s ease-in-out infinite; }\n  @keyframes pulse { 50% { opacity: 0.3; } }\n\n  /* Jobber integration pill \u2014 clickable, in the header */\n  .jobber-pill {\n    display: inline-flex; align-items: center; gap: 6px;\n    padding: 4px 10px; border-radius: 999px;\n    font-size: 11px; font-weight: 700;\n    background: var(--line-soft); color: var(--slate);\n    border: none; cursor: pointer;\n    transition: background 0.15s, color 0.15s;\n    -webkit-tap-highlight-color: transparent;\n    white-space: nowrap;\n  }\n  .jobber-pill:hover { background: var(--line); }\n  .jobber-pill.connected { background: #e6f5ec; color: #2d6e4e; }\n  .jobber-pill.warn      { background: #fff5e6; color: #a66400; }\n  .jobber-pill.error     { background: var(--coral-pale); color: var(--coral); }\n  .jobber-pill .jp-dot {\n    width: 6px; height: 6px; border-radius: 50%;\n    background: currentColor;\n  }\n\n  .jobber-action {\n    display: flex; align-items: center; gap: 10px;\n    padding: 12px 14px;\n    background: var(--paper); border: 1.5px solid var(--line);\n    border-radius: 10px; cursor: pointer;\n    font-size: 14px; font-weight: 600; color: var(--navy);\n    transition: border-color 0.12s, background 0.12s;\n    width: 100%; text-align: left;\n    -webkit-tap-highlight-color: transparent;\n    min-height: 44px;\n  }\n  .jobber-action:hover { border-color: var(--green); }\n  .jobber-action.primary { background: var(--green); color: white; border-color: var(--green); }\n  .jobber-action.primary:hover { background: var(--green-light); border-color: var(--green-light); }\n  .jobber-action.danger { color: var(--coral); }\n  .jobber-action.danger:hover { border-color: var(--coral); background: var(--coral-pale); }\n  .jobber-action .ico { font-size: 18px; }\n\n  @media (max-width: 640px) {\n    .jobber-pill { font-size: 10px; padding: 3px 8px; }\n  }\n\n  /* ============================================================\n     MOBILE \u2014 dashboard refinements (\u2264640px).\n     Scoped to dashboard surfaces only (stat cards, quote rows,\n     folders, bulk bar, settings dialog). Tablet + desktop layouts\n     above 640px are untouched.\n     ============================================================ */\n  @media (max-width: 640px) {\n    /* Dashboard title row \u2014 keep welcome copy + utility cluster on\n       one screenful. Heading shrinks more aggressively here than\n       the global .stage h1 because the dashboard is a list-first\n       surface where customers' names ARE the focal point. */\n    .dash-title-row {\n      gap: 8px;\n      margin-bottom: 8px;\n    }\n    .dash-title-row > div:first-child { min-width: 0; }\n    #stage-dashboard h1 {\n      font-size: 18px; margin-bottom: 4px;\n    }\n    #stage-dashboard .lead {\n      font-size: 12px; margin-bottom: 12px;\n      /* On phones, the lead paragraph is just chrome \u2014 clip to one\n         line so the actual list lands above the fold. The full\n         text is still in the DOM for accessibility. */\n      max-height: 2.6em; overflow: hidden;\n    }\n    .dash-utility { padding-top: 0; gap: 4px; }\n\n    /* Stat cards \u2014 2-up grid using flex baselines already set;\n       reduce numeric weight so they don't dominate when the rep\n       just wants to scan their list. */\n    .dash-stats { gap: 8px; margin: 8px 0 14px; }\n    .stat-card { padding: 10px 12px; flex-basis: calc(50% - 4px); min-width: 0; }\n    .stat-card .stat-num { font-size: 18px; }\n    .stat-card .stat-sub {\n      font-size: 11px;\n      /* Long $-totals like \"$12,345 in projects\" can wrap awkwardly;\n         keep them on one ellipsised line. */\n      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;\n    }\n    .stat-card .stat-lbl { font-size: 10px; margin-top: 6px; }\n\n    /* Toolbar \u2014 full-width Start-New + Search stacked. */\n    .dash-toolbar { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 14px; padding-bottom: 14px; }\n    .dash-toolbar .btn { width: 100%; min-height: 46px; }\n    .dash-search { width: 100%; }\n    .dash-search input { padding: 10px 12px 10px 36px; font-size: 16px; /* keep 16px to suppress iOS autozoom */ }\n    .dash-search::before { left: 12px; font-size: 12px; }\n\n    /* Quote-row card \u2014 denser, with the meta + chip rows tuned\n       so they NEVER overflow the card width on a 360px phone. */\n    .qrow {\n      flex-direction: column; align-items: stretch;\n      padding: 12px; gap: 10px;\n    }\n    .qrow-cust { font-size: 14px; line-height: 1.3; }\n    .qrow-meta {\n      font-size: 11px; gap: 4px 6px;\n      /* The meta row can pile up: quote-id \u00b7 phone \u00b7 address \u00b7 ago.\n         Allow it to wrap and clamp address truncation to fit. */\n    }\n    .qrow-meta .quote-id-mono {\n      font-size: 11px;\n      /* Truncate especially long IDs so they don't push the row wide */\n      max-width: 38vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\n      display: inline-block; vertical-align: bottom;\n    }\n    .qrow-total { font-size: 12px; margin-top: 2px; }\n    .qrow-addr {\n      /* Was 60vw which on iPhone SE / 360px phones still pushed past\n         the card's inner width once padding + gap was subtracted.\n         50vw keeps it safely inside even with the quote-id leading. */\n      max-width: 50vw;\n    }\n    .qrow-chips-row { gap: 4px; margin-top: 4px; }\n    .proj-chip { font-size: 10px; padding: 2px 7px; }\n    .qrow-rep-chip {\n      max-width: calc(100% - 8px);\n      font-size: 10px; padding: 2px 8px 2px 2px;\n    }\n    .qrow-rep-avatar { width: 18px; height: 18px; font-size: 8.5px; }\n    .qrow-rep-name {\n      /* Cap the rep name so a long \"First Lastname\" doesn't elbow\n         out the project chips. */\n      max-width: 130px;\n    }\n\n    /* Row actions \u2014 Resume button + \u22ef menu side-by-side, both\n       chunky enough to thumb-tap. */\n    .qrow-actions { justify-content: stretch; gap: 8px; }\n    .qrow-actions .btn { flex: 1; min-height: 44px; font-size: 13.5px; padding: 10px 14px; }\n    .qrow-actions .ico-btn { width: 44px; height: 44px; flex-shrink: 0; font-size: 19px; }\n\n    /* Bulk-mode tweaks \u2014 when select-mode is on, the row gets a\n       leading checkbox AND the column layout means the checkbox\n       lands on top of the customer name. Float it to the top-left\n       corner so the layout stays scannable. */\n    #dashContent.bulk-mode .qrow {\n      flex-direction: row; flex-wrap: wrap; align-items: flex-start;\n    }\n    #dashContent.bulk-mode .qrow .qrow-checkbox {\n      width: 24px; height: 24px; margin-top: 4px;\n    }\n    #dashContent.bulk-mode .qrow-main { flex: 1 1 calc(100% - 36px); }\n    #dashContent.bulk-mode .qrow-actions { flex: 1 1 100%; }\n\n    /* Bulk action bar \u2014 when selection is non-empty, the floating\n       toolbar at the top needs the count + actions to stack rather\n       than fight for horizontal room with 3-4 wide buttons. */\n    .bulk-action-bar {\n      padding: 10px 12px;\n      flex-direction: column; align-items: stretch; gap: 8px;\n    }\n    .bulk-action-bar .bulk-count { align-self: flex-start; font-size: 12px; padding: 3px 9px; }\n    .bulk-action-bar .bulk-actions {\n      justify-content: stretch; gap: 6px; flex-wrap: wrap;\n    }\n    .bulk-action-bar .bulk-actions .btn {\n      flex: 1 1 calc(50% - 3px); min-height: 40px; font-size: 12px; padding: 8px 10px;\n    }\n\n    /* Folders */\n    .folder { margin-bottom: 8px; border-radius: 10px; }\n    .folder summary { padding: 12px; min-height: 48px; gap: 8px; }\n    .folder summary .folder-label { font-size: 12px; letter-spacing: 0.06em; }\n    .folder summary .folder-count { font-size: 11px; padding: 2px 8px; }\n    .folder summary .folder-icon { font-size: 16px; }\n    .folder-body { padding: 0 10px 10px; }\n    .folder-empty { font-size: 12px; padding: 12px 4px; }\n\n    /* Recent strip */\n    .recent-strip { margin: 4px 0 14px; }\n    .recent-strip h3 { font-size: 11px; margin: 0 0 8px; }\n\n    /* Inline action menu (\u22ef) \u2014 bigger tap targets, hugs the row */\n    .row-menu { min-width: 200px; max-width: calc(100vw - 24px); }\n    .row-menu button { font-size: 14px; padding: 12px; min-height: 44px; }\n\n    /* Header save / Jobber pills */\n    .save-pill { font-size: 10px; padding: 3px 8px; }\n\n    /* Jobber requests panel (orange \"\ud83d\udce5 Recent Jobber requests\") */\n    .req-panel { margin-bottom: 12px; }\n    .req-card-cust { font-size: 14px; }\n    .req-card-title { font-size: 12px; }\n    .req-card-meta { font-size: 11px; }\n\n    /* Settings dialog \u2014 re-clamp max-height (the desktop rule sets\n       92vh, but on mobile the dialog also has a sticky tabs bar\n       and footer that eat ~110px; 88vh prevents the footer from\n       being scrolled off when content is tall). */\n    .pricing-admin-dialog { max-height: 88vh; }\n    .pricing-admin-dialog .pa-tabs {\n      gap: 2px; padding: 6px 6px 0;\n      /* Tabs row can overflow horizontally on a phone \u2014 let it scroll\n         rather than wrap into a 2nd row that pushes content down. */\n      overflow-x: auto; flex-wrap: nowrap;\n      scrollbar-width: none;\n    }\n    .pricing-admin-dialog .pa-tabs::-webkit-scrollbar { display: none; }\n    .pa-tab { padding: 8px 10px; font-size: 12px; white-space: nowrap; }\n    .pa-body { padding: 12px 14px; }\n    .pa-readonly { padding: 5px 8px; font-size: 12px; }\n    .pa-footer { padding: 10px 14px; flex-wrap: wrap; gap: 8px; }\n    .pa-footer .pa-meta { font-size: 10.5px; min-width: 0; flex-basis: 100%; }\n    .pa-footer .btn { flex: 1; min-height: 42px; }\n  }\n\n  /* Ultra-narrow phones (iPhone SE 1st gen, small Androids \u2264380px).\n     The 640px block above already does most of the work; these\n     tweaks just rescue the surfaces that still ran out of room\n     at 320\u2013380px. */\n  @media (max-width: 380px) {\n    .dash-stats { gap: 6px; }\n    .stat-card { padding: 8px 10px; flex-basis: calc(50% - 3px); }\n    .stat-card .stat-num { font-size: 16px; }\n    .stat-card .stat-lbl { font-size: 9.5px; letter-spacing: 0.06em; }\n    .dash-util-btn { padding: 7px 8px; min-width: 36px; min-height: 36px; }\n    .dash-util-btn .ico { font-size: 14px; }\n    .qrow { padding: 10px; gap: 8px; }\n    .qrow-cust { font-size: 13.5px; }\n    .qrow-actions .btn { font-size: 13px; min-height: 42px; }\n    .qrow-actions .ico-btn { width: 42px; height: 42px; }\n    .qrow-rep-name { max-width: 100px; }\n    .qrow-addr { max-width: 44vw; }\n    .qrow-meta .quote-id-mono { max-width: 32vw; }\n    .folder summary { padding: 10px; }\n  }\n\n  /* UI POLISH \u2014 iPad portrait breakpoint (768\u20131024px) */\n  @media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {\n    .stage-wrap { padding: 24px 18px 80px; }\n    .card-grid.cols-3 { grid-template-columns: 1fr 1fr; }\n    .final-grid { grid-template-columns: 1fr; }\n    .final-side { position: relative; top: 0; }\n    .app-header { padding: 12px 18px; }\n    .progress { padding: 12px 18px; }\n    /* iPad portrait: revert to content-sized + scroll so labels never\n       get squished mid-word. The landscape breakpoint above keeps the\n       fill-the-bar default. */\n    .progress-step { flex: 0 0 auto; min-width: 80px; font-size: 10px; }\n    /* Bigger touch targets on tablet */\n    .btn { padding: 16px 28px; font-size: 16px; min-height: 52px; }\n    .toggle-row { padding: 16px 16px; min-height: 56px; }\n    .radio-row { padding: 14px 16px; }\n    .selectable-card .card-body { padding: 20px 22px 24px; }\n    .progress-step { padding: 10px 12px; min-height: 44px; }\n    .wood-age-btn { padding: 18px 18px; min-height: 64px; }\n  }\n  /* Phone-specific tweaks (below 760px) \u2014 sticky stage-nav is global now so\n     no duplicate position rule needed here. */\n  @media (max-width: 760px) {\n    .stage-wrap { padding-bottom: 24px; }\n    /* Bigger touch targets across the board */\n    .btn { padding: 14px 22px; font-size: 15px; min-height: 50px; }\n    .toggle-row { padding: 14px 14px; min-height: 56px; }\n    .radio-row { padding: 14px 14px; min-height: 64px; }\n    .selectable-card .card-body { padding: 16px 18px; }\n    .wood-age-btn { padding: 16px; min-height: 60px; }\n    /* Side-tracker becomes a bottom sheet on phones \u2014 much better thumb reach.\n       Belt-and-suspenders hide: transform AND visibility, so even if Wix\n       wraps the Custom Element in something that breaks position:fixed,\n       the panel is still completely invisible when closed.\n       inset/width are explicit-viewport-width so it always centers\n       horizontally regardless of the host's containing block. */\n    .side-tracker {\n      inset: auto 0 0 0 !important;\n      top: auto !important;\n      left: 0 !important; right: 0 !important;\n      width: 100vw !important; max-width: 100vw !important;\n      height: 85vh; max-height: 85vh;\n      margin: 0 !important;\n      border-radius: 16px 16px 0 0;\n      transform: translateY(105%);\n      visibility: hidden;\n      pointer-events: none;\n      box-sizing: border-box;\n    }\n    .side-tracker.open { transform: translateY(0); visibility: visible; pointer-events: auto; }\n    /* Prevent any horizontal overflow that could let part of the off-screen\n       panel peek through at the page edge. */\n    :host, :host { overflow-x: hidden; max-width: 100vw; }\n    /* Mobile side-tracker tab \u2014 slim vertical pill, minimal footprint */\n    .side-tracker-tab {\n      writing-mode: vertical-rl !important;\n      text-orientation: mixed;\n      top: 50% !important;\n      bottom: auto !important;\n      right: 0 !important;\n      transform: translateY(-50%) !important;\n      padding: 5px 2.5px;\n      font-size: 8.5px;\n      letter-spacing: 0;\n      border-radius: 5px 0 0 5px;\n      box-shadow: -2px 2px 6px rgba(0,0,0,0.12);\n    }\n    .side-tracker-tab.visible { animation: none; }\n    .side-tracker-tab .count {\n      writing-mode: horizontal-tb;\n      font-size: 8px; padding: 0 3px;\n      margin-top: 2px; margin-left: 0;\n      min-width: 0;\n      border-radius: 4px;\n      line-height: 1.3;\n    }\n\n    /* Draft cards \u2014 stack vertically on phones so the customer name, meta\n       row, and Resume/Delete actions each get their own line instead of\n       being crammed into a single horizontal row. */\n    .draft-card {\n      flex-direction: column;\n      align-items: stretch;\n      gap: 10px;\n      padding: 14px 16px;\n    }\n    .draft-card-main { width: 100%; }\n    .draft-customer { font-size: 15px; margin-bottom: 4px; }\n    .draft-meta { font-size: 11px; gap: 3px 6px; line-height: 1.45; }\n    .draft-running-total { font-size: 13px; margin-top: 4px; }\n    .draft-card-actions {\n      width: 100%;\n      justify-content: stretch;\n      gap: 8px;\n    }\n    .draft-card-actions .btn-primary {\n      flex: 1;\n      padding: 12px 16px;\n      font-size: 14px;\n      min-height: 44px;\n      justify-content: center;\n    }\n    .draft-card-actions .btn-ghost-danger {\n      flex: 0 0 auto;\n      padding: 0 14px;\n      min-height: 44px;\n      min-width: 50px;\n    }\n    /* Progress bar \u2014 content-sized steps that finger-swipe horizontally.\n       overflow-x and touch-action explicitly !important so nothing in the\n       cascade can block the swipe. Children also get touch-action: pan-x\n       so a touch starting on a step button doesn't get hijacked. */\n    .progress {\n      padding: 8px 10px; gap: 6px;\n      touch-action: pan-x !important;\n      overflow-x: auto !important;\n      overflow-y: hidden !important;\n      -webkit-overflow-scrolling: touch !important;\n      overscroll-behavior-x: contain;\n    }\n    .progress-step {\n      flex: 0 0 auto;\n      min-width: 60px;\n      font-size: 9.5px;\n      padding: 6px 9px;\n      min-height: 42px;\n      display: inline-flex; flex-direction: column;\n      align-items: center; justify-content: center;\n      touch-action: pan-x;\n    }\n    .progress-step .step-num { font-size: 7.5px; }\n    .progress::-webkit-scrollbar { display: none; }\n    .progress { scrollbar-width: none; }\n    /* Header \u2014 compact on phone.\n       Three competing pieces \u2014 brand mark, save/Jobber pills, and the\n       Quote Total \u2014 used to fight for horizontal room and visibly\n       overlap on narrow phones. Strategy:\n         1. Shrink the brand mark hard (logo only at very narrow widths;\n            name truncates aggressively before that).\n         2. Let .brand-mark itself shrink (its `min-width: 0` lets the\n            ellipsis actually clip; previously the flex item was sized\n            to fit content and pushed the right cluster off-screen).\n         3. Cap .header-right with a max-width derived from viewport,\n            then let it scroll horizontally if its contents overflow \u2014\n            beats a wrapped second row that doubles header height. */\n    .app-header { padding: 8px 10px; gap: 6px; flex-wrap: nowrap; }\n    .app-header .brand-mark { gap: 8px; min-width: 0; flex-shrink: 1; }\n    .app-header .brand-mark .sub { display: none; }\n    .app-header .brand-mark .name {\n      font-size: 11.5px; line-height: 1.2;\n      /* Shorter cap than before (was 120px). Combined with min-width: 0\n         on the parent, the name now ellipsises gracefully when the\n         pills on the right need the space. */\n      max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\n    }\n    .app-header .brand-mark .logo { width: 26px; height: 26px; }\n    .header-right {\n      gap: 6px; flex-shrink: 0;\n      max-width: calc(100vw - 60px);\n      overflow-x: auto; overflow-y: hidden;\n      scrollbar-width: none;\n      /* prevent inertia scrolling from feeling like a bug on iOS */\n      -webkit-overflow-scrolling: auto;\n    }\n    .header-right::-webkit-scrollbar { display: none; }\n    .total-pill { min-width: 60px; padding: 4px 9px; }\n    .total-pill .amt { font-size: 13px; }\n    .total-pill .lbl { font-size: 8px; }\n    /* Quote-id tag \u2014 hide on tiny screens to keep header tight */\n    .quote-id-tag { display: none; }\n    /* Save pill \u2014 keep visible but tighter; hide the text on very narrow\n       screens, just show the colored dot. */\n    .save-pill { font-size: 10px; padding: 3px 7px; gap: 5px; }\n    .save-pill .save-pill-text {\n      max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\n    }\n    /* Jobber pill \u2014 same treatment. */\n    .jobber-pill {\n      font-size: 10px; padding: 3px 8px; gap: 5px;\n    }\n    .jobber-pill #jobberPillText {\n      max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\n    }\n    /* Stage header text \u2014 pulled down a notch (\"too damn big\" feedback) */\n    .stage-title { font-size: 10px; margin-bottom: 4px; }\n    .stage h1 { font-size: 19px; margin-bottom: 6px; line-height: 1.25; letter-spacing: -0.3px; }\n    .stage .lead { font-size: 12.5px; margin-bottom: 16px; line-height: 1.45; }\n\n    /* Tip boxes \u2014 were eating a big chunk of vertical space on a phone */\n    .tip-box { padding: 10px 12px; font-size: 12px; gap: 8px; margin-bottom: 12px; }\n    .tip-box .tip-ico { font-size: 14px; }\n    .tip-box .tip-body strong { font-size: 10px; margin-bottom: 3px; }\n\n    /* Alerts (reco banner, warnings, etc.) */\n    .alert { padding: 10px 12px; font-size: 12px; gap: 8px; margin-bottom: 12px; }\n    .reco-banner { padding: 10px 12px; margin-bottom: 14px; gap: 8px; }\n    .reco-banner .reco-content { font-size: 12px; }\n\n    /* Tighter side padding on phones to maximize content area */\n    .stage-wrap { padding: 14px 10px 24px; }\n    /* Grid gaps reduce \u2014 was 22px, fine on desktop but huge on a phone */\n    .card-grid { gap: 12px; margin-bottom: 18px; }\n    .product-choice-grid { gap: 12px; margin-bottom: 18px; }\n    .addon-grid { gap: 8px; }\n\n    /* Card images take less vertical space on phones */\n    .card-image { height: 150px; }\n    .selectable-card .card-body { padding: 12px 14px; }\n    .selectable-card .card-body .title { font-size: 15px; margin-bottom: 4px; }\n    .selectable-card .card-body .desc { font-size: 12px; line-height: 1.4; }\n    .selectable-card .card-body .badge { font-size: 9px; padding: 2px 6px; margin-top: 6px; }\n\n    /* Tier cards \u2014 much tighter padding + fonts */\n    .tier-card { padding: 14px; border-radius: 12px; }\n    .tier-card .tier-name { font-size: 10px; margin-bottom: 3px; }\n    .tier-card .tier-product { font-size: 15px; margin-bottom: 5px; line-height: 1.2; }\n    .tier-card .tier-tagline { font-size: 11px; margin-bottom: 8px; min-height: 0; }\n    .tier-card .tier-price { font-size: 22px; margin: 6px 0 1px; }\n    .tier-card .tier-cost-per-year { font-size: 11px; }\n    .tier-card .tier-life { font-size: 11px; padding: 4px 8px; margin: 6px 0 10px; }\n    .tier-card .tier-pros li, .tier-card .tier-cons li { font-size: 12px; padding-top: 3px; padding-bottom: 3px; }\n    .tier-card .whats-included { padding: 10px; margin: 10px 0 14px; }\n    .tier-card .whats-included-label, .tier-card .whats-included ul li { font-size: 11px; }\n    .tier-card .best-for { padding-top: 10px; font-size: 11px; }\n    .tier-card .best-for strong { font-size: 10px; }\n\n    /* Product family cards */\n    .product-choice-card .prod-image { height: 130px; }\n    .product-choice-card .prod-body { padding: 12px 14px; gap: 5px; }\n    .product-choice-card .icon { font-size: 20px; }\n    .product-choice-card .h { font-size: 15px; }\n    .product-choice-card .d { font-size: 12px; line-height: 1.4; }\n    .product-choice-card .prod-pros li { font-size: 11.5px; padding: 3px 0 3px 18px; }\n    .product-choice-card .prod-cons li { font-size: 11px; padding: 2px 0 2px 18px; }\n    .product-choice-card .prod-recommend-note { padding: 8px 10px; font-size: 11px; margin-top: 10px; }\n    .product-choice-card .prod-recommend-note strong { font-size: 9px; }\n\n    /* Condition cards (Step 4) */\n    .condition-card .card-image { height: 100px; }\n    .condition-card .cond-body { padding: 10px 12px; }\n    .condition-card .cond-name { font-size: 13.5px; }\n    .condition-card .cond-prep { font-size: 11px; margin: 4px 0 8px; }\n    .condition-card .cond-bullets-label { font-size: 9px; }\n    .condition-card .cond-bullets li { font-size: 11px; line-height: 1.3; padding: 2px 0 2px 16px; }\n    .condition-card .cond-timing { font-size: 10px; padding: 3px 6px; margin-top: 6px; }\n    .condition-card .cond-add { font-size: 13px; padding-top: 8px; }\n\n    /* Form inputs \u2014 were big on desktop, way too big on phone */\n    .field label { font-size: 10.5px; margin-bottom: 4px; }\n    /* iOS Safari auto-zooms in when focusing an input with font-size < 16px\n       and doesn't reliably zoom back out \u2014 feels like the page is \"stuck\"\n       zoomed. Forcing every editable field to \u226516px on mobile is the\n       standard fix and prevents the surprise zoom entirely. */\n    .field input, .field select, .field textarea,\n    input[type=\"text\"], input[type=\"tel\"], input[type=\"email\"],\n    input[type=\"number\"], input[type=\"password\"], input[type=\"search\"],\n    input:not([type]), textarea, select {\n      padding: 10px 12px; font-size: 16px !important; border-radius: 8px;\n    }\n    .field .hint, .field .err { font-size: 11px; }\n    .form-grid { gap: 12px; margin-bottom: 16px; }\n    /* Other editable fields outside .field need the bump too */\n    .side-tracker-notes textarea { font-size: 16px !important; }\n    .custom-add-form input, .custom-add-form select { font-size: 16px !important; padding: 8px 10px; }\n    /* Custom color code input on Step 7 */\n    .custom-color-entry input { font-size: 16px !important; }\n\n    /* Measurement section */\n    .measure-section { padding: 14px 14px; margin-bottom: 12px; border-radius: 10px; }\n    .measure-section h3 { font-size: 14px; }\n    .measure-section .section-hint { font-size: 11.5px; margin-bottom: 12px; }\n\n    /* Wood age and toggle rows */\n    .wood-age-btn { padding: 12px 14px; }\n    .wood-age-btn .wa-ico { font-size: 22px; }\n    .wood-age-btn .wa-label { font-size: 12.5px; }\n    .wood-age-btn .wa-label small { font-size: 10px; }\n    .toggle-row { padding: 10px 12px; min-height: 0; margin-bottom: 6px; }\n    .toggle-row .name { font-size: 13px; }\n    .toggle-row .box { width: 18px; height: 18px; font-size: 11px; }\n    .toggle-row .price { font-size: 12.5px; }\n\n    /* Buttons \u2014 slightly smaller, still tap-friendly (\u226544px) */\n    .btn { padding: 11px 18px; font-size: 14px; min-height: 44px; border-radius: 8px; }\n\n    /* Color swatches */\n    .color-group-label { font-size: 12px; margin-bottom: 8px; }\n    .color-group-label small { font-size: 11px; }\n    .color-swatch { padding: 5px; border-radius: 8px; }\n    .color-swatch .name { font-size: 10.5px; }\n    .color-swatch .code { font-size: 9px; }\n    /* Color grid override already set earlier */\n    /* Color swatch grid \u2014 3 per row instead of fewer big ones */\n    .color-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 10px; }\n    .color-swatch { padding: 6px; }\n    .color-swatch .name { font-size: 11px; }\n    /* Final breakdown stacks; side panel goes below */\n    .final-side { margin-top: 16px; }\n    /* Discount rows \u2014 value chip on its own line UNDER the description so\n       long values like \"No processing fee\" never overflow. */\n    .radio-row {\n      flex-wrap: wrap;\n      padding: 12px;\n      gap: 8px 10px;\n      align-items: flex-start;\n    }\n    .radio-row .disc-img { width: 52px; height: 52px; flex-shrink: 0; }\n    .radio-row .dot-outer { margin-top: 4px; flex-shrink: 0; }\n    .radio-row .label {\n      flex: 1 1 0; min-width: 0;\n    }\n    .radio-row .label .head { font-size: 13px; }\n    .radio-row .label .sub { font-size: 11px; line-height: 1.4; }\n    .radio-row .value {\n      flex: 1 1 100%;\n      white-space: normal !important;\n      text-align: right;\n      font-size: 14px;\n      max-width: 100%;\n      line-height: 1.2;\n      margin-top: 2px;\n    }\n\n    /* Addon rows (Step 8) \u2014 restructure so the image sits ABOVE the\n       description and price on mobile. The checkbox floats over the\n       top-left corner of the image as an overlay. */\n    .addon-section .toggle-row {\n      flex-direction: column;\n      flex-wrap: nowrap;\n      align-items: stretch;\n      padding: 10px;\n      gap: 8px;\n      min-height: 0;\n      position: relative;\n    }\n    .addon-section .toggle-row .box {\n      position: absolute;\n      top: 18px; left: 18px;\n      z-index: 2;\n      /* No background override here \u2014 lets the base white/green cascade\n         through so the checkbox actually fills green when checked. The\n         shadow keeps it visible against any image color underneath. */\n      box-shadow: 0 2px 6px rgba(0,0,0,0.35);\n      flex-shrink: 0;\n    }\n    .toggle-row .addon-img {\n      width: 100% !important; height: 140px !important;\n      border-radius: 8px;\n      flex-shrink: 0;\n      order: -2;\n    }\n    .toggle-row .addon-desc { min-width: 0; order: -1; }\n    .toggle-row .addon-desc .ad-name { font-size: 14px; line-height: 1.3; }\n    .toggle-row .addon-desc .ad-sub { font-size: 12px; }\n    .toggle-row .price {\n      white-space: normal !important;\n      font-size: 14px;\n      text-align: right;\n      flex-shrink: 0;\n      order: 1;\n    }\n    .toggle-row .qty-input { width: 60px; align-self: flex-end; }\n\n    /* Addon rows WITHOUT an image (custom service rows etc.) stay in their\n       compact horizontal layout. */\n    .addon-section .toggle-row:not(:has(.addon-img)) {\n      flex-direction: row;\n      align-items: flex-start;\n    }\n    .addon-section .toggle-row:not(:has(.addon-img)) .box { position: static; box-shadow: none; }\n\n    /* Service-includes rows (the \"Included free\" green cards on Step 8) */\n    .service-include-row {\n      padding: 10px 12px; gap: 10px;\n      align-items: flex-start;\n    }\n    .service-include-row .check { width: 24px; height: 24px; font-size: 12px; margin-top: 2px; }\n    .service-include-row .addon-desc .ad-name { font-size: 13.5px; }\n    .service-include-row .addon-desc .ad-sub { font-size: 11px; }\n    .service-include-row .price { font-size: 10px; }\n\n    /* Custom items list + add form \u2014 repack so they stack cleanly */\n    .custom-item-row {\n      flex-wrap: wrap;\n      padding: 10px 12px;\n      gap: 6px 10px;\n    }\n    .custom-item-row .name { flex: 1 1 100%; font-size: 13px; }\n    .custom-item-row .price { font-size: 13px; }\n    .custom-add-btn { font-size: 11px; padding: 5px 10px; }\n\n    /* REVIEW screen \u2014 tighten edges and pad the main breakdown so the\n       customer-facing summary uses every available pixel on a phone. */\n    .stage-wrap { padding: 16px 10px 24px; }\n    .final-main { padding: 16px 14px; border-radius: 12px; }\n    .final-side { padding: 16px 14px; border-radius: 12px; }\n    .breakdown-section { margin-bottom: 14px; padding-bottom: 8px; }\n    .breakdown-line { padding: 8px 0; gap: 8px; }\n    .breakdown-line .desc { font-size: 13px; }\n    .breakdown-line .val { font-size: 13px; }\n    .saved-projects { padding: 12px 14px; }\n    .saved-project-row {\n      flex-wrap: wrap;\n      gap: 6px 10px;\n    }\n    .saved-project-row .meta { flex: 1 1 100%; padding-left: 0; }\n    .saved-project-row .amt { font-size: 14px; margin-right: 0; }\n    .saved-project-row .row-actions { width: 100%; gap: 6px; }\n    .saved-project-row .row-actions button { flex: 1; }\n    .grand-total { padding: 12px 14px; flex-wrap: wrap; gap: 6px; }\n    .grand-total .label { font-size: 11px; max-width: 100%; }\n    .grand-total .amount { font-size: 22px; }\n    .grand-total .grand-total-amount-block { align-items: flex-start; text-align: left; }\n    .grand-total .grand-total-savings { font-size: 10.5px; }\n    /* Project Total mid-breakdown box \u2014 was visually competing with the\n       Grand Total on phone. Shrink it. */\n    .project-total { padding: 10px 14px; margin-top: 10px; }\n    .project-total .label { font-size: 10.5px; }\n    .project-total .amount { font-size: 18px; }\n    /* Header amount pill */\n    .total-pill .lbl { font-size: 7.5px; }\n    /* Stage h1 even tighter \u2014 friend feedback was big on this */\n    .stage h1 { font-size: 17px; }\n    .stage .lead { font-size: 12px; margin-bottom: 14px; }\n    .stage-title { font-size: 9.5px; }\n    /* Breakdown header row inside review (project name + collapse button) */\n    .breakdown-header-row { margin-bottom: 10px; gap: 8px; }\n    .breakdown-header-row h3 { font-size: 15px; }\n    /* Math walk + DIY totals */\n    .math-walk h4 { font-size: 10px; margin-bottom: 6px; }\n    .math-walk-row.math-walk-subtotal,\n    .math-walk-row.math-walk-total-savings { font-size: 12.5px; }\n    .diy-comparison h4 { font-size: 12px; }\n    .diy-comparison .diy-blurb { font-size: 11.5px; margin-bottom: 10px; }\n    .diy-comparison .diy-row.diy-total { font-size: 13px; padding-top: 8px; }\n    .diy-comparison .diy-conclusion { padding: 10px 12px; font-size: 12px; }\n    /* Bundle savings pill (the celebrate banner) */\n    .bundle-savings-pill { font-size: 13px; padding: 8px 14px; }\n    .bundle-savings-pill strong { font-size: 15px !important; }\n    /* Math walk-through and DIY comparison are tighter too */\n    .math-walk, .diy-comparison { padding: 12px 14px; }\n    .math-walk-row, .diy-row { font-size: 12px; padding: 5px 0; }\n    .diy-project-item { flex-wrap: wrap; }\n    .diy-project-item span:first-child { flex: 1 1 100%; }\n    .quote-expiry-banner { padding: 10px 12px; font-size: 12px; gap: 8px; }\n    .risk-reversal-box { padding: 14px 16px; }\n    .risk-reversal-box li { font-size: 12px; }\n    .review-notes-box { padding: 12px 14px; }\n    .review-notes-box p { font-size: 13px; }\n\n    /* Modal \u2014 near-full-screen on phone with smaller text */\n    .info-dialog {\n      max-width: calc(100% - 16px);\n      width: calc(100% - 16px);\n      max-height: 96vh;\n      border-radius: 12px;\n    }\n    .info-modal-header { padding: 12px 14px; }\n    .info-modal-header h3 { font-size: 15px; }\n    .info-modal-header .close-x { width: 24px; height: 24px; font-size: 14px; }\n    .info-modal-body { padding: 14px 16px; font-size: 12.5px; line-height: 1.5; }\n    .info-modal-body p { margin-bottom: 8px; }\n    .info-modal-body li { margin-bottom: 4px; font-size: 12.5px; line-height: 1.4; }\n    .info-modal-body strong { font-size: 12.5px; }\n\n    /* \"You're saving $X \u2014 discounts ($X)\" pill was rendering as a vertical\n       column of one-word lines on phone because inline-flex was wrapping\n       inside a fixed-width pill shape. Convert to a full-width rounded\n       block on mobile with normal text flow. */\n    .bundle-savings-pill {\n      display: block;\n      width: 100%;\n      box-sizing: border-box;\n      border-radius: 12px;\n      padding: 10px 14px;\n      font-size: 12.5px;\n      text-align: left;\n      line-height: 1.4;\n    }\n    .bundle-savings-pill strong { font-size: 14px !important; }\n\n    /* Review screen \u2014 fence-performance-(oil) breakdown header was too big */\n    .breakdown-header-row { gap: 6px; }\n    .breakdown-header-row h3 { font-size: 13px !important; line-height: 1.25; }\n    .btn-collapse-project { font-size: 11px; padding: 5px 10px; }\n\n    /* All buttons \u2014 one more notch tighter than before. Still 40px min\n       height for tap-friendliness. */\n    .btn { padding: 9px 16px; font-size: 13px; min-height: 40px; }\n    .btn-secondary { padding: 9px 14px; }\n    .btn-save-exit { padding: 5px 10px; font-size: 11px; }\n\n    /* Custom items section h4 (the one with \"Employee Only\" badge + the\n       \"+ Add Custom Item\" button on the right) was overflowing on phone */\n    .addon-section h4 {\n      font-size: 12px;\n      flex-wrap: wrap; gap: 6px;\n    }\n    .addon-section h4 > span {\n      flex-wrap: wrap !important;\n      gap: 4px !important;\n    }\n    .employee-badge { font-size: 10px; padding: 4px 8px; }\n    .custom-add-btn { font-size: 10px; padding: 4px 8px; }\n    .custom-add-form { padding: 10px; }\n    .custom-add-form input, .custom-add-form select { padding: 6px 8px; font-size: 12px; }\n    .custom-add-form .btn-save, .custom-add-form .btn-cancel { padding: 6px 10px; font-size: 11px; }\n    .custom-item-row { padding: 8px 12px; }\n    .custom-item-row .name { font-size: 12.5px; }\n    .custom-item-row .price { font-size: 12.5px; }\n  }\n  /* Extra-narrow phones (\u2264 400px) \u2014 squeeze further */\n  @media (max-width: 400px) {\n    .stage-wrap { padding: 14px 10px 24px; }\n    .stage h1 { font-size: 20px; }\n    .progress-step { min-width: 64px; font-size: 9px; padding: 6px; }\n    .app-header { padding: 6px 8px; gap: 5px; }\n    /* On tiny phones the company name is the first to go \u2014 the brand\n       logo identifies us already, and the screen real estate is better\n       spent on pills + Save status. The .name still exists in the DOM\n       (and stays visible to screen readers via aria-label on .brand-mark\n       elsewhere) so SR users aren't impacted. */\n    .app-header .brand-mark .name { display: none; }\n    .app-header .brand-mark .logo { width: 24px; height: 24px; }\n    .header-right { max-width: calc(100vw - 44px); gap: 5px; }\n    .total-pill { min-width: 60px; padding: 4px 8px; }\n    .total-pill .amt { font-size: 13px; }\n    .total-pill .lbl { font-size: 7.5px; }\n    /* Save / Jobber pill text \u2192 dot-only on the narrowest phones */\n    .save-pill .save-pill-text,\n    .jobber-pill #jobberPillText { display: none; }\n    .save-pill, .jobber-pill { padding: 5px 6px; gap: 0; min-width: 22px; justify-content: center; }\n    .card-image { height: 150px; }\n    .product-choice-card .prod-image { height: 130px; }\n    .color-grid { grid-template-columns: repeat(2, 1fr) !important; }\n  }\n\n  /* ============ SIDE TRACKER PANEL ============ */\n  /* The header-mounted \"Your Quote\" button was an iframe-era fallback; in\n     the Custom Element build the floating tab on the right edge works fine,\n     so the header button is hidden. */\n  .header-tracker-btn { display: none !important; }\n\n  /* Floating \"Your Quote\" tab \u2014 fixed to the right edge of the viewport,\n     vertically centered. Hidden by default; .visible is toggled on by the\n     renderSidePanel() function once the user has made any meaningful\n     selection. */\n  .side-tracker-tab {\n    position: fixed; right: 0; top: 50%; transform: translateY(-50%);\n    background: var(--green); color: white;\n    padding: 14px 10px; border-radius: 10px 0 0 10px;\n    box-shadow: var(--shadow-md); cursor: pointer;\n    z-index: 999999; display: none;\n    writing-mode: vertical-rl; text-orientation: mixed;\n    font-weight: 700; font-size: 13px; letter-spacing: 0.05em;\n    transition: background 0.15s, padding 0.15s;\n  }\n  .side-tracker-tab:hover { background: var(--green-light); padding-right: 14px; }\n  .side-tracker-tab.visible { display: block; animation: slideTab 0.3s; }\n  /* Hide the floating tab while the side panel itself is open \u2014 otherwise\n     the tab sits on top of the panel at the same right:0 edge. */\n  .side-tracker-tab.hidden-while-open { display: none !important; }\n  @keyframes slideTab {\n    from { transform: translateY(-50%) translateX(100%); }\n    to   { transform: translateY(-50%) translateX(0); }\n  }\n  /* Count chip hidden globally \u2014 the user prefers the tab to read just\n     \"Your Quote\" without the running selection count attached. */\n  .side-tracker-tab .count { display: none !important; }\n\n  .side-tracker {\n    position: fixed; right: 0; top: 0; bottom: 0;\n    width: 360px; max-width: 90vw;\n    background: var(--paper); box-shadow: -8px 0 24px rgba(0,0,0,0.12);\n    z-index: 95; transform: translateX(100%);\n    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n    display: flex; flex-direction: column;\n  }\n  .side-tracker.open { transform: translateX(0); }\n  .side-tracker-header {\n    padding: 16px 20px; border-bottom: 1px solid var(--line);\n    display: flex; align-items: center; justify-content: space-between;\n    background: var(--navy); color: white;\n  }\n  .side-tracker-header h3 { font-size: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin: 0; }\n  .side-tracker-header .close-btn {\n    background: rgba(255,255,255,0.15); color: white;\n    width: 30px; height: 30px; border-radius: 8px;\n    font-size: 18px; font-weight: 700;\n    display: flex; align-items: center; justify-content: center;\n    transition: background 0.15s;\n  }\n  .side-tracker-header .close-btn:hover { background: rgba(255,255,255,0.25); }\n  .side-tracker-body {\n    flex: 1 1 auto; min-height: 0; overflow-y: auto;\n    padding: 12px 16px;\n    touch-action: pan-y;\n    -webkit-overflow-scrolling: touch;\n    overscroll-behavior: contain;\n  }\n  .side-tracker-body .empty-state {\n    text-align: center; padding: 24px 10px; color: var(--slate);\n    font-size: 12px;\n  }\n  .tracker-section { margin-bottom: 14px; }\n  .tracker-section h4 {\n    font-size: 10px; color: var(--slate);\n    text-transform: uppercase; letter-spacing: 0.08em;\n    font-weight: 700; margin-bottom: 6px;\n    padding-bottom: 5px; border-bottom: 1px solid var(--line);\n  }\n  .tracker-row {\n    display: flex; align-items: center; gap: 8px;\n    padding: 6px 0; border-bottom: 1px dashed var(--line);\n    font-size: 12px;\n  }\n  .tracker-row:last-child { border-bottom: none; }\n  .tracker-row .tr-label { color: var(--slate); font-size: 9.5px; font-weight: 600; width: 56px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.04em; }\n  /* Truncate long values (especially emails) with ellipsis so the edit\n     button always stays visible on the right. min-width:0 is required for\n     a flex child to actually shrink below its content width. */\n  .tracker-row .tr-value {\n    flex: 1 1 auto; min-width: 0;\n    color: var(--navy); font-weight: 600;\n    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;\n  }\n  .tracker-row .tr-actions { display: flex; gap: 4px; flex-shrink: 0; }\n  .tracker-row .tr-actions button {\n    width: 24px; height: 24px; border-radius: 5px;\n    font-size: 11px; display: flex; align-items: center; justify-content: center;\n    transition: background 0.12s;\n  }\n  .tracker-row .tr-actions .edit { background: var(--line-soft); color: var(--navy); }\n  .tracker-row .tr-actions .edit:hover { background: var(--green-pale); color: var(--green); }\n  .tracker-row .tr-actions .clear { background: var(--line-soft); color: var(--coral); }\n  .tracker-row .tr-actions .clear:hover { background: var(--coral-pale); }\n  .side-tracker-footer {\n    padding: 10px 14px 12px;\n    border-top: 2px solid var(--green-pale);\n    background: var(--green-pale);\n    display: flex; align-items: center; gap: 10px;\n  }\n  .side-tracker-footer .tot-block {\n    margin-left: auto;\n    display: flex; flex-direction: column;\n    align-items: flex-end; line-height: 1.1;\n  }\n  .side-tracker-footer .tot-label {\n    font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.06em;\n    color: var(--slate); font-weight: 700;\n  }\n  .side-tracker-footer .tot-amt {\n    font-size: 18px; font-weight: 800; color: var(--green); letter-spacing: -0.3px;\n    margin-top: 2px;\n  }\n  .side-tracker-overlay {\n    position: fixed; inset: 0;\n    background: rgba(0,0,0,0.3);\n    z-index: 94; opacity: 0; pointer-events: none;\n    transition: opacity 0.25s;\n  }\n  .side-tracker-overlay.visible { opacity: 1; pointer-events: auto; }\n\n  /* ============ INFO BUTTON + MODAL ============ */\n  .info-btn {\n    display: inline-flex; align-items: center; justify-content: center;\n    width: 18px; height: 18px; border-radius: 50%;\n    background: var(--slate); color: white;\n    font-size: 11px; font-weight: 800; font-family: serif;\n    cursor: pointer; vertical-align: middle;\n    margin-left: 6px; user-select: none;\n    transition: all 0.15s;\n  }\n  .info-btn:hover, .info-btn:focus { background: var(--navy); transform: scale(1.1); outline: none; }\n  /* Native <dialog> \u2014 renders in the browser's top layer via showModal(),\n     escaping any containing-block / transform restrictions imposed by Wix's\n     Custom Element wrapper. The ::backdrop pseudo-element handles the\n     overlay automatically. Explicit fixed centering as a safety net for\n     Shadow-DOM + transformed-ancestor edge cases where the default\n     dialog auto-centering misbehaves. */\n  .info-dialog {\n    background: var(--paper); border-radius: 16px;\n    border: none; padding: 0;\n    max-width: 540px; width: calc(100% - 32px);\n    max-height: 85vh; overflow-y: auto;\n    box-shadow: var(--shadow-lg);\n    color: var(--navy);\n    position: fixed;\n    top: 50%; left: 50%;\n    transform: translate(-50%, -50%);\n    margin: 0;\n  }\n  /* Pricing admin reuses .info-dialog but wants more horizontal room +\n     a vertical layout with sticky tabs and footer. Larger than the\n     stock info modal because Settings has a lot to expose now (tier\n     rates, prep, extras, addons, discounts, DIY knobs, reps, devices). */\n  .pricing-admin-dialog { max-width: 1160px; width: calc(100% - 32px); max-height: 92vh; }\n  /* --- Settings search + legend row --- */\n  .pa-search-row {\n    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;\n    padding: 10px 14px 2px;\n  }\n  .pa-search-wrap { position: relative; flex: 1; min-width: 240px; max-width: 460px; }\n  #paSearch {\n    width: 100%; padding: 9px 13px;\n    border: 1.5px solid var(--line); border-radius: 999px;\n    font: inherit; font-size: 13px; color: var(--navy); background: var(--cream);\n  }\n  #paSearch:focus { outline: none; border-color: var(--green); background: var(--paper); box-shadow: 0 0 0 3px rgba(45,110,78,0.10); }\n  .pa-search-results {\n    position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 30;\n    background: var(--paper); border: 1.5px solid var(--line); border-radius: 12px;\n    box-shadow: var(--shadow-lg); overflow: hidden; max-height: 320px; overflow-y: auto;\n  }\n  .pa-sr-row {\n    display: flex; justify-content: space-between; align-items: baseline; gap: 10px;\n    width: 100%; padding: 9px 14px; border: none; background: transparent;\n    cursor: pointer; text-align: left;\n  }\n  .pa-sr-row:hover, .pa-sr-row:focus { background: var(--green-pale); }\n  .pa-sr-row + .pa-sr-row { border-top: 1px solid var(--line-soft); }\n  .pa-sr-label { font-size: 13px; font-weight: 600; color: var(--navy); flex: 1 1 auto; min-width: 140px; }\n  .pa-sr-where { font-size: 11px; color: var(--slate); text-align: right; flex: 0 1 auto; }\n  .pa-sr-empty { padding: 10px 14px; font-size: 12.5px; color: var(--slate); }\n  .pa-legend { font-size: 11.5px; color: var(--slate); display: inline-flex; align-items: center; gap: 6px; }\n  .pa-legend-chip { width: 14px; height: 14px; border-radius: 4px; background: var(--gold-pale); border: 1.5px solid var(--gold); display: inline-block; }\n  /* --- Per-field reset chip --- */\n  .pa-cell { position: relative; display: inline-flex; align-items: center; width: 100%; }\n  .pa-cell .pa-input { padding-right: 8px; }\n  .pa-reset {\n    display: none;\n    position: absolute; right: -9px; top: -9px;\n    width: 20px; height: 20px; border-radius: 50%;\n    border: none; background: var(--gold); color: #fff;\n    font-size: 11px; line-height: 1; cursor: pointer;\n    box-shadow: var(--shadow-sm); z-index: 3;\n  }\n  .pa-cell:has(.pa-input.pa-overridden) .pa-reset { display: block; }\n  .pa-reset:hover { background: var(--navy); }\n  /* --- Search jump flash --- */\n  @keyframes paFlash {\n    0%, 60% { box-shadow: 0 0 0 4px rgba(200, 155, 60, 0.45); border-color: var(--gold); }\n    100% { box-shadow: none; }\n  }\n  .pa-input.pa-flash { animation: paFlash 2.4s ease-out; }\n  /* --- Tab override-count badges --- */\n  .pa-tab { position: relative; }\n  .pa-tab-count {\n    display: inline-block; margin-left: 6px;\n    min-width: 17px; padding: 1px 5px;\n    background: var(--gold); color: #fff;\n    border-radius: 999px; font-size: 10px; font-weight: 800; text-align: center;\n    vertical-align: 1px;\n  }\n  /* --- Unsaved-changes pill --- */\n  .pa-dirty-pill {\n    font-size: 12px; font-weight: 700; color: var(--coral);\n    background: var(--coral-pale); border-radius: 999px; padding: 5px 12px;\n    white-space: nowrap;\n  }\n  /* --- Section + grid readability --- */\n  .pa-note { font-size: 12px; color: var(--slate); margin: 0 0 10px; line-height: 1.5; }\n  .pa-note a { color: var(--green); font-weight: 700; }\n  .pa-grid-2col { grid-template-columns: minmax(230px, 1fr) 130px !important; }\n  .pricing-admin-dialog .pa-tabs {\n    display: flex; gap: 4px;\n    padding: 8px 14px 0;\n    border-bottom: 1px solid var(--line);\n    position: sticky; top: 0;\n    background: var(--paper); z-index: 2;\n  }\n  .pa-tab {\n    background: transparent; border: none;\n    padding: 10px 16px; cursor: pointer;\n    font-size: 13px; font-weight: 600; color: var(--slate);\n    border-bottom: 3px solid transparent;\n    border-radius: 6px 6px 0 0;\n    transition: background 0.12s, color 0.12s, border-color 0.12s;\n  }\n  .pa-tab:hover { background: var(--line-soft); color: var(--navy); }\n  .pa-tab.active { color: var(--navy); border-bottom-color: var(--green); background: var(--line-soft); }\n  .pa-body { padding: 16px 20px; background: var(--cream); }\n  .pa-section {\n    margin-bottom: 16px; padding: 16px 18px;\n    background: var(--paper); border: 1px solid var(--line); border-radius: 12px;\n  }\n  .pa-section-title {\n    font-size: 13px; font-weight: 800; color: var(--navy);\n    text-transform: uppercase; letter-spacing: 0.06em;\n    margin: 0 0 10px; padding-left: 10px;\n    border-left: 3px solid var(--green);\n  }\n  .pa-grid {\n    display: grid;\n    grid-template-columns: minmax(120px, 1fr) repeat(3, 110px);\n    gap: 6px 10px; align-items: center;\n  }\n  .pa-grid-head {\n    font-size: 11px; font-weight: 700; color: var(--slate);\n    text-transform: uppercase; letter-spacing: 0.05em;\n    padding-bottom: 4px;\n    text-align: right;\n  }\n  .pa-grid-head:first-child { text-align: left; }\n  .pa-grid-label {\n    font-size: 13px; color: var(--navy); font-weight: 600;\n  }\n  .pa-grid input[type=\"number\"] {\n    width: 100%; padding: 6px 8px;\n    background: var(--paper); color: var(--navy);\n    border: 1px solid var(--line); border-radius: 6px;\n    font-size: 13px; font-family: ui-monospace, monospace;\n    text-align: right;\n    -moz-appearance: textfield;\n  }\n  .pa-grid input[type=\"number\"]:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 2px rgba(64, 156, 105, 0.16); }\n  .pa-grid input[type=\"number\"]::-webkit-outer-spin-button,\n  .pa-grid input[type=\"number\"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }\n  .pa-grid .pa-hint { font-size: 11px; color: var(--slate); grid-column: 1 / -1; margin-top: 2px; }\n  .pa-changed { background: #fff8eb; }\n  /* Read-only value chip \u2014 replaces the editable number input now that\n     pricing is shown for reference rather than tunable from the UI. */\n  .pa-readonly {\n    display: inline-block; width: 100%; box-sizing: border-box;\n    padding: 6px 10px;\n    background: var(--line-soft); color: var(--navy);\n    border: 1px solid var(--line); border-radius: 6px;\n    font-size: 13px; font-family: ui-monospace, monospace;\n    text-align: right; font-weight: 600;\n  }\n  .pa-readonly.muted { color: var(--slate); font-weight: 400; }\n  .pa-input {\n    width: 100%; max-width: 110px; padding: 6px 8px;\n    border: 1.5px solid var(--line); border-radius: 8px;\n    font: inherit; font-size: 13px; font-weight: 600; color: var(--navy);\n    background: var(--paper); box-sizing: border-box;\n  }\n  .pa-input:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(45, 110, 78, 0.12); }\n  /* Gold ring = this cell differs from the code default (an override). */\n  .pa-input.pa-overridden { border-color: var(--gold); background: var(--gold-pale); }\n  .pa-footer {\n    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;\n    padding: 14px 20px;\n    border-top: 1px solid var(--line);\n    position: sticky; bottom: 0;\n    background: var(--paper); z-index: 2;\n  }\n  .pa-meta { flex: 1; font-size: 11px; color: var(--slate); min-width: 140px; }\n  .pa-toast {\n    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);\n    background: var(--navy); color: white;\n    padding: 12px 22px; border-radius: 999px;\n    font-size: 13px; font-weight: 600;\n    box-shadow: var(--shadow-lg);\n    opacity: 0; pointer-events: none;\n    transition: opacity 0.2s, transform 0.2s;\n    z-index: 9999;\n  }\n  .pa-toast.show { opacity: 1; transform: translateX(-50%) translateY(-8px); }\n  @media (max-width: 640px) {\n    /* (No width override here \u2014 the bottom-sheet rule makes the dialog\n       full-width on phones; the old calc(100% - 16px) was fighting it.) */\n    /* Reflow each pricing row for phones: the label takes its own full\n       line, and the three tier fields sit in a 3-up row beneath it. The\n       old fixed 90px columns (label + 270px + gaps) ran off-screen. */\n    .pa-grid { grid-template-columns: repeat(3, 1fr); gap: 4px 8px; font-size: 12px; }\n    .pa-grid .pa-grid-label { grid-column: 1 / -1; margin-top: 10px; font-size: 12.5px; }\n    .pa-grid .pa-grid-head { text-align: center; font-size: 10px; padding-bottom: 0; }\n    /* The \"Project\" corner header has no column of its own anymore. */\n    .pa-grid .pa-grid-head:first-child { display: none; }\n    /* 16px font stops iOS from zoom-jumping into every field (a big part\n       of what made Settings feel broken on a phone). */\n    .pa-input, .pa-grid input[type=\"number\"] {\n      max-width: none; width: 100%;\n      font-size: 16px; padding: 8px 6px;\n      box-sizing: border-box;\n    }\n    .pa-section-title { font-size: 12px; }\n    .pa-preview { font-size: 11.5px; padding: 9px 12px; }\n    .pa-body { padding-bottom: 20px; }\n    .pa-tabs { padding: 6px 6px 0; }\n    .pa-tab { padding: 8px 10px; font-size: 12px; }\n    .pa-footer { padding: 10px 14px; }\n  }\n  /* Settings tab strip: 11 pricing tabs outgrow the dialog on\n     tablets (917px of tabs in a ~736px dialog) \u2014 scroll the strip at\n     EVERY width instead of clipping the last tabs. Same pan-x lesson\n     as the pipeline board: the global pan-y rule would eat the swipe. */\n  .pa-tabs {\n    overflow-x: auto; flex-wrap: nowrap;\n    scrollbar-width: none; -webkit-overflow-scrolling: touch;\n    touch-action: pan-x pan-y !important;\n  }\n  .pa-tabs::-webkit-scrollbar { display: none; }\n  .info-dialog[open] { animation: modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }\n  .info-dialog::backdrop { background: rgba(26, 37, 64, 0.55); animation: fadeIn 0.2s; }\n  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }\n  /* Keep the centering translate baked into every keyframe of the\n     pop animation, otherwise the dialog snaps from a corner to center\n     as the animation ends. */\n  /* Keep the centering translate baked into every keyframe of the pop\n     animation, otherwise the dialog snaps from a corner to center as the\n     animation ends. */\n  @keyframes modalPop {\n    from { transform: translate(-50%, -50%) scale(0.92); opacity: 0; }\n    to   { transform: translate(-50%, -50%) scale(1);    opacity: 1; }\n  }\n  .info-modal-header {\n    padding: 18px 22px; border-bottom: 1px solid var(--line);\n    display: flex; justify-content: space-between; align-items: center;\n  }\n  .info-modal-header h3 { margin: 0; font-size: 18px; color: var(--navy); }\n  .info-modal-header .close-x {\n    background: var(--line-soft); color: var(--slate);\n    width: 28px; height: 28px; border-radius: 6px;\n    font-size: 16px; font-weight: 700;\n    display: flex; align-items: center; justify-content: center;\n  }\n  .info-modal-header .close-x:hover { background: var(--coral-pale); color: var(--coral); }\n  .info-modal-body { padding: 20px 22px; font-size: 14px; line-height: 1.6; color: var(--navy); }\n  .info-modal-body p { margin-bottom: 12px; }\n  .info-modal-body strong { color: var(--green); }\n  .info-modal-body ul { margin: 8px 0 12px 20px; }\n  .info-modal-body li { margin-bottom: 6px; }\n  .info-modal-body .info-img {\n    width: 100%; max-height: 200px; object-fit: cover;\n    border-radius: 10px; margin-bottom: 14px;\n  }\n\n  /* AUTH OVERLAY \u2014 full-cover gate shown until the rep signs in.\n     Sits above everything else (z-index 5000+) with its own backdrop\n     so the calc behind it can't be interacted with. */\n  .auth-gate {\n    position: fixed; inset: 0;\n    background: linear-gradient(135deg, #1a2540 0%, #2a3556 100%);\n    z-index: 5000;\n    display: flex; align-items: center; justify-content: center;\n    padding: 20px;\n    -webkit-overflow-scrolling: touch;\n    overflow-y: auto;\n  }\n  .auth-card {\n    background: var(--paper);\n    border-radius: 16px;\n    padding: 32px 28px;\n    max-width: 420px;\n    width: 100%;\n    box-shadow: 0 20px 60px rgba(0,0,0,0.35);\n  }\n  .auth-card .auth-logo {\n    width: 56px; height: 56px; border-radius: 12px;\n    background: var(--navy); color: white;\n    display: flex; align-items: center; justify-content: center;\n    font-size: 22px; font-weight: 800;\n    margin: 0 auto 16px;\n  }\n  .auth-card h2 {\n    text-align: center;\n    margin: 0 0 6px;\n    color: var(--navy);\n    font-size: 20px;\n  }\n  .auth-card .auth-sub {\n    text-align: center;\n    color: var(--slate);\n    font-size: 13px;\n    margin-bottom: 22px;\n  }\n  .auth-card .field { margin-bottom: 14px; }\n  .auth-card .field label {\n    display: block;\n    font-size: 12px; font-weight: 700;\n    color: var(--navy);\n    text-transform: uppercase; letter-spacing: 0.05em;\n    margin-bottom: 6px;\n  }\n  .auth-card .field input {\n    width: 100%; box-sizing: border-box;\n    padding: 12px 14px;\n    border: 1.5px solid var(--line);\n    border-radius: 8px;\n    font-size: 16px;\n    color: var(--navy);\n    background: var(--paper);\n  }\n  .auth-card .field input:focus {\n    outline: none; border-color: var(--green);\n    box-shadow: 0 0 0 3px rgba(64, 156, 105, 0.18);\n  }\n  .auth-card .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }\n  .auth-card .auth-submit {\n    width: 100%; padding: 14px; min-height: 52px;\n    margin-top: 8px;\n    background: var(--green); color: white;\n    border: none; border-radius: 8px;\n    font-size: 15px; font-weight: 700;\n    cursor: pointer; transition: background 0.12s, transform 0.06s;\n  }\n  .auth-card .auth-submit:hover { background: #3a755a; }\n  .auth-card .auth-submit:active { transform: scale(0.99); }\n  .auth-card .auth-submit:disabled { opacity: 0.6; cursor: not-allowed; }\n  .auth-card .auth-error {\n    background: #ffeded;\n    color: #a23636;\n    padding: 10px 14px;\n    border-radius: 8px;\n    font-size: 13px;\n    margin-bottom: 14px;\n    display: none;\n  }\n  .auth-card .auth-error.show { display: block; }\n  .auth-card .auth-bootstrap-banner {\n    background: #fff8eb;\n    border: 1.5px solid #f1d68e;\n    color: #6b4d00;\n    padding: 12px 14px;\n    border-radius: 8px;\n    font-size: 13px;\n    margin-bottom: 16px;\n  }\n  .auth-card .auth-status {\n    display: flex; align-items: center; justify-content: center; gap: 10px;\n    padding: 14px;\n    background: #f5f9ff;\n    border-radius: 8px;\n    font-size: 14px; font-weight: 600;\n    color: var(--navy);\n    margin-bottom: 16px;\n  }\n  .auth-card .auth-status.success {\n    background: #e8f7ee;\n    color: #1f6b3a;\n  }\n  .auth-card .auth-status .spinner {\n    width: 16px; height: 16px;\n    border: 2px solid #d9e3f0;\n    border-top-color: var(--navy);\n    border-radius: 50%;\n    animation: authSpin 0.7s linear infinite;\n  }\n  @keyframes authSpin { to { transform: rotate(360deg); } }\n  .auth-card .auth-help {\n    font-size: 11px;\n    color: var(--slate);\n    text-align: center;\n    margin-top: 18px;\n    line-height: 1.5;\n  }\n\n  /* Header rep chip */\n  .rep-chip {\n    display: inline-flex; align-items: center; gap: 6px;\n    padding: 6px 12px;\n    background: var(--line-soft);\n    border-radius: 999px;\n    font-size: 12px; font-weight: 700;\n    color: var(--navy);\n    cursor: pointer;\n    -webkit-tap-highlight-color: transparent;\n  }\n  .rep-chip:hover { background: var(--line); }\n  .rep-chip .rep-initials {\n    width: 22px; height: 22px;\n    background: var(--navy); color: white;\n    border-radius: 50%;\n    display: inline-flex; align-items: center; justify-content: center;\n    font-size: 10px; font-weight: 800;\n  }\n  .rep-chip-menu {\n    position: absolute;\n    background: var(--paper);\n    border: 1px solid var(--line);\n    border-radius: 8px;\n    box-shadow: var(--shadow-md);\n    min-width: 200px;\n    padding: 6px;\n    z-index: 4000;\n  }\n  .rep-chip-menu button {\n    display: flex; align-items: center; gap: 8px;\n    width: 100%;\n    background: transparent; border: none;\n    padding: 10px 12px;\n    text-align: left;\n    font-size: 13px; color: var(--navy);\n    border-radius: 6px;\n    cursor: pointer;\n  }\n  .rep-chip-menu button:hover { background: var(--line-soft); }\n  .rep-chip-menu .rep-menu-info {\n    padding: 10px 12px;\n    border-bottom: 1px solid var(--line);\n    margin-bottom: 4px;\n    font-size: 12px;\n    color: var(--slate);\n  }\n/* ============================================================\n   INTERIOR PAINTING \u2014 room-by-room builder + color planner\n   ============================================================ */\n.int-empty { display:flex; flex-direction:column; align-items:center; gap:8px; padding:36px 20px; text-align:center; background:var(--cream); border:2px dashed var(--line); border-radius:var(--radius-lg); color:var(--slate); font-size:14px; }\n.int-empty strong { color:var(--navy); font-size:16px; }\n.int-empty span { max-width:440px; line-height:1.5; }\n\n.int-summary-bar { margin:14px 0 4px; padding:12px 16px; background:var(--green-pale); border-left:3px solid var(--green); border-radius:8px; font-size:14px; color:var(--navy); }\n.int-summary-bar small { color:var(--slate); font-weight:500; }\n/* Phones: pin the running summary to the bottom of the viewport while\n   scrolling long room lists. */\n@media (max-width: 640px) {\n  .int-summary-bar { position:sticky; bottom:10px; z-index:6; box-shadow:var(--shadow-md); border:1px solid var(--green-light); }\n}\n\n.irh-dup { width:26px; height:26px; border-radius:50%; border:none; background:var(--line-soft); color:var(--slate); font-size:13px; cursor:pointer; line-height:1; }\n.irh-dup:hover { background:var(--green-pale); color:var(--green); }\n\n.int-accent-color { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:10px; padding:9px 12px; background:var(--gold-pale); border:1.5px dashed var(--gold); border-radius:10px; }\n.int-accent-color input { padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; color:var(--navy); }\n.int-accent-color input[data-accent-name] { width:190px; }\n.int-accent-color input[data-accent-code] { width:110px; }\n\n.int-photo-strip { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }\n.int-thumb { position:relative; width:62px; height:62px; border-radius:10px; background-size:cover; background-position:center; border:1.5px solid var(--line); display:inline-block; }\n.int-thumb.uploading { opacity:0.55; }\n.int-thumb-x { position:absolute; top:-7px; right:-7px; width:20px; height:20px; border-radius:50%; border:none; background:var(--navy); color:#fff; font-size:12px; font-weight:700; cursor:pointer; line-height:1; }\n.int-photo-add { width:62px; height:62px; border-radius:10px; border:1.5px dashed var(--line); background:var(--cream); font-size:12px; font-weight:700; color:var(--slate); cursor:pointer; }\n.int-photo-add:hover { border-color:var(--green); color:var(--green); }\n\n/* Compact progress pill \u2014 phones only. Desktop keeps the full strip. */\n.progress-pill { display:none; align-items:center; gap:10px; width:100%; padding:11px 16px; border:1.5px solid var(--line); border-radius:12px; background:var(--paper); cursor:pointer; box-shadow:var(--shadow-sm); }\n.progress-pill .pp-step { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.07em; color:var(--green); white-space:nowrap; }\n.progress-pill .pp-name { font-size:15px; font-weight:800; color:var(--navy); flex:1; text-align:left; }\n.progress-pill .pp-chev { color:var(--slate); font-size:13px; }\n@media (max-width: 640px) {\n  .progress { flex-direction:column; overflow-x:visible; }\n  .progress-pill { display:flex; }\n  .progress .progress-step { display:none; width:100%; }\n  .progress.expanded .progress-step { display:flex; }\n}\n\n.sss-toast { position:fixed; left:50%; bottom:26px; transform:translate(-50%, 14px); display:flex; align-items:center; gap:14px;\n  background:var(--navy); color:#fff; padding:12px 18px; border-radius:12px; box-shadow:var(--shadow-lg);\n  font-size:14px; z-index:2147483000; opacity:0; transition:opacity .2s, transform .2s; max-width:min(92vw, 480px); }\n.sss-toast.show { opacity:1; transform:translate(-50%, 0); }\n.sss-toast .st-action { border:none; background:transparent; color:#8fd0a9; font-weight:800; font-size:14px; cursor:pointer; padding:4px 6px; text-transform:uppercase; letter-spacing:0.04em; }\n\n.int-room-card { background:var(--paper); border:1.5px solid var(--line); border-radius:var(--radius-lg); margin-bottom:12px; box-shadow:var(--shadow-sm); overflow:hidden; }\n.int-room-card.open { border-color:var(--green-light); box-shadow:var(--shadow-md); }\n.int-room-head { display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer; background:var(--paper); }\n.int-room-card.open .int-room-head { border-bottom:1px solid var(--line-soft); background:linear-gradient(to bottom, #fbfaf8, var(--paper)); }\n.irh-ico { font-size:20px; }\n.irh-label { font-weight:700; font-size:15px; color:var(--navy); border:none; background:transparent; border-bottom:1.5px dashed transparent; min-width:90px; max-width:190px; flex:0 1 auto; padding:2px 0; }\n.irh-label:hover, .irh-label:focus { border-bottom-color:var(--line); outline:none; }\n.irh-meta { font-size:12px; color:var(--slate); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }\n.irh-price { font-weight:800; font-size:15px; color:var(--green); }\n.irh-x { width:26px; height:26px; border-radius:50%; border:none; background:var(--line-soft); color:var(--slate); font-size:15px; font-weight:700; cursor:pointer; line-height:1; }\n.irh-x:hover { background:var(--coral-pale); color:var(--coral); }\n.irh-chev { color:var(--slate); font-size:13px; }\n.int-room-body { padding:14px 16px 16px; }\n\n.int-sec { margin-bottom:16px; }\n.int-sec:last-child { margin-bottom:0; }\n.int-sec-title { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.07em; color:var(--navy); margin-bottom:8px; }\n.int-sec-title small { text-transform:none; letter-spacing:0; }\n\n.int-chip-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }\n.int-inline-lbl { font-size:12px; font-weight:700; color:var(--slate); margin-right:2px; }\n.int-chip { padding:8px 14px; border-radius:999px; border:1.5px solid var(--line); background:var(--paper); font-size:13px; font-weight:600; color:var(--navy); cursor:pointer; transition:all .12s; }\n.int-chip:hover { border-color:var(--green-light); }\n.int-chip.on { background:var(--green); border-color:var(--green); color:#fff; }\n.int-chip.small { padding:6px 11px; font-size:12px; }\n\n.int-custom-size { display:flex; gap:10px; margin-top:10px; }\n.ics-field label { display:block; font-size:11px; font-weight:700; color:var(--slate); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px; }\n.ics-field input, .int-height-input { width:110px; padding:9px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:14px; font-weight:600; color:var(--navy); }\n.int-height-input { width:84px; }\n\n.int-counter-row { display:flex; gap:16px; margin-top:10px; flex-wrap:wrap; }\n.int-counter { display:flex; align-items:center; gap:8px; background:var(--cream); border:1.5px solid var(--line); border-radius:999px; padding:5px 8px 5px 12px; }\n.int-counter .lbl { font-size:13px; font-weight:600; color:var(--navy); }\n.ic-btn { width:26px; height:26px; border-radius:50%; border:none; background:var(--paper); box-shadow:var(--shadow-sm); font-size:15px; font-weight:800; color:var(--navy); cursor:pointer; line-height:1; }\n.ic-btn:hover { background:var(--green); color:#fff; }\n.ic-val { min-width:18px; text-align:center; font-weight:800; font-size:14px; color:var(--navy); }\n\n.int-seg { display:inline-flex; border:1.5px solid var(--line); border-radius:10px; overflow:hidden; }\n.int-seg-btn { padding:9px 16px; border:none; background:var(--paper); font-size:13px; font-weight:700; color:var(--slate); cursor:pointer; border-right:1px solid var(--line); }\n.int-seg-btn:last-child { border-right:none; }\n.int-seg-btn.on { background:var(--navy); color:#fff; }\n.int-seg-hint { margin-top:7px; font-size:12px; color:var(--slate); font-style:italic; }\n\n.int-more { margin:0 0 16px; border:1.5px dashed var(--line); border-radius:10px; padding:10px 14px; background:#fbfaf8; }\n.int-more summary { font-size:13px; font-weight:700; color:var(--slate); cursor:pointer; list-style:none; }\n.int-more summary::-webkit-details-marker { display:none; }\n.int-more[open] summary { color:var(--navy); }\n.int-more-count { display:inline-block; margin-left:8px; padding:2px 8px; background:var(--green); color:#fff; border-radius:999px; font-size:11px; }\n\n.int-notes { width:100%; min-height:54px; padding:10px 12px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; color:var(--navy); resize:vertical; font-family:inherit; }\n/* Multi-area discount nudge \u2014 amber while building toward it, green once earned */\n.int-nudge { margin-top:8px; padding:7px 12px; border-radius:8px; font-size:12.5px; font-weight:600; background:#fdf3e3; color:#8a5a1a; border:1px solid #f3ddb5; }\n.int-nudge.on { background:var(--green-pale); color:#1f4d36; border-color:#bfe0cc; }\n.int-notes:focus { border-color:var(--green-light); outline:none; }\n\n.int-add-section { margin-top:18px; padding:16px; background:var(--cream); border-radius:var(--radius-lg); border:1.5px solid var(--line); }\n.int-add-title { font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:0.07em; color:var(--navy); margin-bottom:10px; }\n.int-add-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; }\n.int-add-chip { display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--paper); border:1.5px solid var(--line); border-radius:10px; font-size:13px; font-weight:600; color:var(--navy); cursor:pointer; transition:all .12s; text-align:left; }\n.int-add-chip:hover { border-color:var(--green); background:var(--green-pale); }\n.int-add-chip .ico { font-size:17px; }\n\n/* Exterior + cabinet builders \u2014 labeled number fields in a responsive\n   grid (house details, crown ln ft, side dimensions). Same visual\n   language as .ics-field but self-labeled and grid-friendly. */\n.ext-fields { display:grid; grid-template-columns:repeat(auto-fill, minmax(168px, 1fr)); gap:12px 14px; }\n.ext-field label { display:block; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; color:var(--slate); margin-bottom:4px; }\n.ext-field .ef-wrap { display:flex; align-items:center; gap:7px; }\n.ext-field input { width:100%; min-width:0; padding:10px 12px; border:1.5px solid var(--line); border-radius:10px; font:inherit; font-size:15px; color:var(--navy); background:var(--paper); }\n.ext-field input:focus { outline:none; border-color:var(--green); }\n.ext-field .unit { font-size:11.5px; font-weight:700; color:var(--slate); white-space:nowrap; }\n@media (max-width: 640px) {\n  .ext-fields { grid-template-columns:repeat(2, 1fr); gap:10px; }\n  .ext-field input { font-size:16px; }\n}\n/* Typeable counter value \u2014 the count in a \u2212/\uff0b pill is a real input,\n   so big numbers get typed instead of tapped 26 times. */\n.ic-input { width:46px; text-align:center; border:none; background:transparent; font:inherit; font-size:14px; font-weight:800; color:var(--navy); padding:2px 0; -moz-appearance:textfield; }\n.ic-input::-webkit-outer-spin-button, .ic-input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }\n.ic-input:focus { outline:none; background:var(--paper); border-radius:6px; box-shadow:0 0 0 2px var(--green-light); }\n@media (max-width: 640px) { .ic-input { font-size:16px; } }\n\n/* Color planner */\n/* #colorGrid is a CSS grid sized for stain swatches \u2014 the interior\n   planner needs to escape it and span the full row. */\n#colorGrid .int-color-planner { grid-column: 1 / -1; }\n.int-mode-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:18px; }\n.int-mode-card { display:flex; flex-direction:column; gap:6px; padding:16px; background:var(--paper); border:2px solid var(--line); border-radius:var(--radius-lg); cursor:pointer; text-align:left; transition:all .12s; }\n.int-mode-card:hover { border-color:var(--green-light); }\n.int-mode-card.on { border-color:var(--green); background:var(--green-pale); box-shadow:var(--shadow-md); }\n.imc-ico { font-size:24px; }\n.imc-title { font-weight:800; font-size:15px; color:var(--navy); }\n.imc-sub { font-size:12px; color:var(--slate); line-height:1.45; }\n\n.int-color-picker { border:1.5px solid var(--line); border-radius:var(--radius-lg); background:var(--paper); margin-bottom:12px; padding:0; overflow:hidden; }\n.int-color-picker summary { display:flex; align-items:center; gap:12px; padding:13px 16px; cursor:pointer; list-style:none; font-size:14px; color:var(--navy); }\n.int-color-picker summary::-webkit-details-marker { display:none; }\n.int-color-picker[open] summary { border-bottom:1px solid var(--line-soft); }\n.int-picker-body { padding:12px 16px 16px; }\n.int-sheen-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; padding-bottom:12px; border-bottom:1px dashed var(--line); }\n.int-sheen-seg { flex-wrap:wrap; }\n.int-wall-sheen-standalone { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; }\n.int-wall-sheen-standalone .int-sheen-row { margin-bottom:0; padding-bottom:0; border-bottom:none; }\n.int-sheen-note { font-size:12px; color:var(--slate); font-style:italic; }\n.int-picked { display:inline-flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:var(--navy); margin-left:auto; }\n.int-picked.none, .int-picked .none { color:var(--coral); font-weight:600; }\n.int-picked small { color:var(--slate); font-weight:500; }\n\n/* Color family accordion \u2014 tiny preview strip collapsed, full swatches open */\n.int-fam { border:1.5px solid var(--line); border-radius:10px; margin-bottom:7px; background:var(--paper); overflow:hidden; }\n.int-fam.open { border-color:var(--green-light); }\n.int-fam-head { display:flex; align-items:center; gap:10px; width:100%; padding:9px 12px; border:none; background:transparent; cursor:pointer; text-align:left; }\n.int-fam-head:hover { background:var(--line-soft); }\n.int-fam-lbl { font-size:12.5px; font-weight:800; color:var(--navy); white-space:nowrap; }\n.int-fam-sel { color:var(--green); }\n.int-fam-mini { display:flex; flex-wrap:wrap; gap:3px; flex:1; justify-content:flex-end; }\n.mini-chip { width:15px; height:15px; border-radius:4px; border:1px solid rgba(0,0,0,0.10); display:inline-block; }\n.int-fam-body { padding:10px 12px 12px; border-top:1px solid var(--line-soft); }\n\n.int-sw-group { margin-bottom:12px; }\n.int-sw-group-lbl { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:var(--slate); margin-bottom:6px; }\n.int-sw-row { display:flex; flex-wrap:wrap; gap:8px; }\n.int-swatch { display:flex; flex-direction:column; align-items:center; gap:3px; width:88px; padding:8px 4px; background:var(--paper); border:1.5px solid var(--line); border-radius:10px; cursor:pointer; transition:all .12s; }\n.int-swatch:hover { border-color:var(--green-light); }\n.int-swatch.on { border-color:var(--green); box-shadow:0 0 0 2px var(--green-pale); }\n.sw-chip { display:inline-block; width:100%; height:34px; border-radius:6px; border:1px solid rgba(0,0,0,0.08); }\n.int-swatch .sw-chip { width:72px; }\n.sw-name { font-size:10.5px; font-weight:700; color:var(--navy); text-align:center; line-height:1.2; }\n.sw-code { font-size:9.5px; color:var(--slate); }\n.int-picked .sw-chip { width:18px; height:18px; border-radius:5px; }\n\n.int-sw-custom { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:6px; padding-top:10px; border-top:1px dashed var(--line); }\n.int-sw-custom input { padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; color:var(--navy); }\n.int-custom-color-name { width:200px; }\n.int-custom-color-code { width:130px; }\n\n.int-room-color-row { border:1.5px solid var(--line); border-radius:10px; margin-bottom:8px; background:var(--paper); overflow:hidden; }\n.int-room-color-row.overridden { border-color:var(--green-light); }\n.ircr-head { display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; }\n.ircr-name { font-weight:700; font-size:13.5px; color:var(--navy); flex:0 0 auto; }\n.ircr-reset { border:none; background:var(--line-soft); color:var(--slate); font-size:11.5px; font-weight:700; padding:4px 9px; border-radius:999px; cursor:pointer; }\n.ircr-reset:hover { background:var(--coral-pale); color:var(--coral); }\n.ircr-body { padding:10px 14px 14px; border-top:1px solid var(--line-soft); }\n\n@media (max-width: 640px) {\n  .irh-meta { display:none; }\n  .int-add-grid { grid-template-columns:repeat(auto-fill, minmax(128px, 1fr)); }\n  .int-custom-size { flex-wrap:wrap; }\n  .int-seg { flex-wrap:wrap; border-radius:10px; }\n  /* Long SW color names on narrow phones: let picker summaries and\n     room-color headers wrap instead of squeezing. */\n  .int-color-picker summary, .ircr-head { flex-wrap:wrap; }\n  .int-swatch { width:31%; }\n  .int-swatch .sw-chip { width:100%; }\n}";
+  const HTML  = "<!-- AUTH GATE \u2014 covers everything until the rep signs in. JS toggles\n     it via #authGate.style.display and swaps the inner form depending\n     on bootstrap state (no reps yet \u2192 create-first-admin form vs.\n     normal Sign-In form). The whole gate is rendered upfront and\n     hidden via CSS; the JS only flips a single root style. -->\n<!-- Default-VISIBLE: the gate covers the calc until authStatus\n     resolves. Otherwise the dashboard flashes briefly before the\n     gate slides in. JS hides this whenever auth is confirmed. -->\n<div class=\"auth-gate\" id=\"authGate\">\n  <div class=\"auth-card\">\n    <div class=\"auth-logo\">SS</div>\n    <h2 id=\"authTitle\">Loading\u2026</h2>\n    <div class=\"auth-sub\" id=\"authSub\">Checking your session\u2026</div>\n    <div class=\"auth-bootstrap-banner\" id=\"authBootstrapBanner\" style=\"display:none;\">\n      <strong>First-time setup.</strong> No reps exist yet \u2014 the first account you create becomes the admin and can manage everyone else.\n    </div>\n    <div class=\"auth-error\" id=\"authError\"></div>\n    <!-- Status line: shows \"Signing in\u2026\" then \"\u2713 Signed in\" briefly\n         before the gate hides. Hidden by default. -->\n    <div class=\"auth-status\" id=\"authStatusLine\" style=\"display:none;\"></div>\n    <form id=\"authForm\" style=\"display:none;\">\n      <div class=\"auth-bootstrap-fields\" id=\"authBootstrapFields\" style=\"display:none;\">\n        <div class=\"field\">\n          <label>Full name</label>\n          <input type=\"text\" id=\"authDisplayName\" autocomplete=\"name\" placeholder=\"Adrian Gluchowski\">\n        </div>\n        <div class=\"field\">\n          <label>Email <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(optional)</span></label>\n          <input type=\"email\" id=\"authEmail\" autocomplete=\"email\" placeholder=\"rep@superiorstainsolutions.com\">\n        </div>\n      </div>\n      <div class=\"field-row\">\n        <div class=\"field\">\n          <label>Initials</label>\n          <input type=\"text\" id=\"authInitials\" autocomplete=\"username\" inputmode=\"text\" autocapitalize=\"characters\" maxlength=\"6\" placeholder=\"AG\">\n        </div>\n        <div class=\"field\">\n          <label>PIN</label>\n          <input type=\"password\" id=\"authPin\" autocomplete=\"current-password\" inputmode=\"numeric\" pattern=\"[0-9]*\" maxlength=\"12\" placeholder=\"\u2022 \u2022 \u2022 \u2022\">\n        </div>\n      </div>\n      <button type=\"submit\" class=\"auth-submit\" id=\"authSubmit\">Sign in</button>\n    </form>\n    <div class=\"auth-help\" id=\"authHelpLine\" style=\"display:none;\">\n      Forgot your PIN? Ask an admin to reset it from Settings \u2192 Reps. Sessions auto-expire after 7 days of inactivity.\n    </div>\n  </div>\n</div>\n\n<div class=\"app\">\n\n  <header class=\"app-header\">\n    <div class=\"brand-mark\">\n      <div class=\"logo\">SS</div>\n      <div>\n        <div class=\"name\">Superior Stain Solutions</div>\n        <div class=\"sub\">Quote Builder \u00b7 Internal</div>\n      </div>\n    </div>\n    <div class=\"header-right\">\n      <div class=\"quote-id-tag\">Quote <span class=\"quote-num\" id=\"quoteNum\">\u2014</span></div>\n      <span class=\"save-pill hidden\" id=\"savePill\" title=\"Cloud save status\"><span class=\"dot\"></span><span class=\"save-pill-text\">Idle</span></span>\n      <button type=\"button\" class=\"jobber-pill\" id=\"jobberPill\" onclick=\"openJobberPanel()\" title=\"Jobber integration\"><span class=\"jp-dot\"></span><span id=\"jobberPillText\">Jobber</span></button>\n      <div class=\"total-pill secondary\" id=\"activeProjectPill\" style=\"display:none\">\n        <div class=\"lbl\">This Project</div>\n        <div class=\"amt\" id=\"activeProjectAmount\">$0</div>\n      </div>\n      <div class=\"total-pill\" id=\"totalPill\" style=\"display:none\">\n        <div class=\"lbl\">Quote Total</div>\n        <div class=\"amt\" id=\"totalAmount\">$0</div>\n      </div>\n      <button type=\"button\" id=\"headerSideTrackerBtn\" class=\"header-tracker-btn\" onclick=\"openSideTracker()\" style=\"display:none;\">\n        \ud83d\udccb Your Quote <span class=\"header-tracker-count\" id=\"headerSideTrackerCount\">0</span>\n      </button>\n    </div>\n  </header>\n\n  <!-- PROJECT BUBBLES \u2014 shows all projects in this quote, lets employee jump\n       between them. Numbers repeat-types (\"Fence #1\", \"Fence #2\") automatically. -->\n  <div class=\"project-bubbles\" id=\"projectBubbles\" style=\"display:none;\"></div>\n\n  <!-- PROGRESS \u2014 10 steps. Default hidden; refreshProgressBarVisibility()\n       reveals it only when a quote-building stage (1\u201310) is the visible\n       one. Inline display:none beats any timing race where the JS hasn't\n       wired up the visibility logic yet. -->\n  <nav class=\"progress\" id=\"progress\" style=\"display:none;\">\n    <!-- Phone-only compact header: \"Step 3 of 10 \u00b7 Measurements\" pill.\n         Tapping it expands the full step list; tapping a step (or\n         navigating) collapses it again. Hidden on desktop via CSS. -->\n    <button type=\"button\" class=\"progress-pill\" id=\"progressPill\" aria-label=\"Show all steps\">\n      <span class=\"pp-step\" id=\"progressPillStep\">Step 1 of 10</span>\n      <span class=\"pp-name\" id=\"progressPillName\">Customer</span>\n      <span class=\"pp-chev\" id=\"progressPillChev\">\u25be</span>\n    </button>\n    <div class=\"progress-step active reachable\" data-stage=\"1\"><span class=\"step-num\">Step 1</span>Customer</div>\n    <div class=\"progress-step\" data-stage=\"2\"><span class=\"step-num\">Step 2</span>Project</div>\n    <div class=\"progress-step\" data-stage=\"3\"><span class=\"step-num\">Step 3</span>Measurements</div>\n    <div class=\"progress-step\" data-stage=\"4\"><span class=\"step-num\">Step 4</span>Condition</div>\n    <div class=\"progress-step\" data-stage=\"5\"><span class=\"step-num\">Step 5</span>Product</div>\n    <div class=\"progress-step\" data-stage=\"6\"><span class=\"step-num\">Step 6</span>Tier</div>\n    <div class=\"progress-step\" data-stage=\"7\"><span class=\"step-num\">Step 7</span>Color</div>\n    <div class=\"progress-step\" data-stage=\"8\"><span class=\"step-num\">Step 8</span>Add-ons</div>\n    <div class=\"progress-step\" data-stage=\"9\"><span class=\"step-num\">Step 9</span>Discounts</div>\n    <div class=\"progress-step\" data-stage=\"10\"><span class=\"step-num\">Step 10</span>Review</div>\n  </nav>\n\n  <main class=\"stage-wrap\">\n\n    <!-- DASHBOARD \u2014 shown first when calculator loads (employee-only).\n         Cloud-synced: drafts, finished, archived, and trashed quotes all\n         live in the EmployeeQuotes Wix collection. localStorage stays as\n         an offline cache. -->\n    <section class=\"stage visible\" id=\"stage-dashboard\">\n      <div class=\"dash-title-row\">\n        <div>\n          <div class=\"stage-title\">Employee Dashboard</div>\n          <h1>Welcome back. Pick up where you left off?</h1>\n          <p class=\"lead\">Your quotes auto-save to the cloud as you work. Search, archive, or resume from anywhere.</p>\n        </div>\n        <!-- Utility actions \u2014 meta operations on the dashboard itself,\n             intentionally pulled out of the primary toolbar so they\n             stop competing with Start-New-Quote and the search bar. -->\n        <div class=\"dash-utility\">\n          <button class=\"dash-util-btn\" onclick=\"refreshDashboardHard()\" title=\"Reload to get the latest version of the calculator + freshest data\" aria-label=\"Refresh\">\n            <span class=\"ico\">\ud83d\udd04</span><span class=\"lbl\">Refresh</span>\n          </button>\n          <button class=\"dash-util-btn\" id=\"bulkSelectToggle\" onclick=\"toggleBulkMode()\" title=\"Select multiple quotes to move, archive, or delete in one go\" aria-label=\"Select multiple\">\n            <span class=\"ico\">\u2611\ufe0f</span><span class=\"lbl\">Select</span>\n          </button>\n          <button class=\"dash-util-btn\" id=\"dashUtilSettings\" onclick=\"openPricingAdmin()\" title=\"Settings \u2014 pricing rules, reps, devices, and more\" aria-label=\"Settings\">\n            <span class=\"ico\">\u2699\ufe0f</span><span class=\"lbl\">Settings</span>\n          </button>\n        </div>\n      </div>\n\n      <div class=\"dash-stats\" id=\"dashStats\">\n        <div class=\"stat-card\" id=\"statCardWeek\" onclick=\"toggleDashDateFilter('week')\" title=\"Click to show only this week's quotes\" role=\"button\" tabindex=\"0\">\n          <div class=\"stat-num\" id=\"statWeekCount\">\u2014</div>\n          <div class=\"stat-sub\" id=\"statWeekTotal\">&nbsp;</div>\n          <div class=\"stat-lbl\">This week</div>\n        </div>\n        <div class=\"stat-card\" id=\"statCardMonth\" onclick=\"toggleDashDateFilter('month')\" title=\"Click to show only this month's quotes\" role=\"button\" tabindex=\"0\">\n          <div class=\"stat-num\" id=\"statMonthCount\">\u2014</div>\n          <div class=\"stat-sub\" id=\"statMonthTotal\">&nbsp;</div>\n          <div class=\"stat-lbl\">This month</div>\n        </div>\n      </div>\n\n      <!-- DASHBOARD TABS \u2014 My Quotes / Customer Leads / Analytics.\n           Everything that used to stack vertically (rep quote folders,\n           then three customer-calc folders bolted on underneath) now\n           lives under its own tab so each area gets the full width. -->\n      <div class=\"dash-tabs\" id=\"dashTabs\" role=\"tablist\">\n        <button class=\"dash-tab active\" id=\"dashTabBtnQuotes\" role=\"tab\" onclick=\"switchDashTab('quotes')\">\ud83d\udccb My Quotes</button>\n        <button class=\"dash-tab\" id=\"dashTabBtnLeads\" role=\"tab\" onclick=\"switchDashTab('leads')\">\ud83c\udf10 Customer Leads <span class=\"tab-count\" id=\"dashTabLeadsCount\" style=\"display:none;\">0</span></button>\n        <button class=\"dash-tab\" id=\"dashTabBtnPipeline\" role=\"tab\" onclick=\"switchDashTab('pipeline')\">\ud83e\udded Pipeline <span class=\"tab-count\" id=\"dashTabPipelineCount\" style=\"display:none; background: var(--coral);\">0</span></button>\n        <button class=\"dash-tab\" id=\"dashTabBtnAnalytics\" role=\"tab\" onclick=\"switchDashTab('analytics')\">\ud83d\udcca Analytics</button>\n      </div>\n\n      <div id=\"dashTabQuotes\">\n      <!-- Recent Jobber Requests panel \u2014 customer-submitted quote\n           requests pulled from Jobber. Click one to start a new quote\n           pre-filled with that customer's info. Hidden when empty\n           (or when not connected to Jobber). -->\n      <details id=\"reqPanel\" class=\"req-panel\" style=\"display:none;\">\n        <summary>\n          <span class=\"chev\">\u25b8</span>\n          <span class=\"rp-title\">\ud83d\udce5 Recent Jobber requests</span>\n          <span id=\"reqPanelCount\" class=\"folder-count\">0</span>\n        </summary>\n        <div class=\"req-panel-toolbar\">\n          <input type=\"search\" id=\"reqSearch\" placeholder=\"Search name, email, phone, city, title\u2026\" aria-label=\"Search requests\">\n        </div>\n        <div id=\"reqPanelBody\" class=\"req-panel-body\"></div>\n      </details>\n\n      <div class=\"dash-toolbar\">\n        <button class=\"btn btn-primary\" id=\"dashNewQuoteBtn\" onclick=\"startNewQuote()\">\uff0b Start New Quote</button>\n        <div class=\"dash-search\">\n          <input type=\"search\" id=\"dashSearch\" placeholder=\"Search name, phone, address, ID\u2026\" aria-label=\"Search quotes\">\n        </div>\n      </div>\n      <div class=\"dash-filter-chip\" id=\"dashFilterChip\" style=\"display:none;\"></div>\n\n      <!-- Bulk-action bar \u2014 slides in when bulkMode is on AND at least\n           one row is selected. Actions adapt to which folders the\n           selected rows live in (e.g. \"Delete Forever\" only when the\n           selection contains trash items). -->\n      <div id=\"bulkActionBar\" class=\"bulk-action-bar\" style=\"display:none;\"></div>\n\n      <div id=\"dashContent\"></div>\n      </div><!-- /dashTabQuotes -->\n\n      <div id=\"dashTabLeads\" style=\"display:none;\">\n      <div id=\"leadsEmptyState\" class=\"folder-empty\" style=\"display:none; padding: 28px 16px; text-align:center;\">No customer-calculator activity yet. Submissions, needs-review items, and abandoned drafts from the public calculators will show up here.</div>\n      <!-- Customer Submissions folder \u2014 reads from the CustomerSubmissions\n           Wix collection (populated by /_functions/submitCustomerEstimate\n           from the public customer calculator). Distinct from the gold\n           \"Recent Jobber requests\" panel above, which surfaces ALL\n           inbound Jobber Requests regardless of source \u2014 this folder is\n           filtered to ONLY rows the customer-calculator created.\n           Sits at the very bottom so it never crowds Drafts/Finished. -->\n      <!-- Customer Submissions \u2014 finished, cleanly-pushed customer-calc\n           submissions (jobberOk:true). Search filters across all of\n           them; the Analytics button opens the aggregate-stats modal. -->\n      <details id=\"custSubsPanel\" class=\"folder cust-subs-folder\" style=\"display:none;\">\n        <summary onclick=\"onCustSubsToggle(event)\">\n          <span class=\"chev\">\u25b8</span>\n          <span class=\"folder-icon\">\ud83d\udce5</span>\n          <span class=\"folder-label\">Customer Submissions</span>\n          <span id=\"custSubsCount\" class=\"folder-count\">0</span>\n        </summary>\n        <div class=\"folder-body\">\n          <div class=\"cust-subs-toolbar\">\n            <input type=\"search\" id=\"custSubsSearch\" placeholder=\"Search name, email, phone, reference\u2026\" aria-label=\"Search customer submissions\">\n            <button type=\"button\" class=\"cust-subs-analytics-btn\" onclick=\"openCustCalcAnalytics()\" title=\"View aggregate stats for the customer calculator\">\ud83d\udcca Analytics</button>\n          </div>\n          <div id=\"custSubsBody\"></div>\n        </div>\n      </details>\n\n      <!-- Submissions \u2014 Needs Review \u2014 customer-calc submissions where\n           the Jobber push didn't go through cleanly (jobberOk:false).\n           These need a rep to manually create the Jobber entries.\n           Sister folder to Customer Submissions, sits directly below.\n           Coral accent so reps can tell at a glance. -->\n      <details id=\"custDraftsPanel\" class=\"folder cust-drafts-folder\" style=\"display:none;\">\n        <summary onclick=\"onCustDraftsToggle(event)\">\n          <span class=\"chev\">\u25b8</span>\n          <span class=\"folder-icon\">\u26a0\ufe0f</span>\n          <span class=\"folder-label\">Submissions \u2014 Needs Review</span>\n          <span id=\"custDraftsCount\" class=\"folder-count\">0</span>\n        </summary>\n        <div class=\"folder-body\">\n          <div class=\"cust-subs-toolbar\">\n            <input type=\"search\" id=\"custDraftsSearch\" placeholder=\"Search needs-review submissions\u2026\" aria-label=\"Search needs-review submissions\">\n          </div>\n          <div id=\"custDraftsBody\"></div>\n        </div>\n      </details>\n\n      <!-- Customer Drafts (abandoned) \u2014 distinct from the rep's own\n           Drafts folder up top. These rows come from CustomerDrafts,\n           populated by the customer-calc on every stage transition\n           after Step 1 contact info is captured. Once the customer\n           submits, the backend deletes the matching draft, so this\n           folder only ever shows real abandoned mid-flow leads. Amber\n           accent + Stage X-of-10 chips on each card. -->\n      <details id=\"custAbandonedPanel\" class=\"folder cust-abandoned-folder\" style=\"display:none;\">\n        <summary onclick=\"onCustAbandonedToggle(event)\">\n          <span class=\"chev\">\u25b8</span>\n          <span class=\"folder-icon\">\u23f3</span>\n          <span class=\"folder-label\">Customer Drafts (abandoned)</span>\n          <span id=\"custAbandonedCount\" class=\"folder-count\">0</span>\n        </summary>\n        <div class=\"folder-body\">\n          <div class=\"cust-subs-toolbar\">\n            <input type=\"search\" id=\"custAbandonedSearch\" placeholder=\"Search abandoned drafts\u2026\" aria-label=\"Search abandoned customer drafts\">\n          </div>\n          <div id=\"custAbandonedBody\"></div>\n        </div>\n      </details>\n      </div><!-- /dashTabLeads -->\n\n      <!-- ANALYTICS TAB \u2014 inline (no more modal hunting). KPI cards,\n           SW-vs-regular source split, weekly volume, project mix, and\n           the abandonment funnel. Data loads lazily on first open. -->\n      <!-- PIPELINE TAB \u2014 kanban of every open lead/quote/job pulled\n           from Jobber + manual walk-in leads. Reconciled client-side\n           against PipelineCards; replaces Jobber's $49/mo Pipeline\n           add-on. Rendered entirely by renderPipeline(). -->\n      <div id=\"dashTabPipeline\" style=\"display:none;\">\n        <div class=\"pipe-head\">\n          <span class=\"pipe-sync-pill\" id=\"pipeSyncPill\"><span class=\"dot off\"></span>Not synced yet</span>\n          <input id=\"pipeSearch\" type=\"search\" placeholder=\"\ud83d\udd0e Filter by name, address\u2026\" autocomplete=\"off\" oninput=\"pipeSetFilter(this.value)\">\n          <span class=\"spacer\"></span>\n          <button class=\"pipe-btn ghost\" id=\"pipeArchToggle\" onclick=\"pipeToggleArchived()\" title=\"Show archived cards\">\ud83d\uddc2</button>\n          <button class=\"pipe-btn\" onclick=\"loadPipeline(true)\" title=\"Re-sync with Jobber\">\u21bb Sync</button>\n          <button class=\"pipe-btn primary\" onclick=\"openPipeLeadDialog()\">\uff0b Add lead</button>\n        </div>\n        <div class=\"pipe-stats\" id=\"pipeStats\"></div>\n        <div id=\"pipeNext\"></div>\n        <div class=\"pipe-board\" id=\"pipeBoard\"><div class=\"skel-stack\" style=\"width:100%\"><div class=\"skel tall\"></div><div class=\"skel tall\" style=\"width:70%\"></div></div></div>\n      </div>\n\n      <div id=\"dashTabAnalytics\" style=\"display:none;\">\n        <div id=\"dashAnalyticsBody\"><div class=\"skel-stack\"><div class=\"skel\" style=\"width:55%\"></div><div class=\"skel tall\"></div><div class=\"skel\" style=\"width:80%\"></div><div class=\"skel tall\"></div></div></div>\n      </div>\n\n      <!-- MOBILE BOTTOM NAV + FAB \u2014 phones only (CSS-gated). Inside the\n           dashboard section so they vanish automatically on every other\n           stage (.stage display:none hides fixed children too). -->\n      <nav class=\"dash-bottom-nav\" id=\"dashBottomNav\">\n        <button class=\"dbn-btn active\" id=\"dbnQuotes\" onclick=\"switchDashTab('quotes')\"><span class=\"i\">\ud83d\udccb</span>Quotes</button>\n        <button class=\"dbn-btn\" id=\"dbnLeads\" onclick=\"switchDashTab('leads')\"><span class=\"i\">\ud83c\udf10</span>Leads<span class=\"dbn-count\" id=\"dbnLeadsCount\" style=\"display:none;\">0</span></button>\n        <button class=\"dbn-btn\" id=\"dbnPipeline\" onclick=\"switchDashTab('pipeline')\"><span class=\"i\">\ud83e\udded</span>Pipeline<span class=\"dbn-count\" id=\"dbnPipelineCount\" style=\"display:none; background: var(--coral);\">0</span></button>\n        <button class=\"dbn-btn\" id=\"dbnAnalytics\" onclick=\"switchDashTab('analytics')\"><span class=\"i\">\ud83d\udcca</span>Analytics</button>\n        <button class=\"dbn-btn\" onclick=\"openPricingAdmin()\"><span class=\"i\">\u2699\ufe0f</span>Settings</button>\n      </nav>\n      <button class=\"dash-fab\" id=\"dashFab\" onclick=\"startNewQuote()\" aria-label=\"Start new quote\" title=\"Start new quote\">\uff0b</button>\n    </section>\n\n    <!-- Customer Calc Analytics modal \u2014 opened from the Customer\n         Submissions folder header. Aggregates 90 days of submissions:\n         volume, conversion (Jobber success), callback rate, project mix,\n         and average estimate dollar value. Out-of-the-way UI: only\n         loads on demand. -->\n    <dialog class=\"info-dialog cust-analytics-dialog\" id=\"custCalcAnalyticsDialog\">\n      <div class=\"info-modal-header\">\n        <h3>\ud83d\udcca Customer Calculator Analytics <span style=\"color:var(--slate); font-weight:500; font-size:13px;\">last 90 days</span></h3>\n        <button class=\"close-x\" onclick=\"closeCustCalcAnalytics()\" aria-label=\"Close\">\u00d7</button>\n      </div>\n      <div class=\"info-modal-body\" id=\"custCalcAnalyticsBody\">\n        <div class=\"skel-stack\"><div class=\"skel\" style=\"width:55%\"></div><div class=\"skel tall\"></div><div class=\"skel\" style=\"width:80%\"></div></div>\n      </div>\n    </dialog>\n\n    <!-- SUBMISSION DETAILS \u2014 full stage-by-stage breakdown of what the\n         customer selected, opened from the \ud83d\udccb Details button on each\n         Customer Submissions / Needs Review card. -->\n    <dialog class=\"info-dialog cust-details-dialog\" id=\"custDetailsDialog\">\n      <div class=\"info-modal-header\">\n        <h3 id=\"custDetailsTitle\">Submission details</h3>\n        <button class=\"close-x\" onclick=\"closeSubmissionDetails()\" aria-label=\"Close\">\u00d7</button>\n      </div>\n      <div class=\"info-modal-body\" id=\"custDetailsBody\"></div>\n    </dialog>\n\n    <!-- Pipeline card detail \u2014 info first, then the actions the\n         Jobber API actually supports (start quote, push lead, push\n         note, deep links). Body rendered by renderPipeCardDialog(). -->\n    <dialog class=\"info-dialog pipe-dialog\" id=\"pipeCardDialog\">\n      <div class=\"pipe-d-head\">\n        <h3 id=\"pipeCardTitle\">Lead</h3>\n        <span class=\"pipe-stage-chip\" id=\"pipeCardStageChip\"></span>\n        <button class=\"close-x\" onclick=\"closePipeCard()\" aria-label=\"Close\">\u00d7</button>\n      </div>\n      <div class=\"pipe-d-body\" id=\"pipeCardBody\"></div>\n    </dialog>\n\n    <!-- Add-lead dialog \u2014 manual walk-in / call-in leads that don't\n         exist in Jobber yet. Can be pushed to Jobber later from the\n         card (creates client + request via the API). -->\n    <dialog class=\"info-dialog pipe-dialog\" id=\"pipeLeadDialog\">\n      <div class=\"pipe-d-head\">\n        <h3>\uff0b New lead</h3>\n        <button class=\"close-x\" onclick=\"closePipeLeadDialog()\" aria-label=\"Close\">\u00d7</button>\n      </div>\n      <div class=\"pipe-d-body\">\n        <div class=\"pipe-field\"><label for=\"plName\">Name *</label><input id=\"plName\" type=\"text\" autocomplete=\"off\" placeholder=\"Jane Smith\"></div>\n        <div class=\"pipe-field\"><label for=\"plPhone\">Phone</label><input id=\"plPhone\" type=\"tel\" inputmode=\"tel\" autocomplete=\"off\" placeholder=\"(864) 555-0100\"></div>\n        <div class=\"pipe-field\"><label for=\"plEmail\">Email</label><input id=\"plEmail\" type=\"email\" inputmode=\"email\" autocomplete=\"off\" placeholder=\"jane@example.com\"></div>\n        <div class=\"pipe-field\"><label for=\"plAddress\">Address</label><input id=\"plAddress\" type=\"text\" autocomplete=\"off\" placeholder=\"123 Main St, Duncan, SC\"></div>\n        <div class=\"pipe-field\"><label for=\"plSource\">How did they find us?</label>\n          <select id=\"plSource\">\n            <option value=\"Call-in\">Call-in</option>\n            <option value=\"Referral\">Referral</option>\n            <option value=\"Facebook\">Facebook</option>\n            <option value=\"Walk-in\">Walk-in</option>\n            <option value=\"Yard sign\">Yard sign</option>\n            <option value=\"Other\">Other</option>\n          </select>\n        </div>\n        <div class=\"pipe-field\"><label for=\"plNote\">First note (optional)</label><input id=\"plNote\" type=\"text\" autocomplete=\"off\" placeholder=\"Wants interior painting quote next week\"></div>\n        <div class=\"pipe-d-actions\">\n          <button class=\"pipe-btn primary\" onclick=\"savePipeLead()\">Add to pipeline</button>\n          <button class=\"pipe-btn ghost\" onclick=\"closePipeLeadDialog()\">Cancel</button>\n        </div>\n      </div>\n    </dialog>\n\n\n    <!-- STAGE 1: CUSTOMER -->\n    <section class=\"stage\" id=\"stage-1\">\n      <div class=\"stage-title\">Step 1 of 10</div>\n      <h1>Let's start with the customer.</h1>\n      <p class=\"lead\">Confirm contact details. If a Jobber job number is open, paste it for reference (the final quote can be pushed to Jobber via Zapier).</p>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83d\udccb</span>\n        <div class=\"tip-body\">\n          <strong>What to expect</strong>\n          This builder walks through every detail of the project step by step \u2014 surface type, measurements, condition, product selection, color, add-ons, and discounts \u2014 so you can see exactly how the price is calculated. The final breakdown at the end is fully adjustable; you can change anything and watch the total update in real time before we send the quote.\n        </div>\n      </div>\n\n      <!-- Existing-customer search \u2014 type-ahead against Jobber clients.\n           Pick a result and the form below fills in. -->\n      <div class=\"cust-search\">\n        <label class=\"cust-search-label\">\ud83d\udd0e Search existing Jobber customer</label>\n        <input type=\"search\" id=\"custSearchInput\" placeholder=\"Name, email, phone, or company\u2026\" autocomplete=\"off\">\n        <div id=\"custSearchPicked\" class=\"cust-search-picked\" style=\"display:none;\"></div>\n        <div id=\"custSearchResults\" class=\"cust-search-results\" style=\"display:none;\"></div>\n      </div>\n\n      <div class=\"form-grid\">\n        <div class=\"field\"><label>Customer Name</label><input type=\"text\" id=\"custName\" placeholder=\"Full name\" autocomplete=\"off\"><div class=\"err\">Required</div></div>\n        <div class=\"field\"><label>Phone Number</label><input type=\"tel\" id=\"custPhone\" placeholder=\"(864) 555-0123\" autocomplete=\"off\"><div class=\"err\">Required</div></div>\n        <div class=\"field\"><label>Email</label><input type=\"email\" id=\"custEmail\" placeholder=\"customer@email.com\" autocomplete=\"off\"><div class=\"err\">Valid email required</div></div>\n        <div class=\"field\"><label>Property Address</label><input type=\"text\" id=\"custAddress\" placeholder=\"123 Main St, City, SC\" autocomplete=\"off\"><div class=\"err\">Required</div></div>\n        <div class=\"field\"><label>Jobber Job Number <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(optional)</span></label><input type=\"text\" id=\"jobberNum\" placeholder=\"Paste from Jobber if available\" autocomplete=\"off\"></div>\n        <div class=\"field\"><label>Quoting Employee <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(optional)</span></label><input type=\"text\" id=\"employeeName\" placeholder=\"Your name\" autocomplete=\"off\"></div>\n      </div>\n\n      <!-- SW-REFERRED CUSTOMER \u2014 flips the oil lineup to the Sherwin-Williams\n           SuperDeck products (same set the public SW calculator shows) and\n           auto-applies the locked 10% SW Referral discount on every project. -->\n      <div class=\"toggle-row\" id=\"swReferralToggle\" onclick=\"toggleSwReferral()\" style=\"margin-top:16px; border: 2px solid #2f6fb0; background: #f3f8fc;\">\n        <span class=\"box\"></span>\n        <span class=\"name\"><strong style=\"color:#2f6fb0;\">\ud83c\udfa8 Sherwin-Williams referred customer</strong><br>\n        <small style=\"color:var(--slate); font-weight:500;\">Shows the SW SuperDeck oil lineup (same products as the SW referral calculator) and auto-applies the 10% SW Referral discount to every project on this quote.</small></span>\n      </div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"cancelNewQuote()\" title=\"Discard this quote and return to the dashboard\">\u2190 Cancel</button>\n        <button class=\"btn btn-primary\" onclick=\"nextStage()\">Next: Project Type <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 2: PROJECT TYPE -->\n    <section class=\"stage\" id=\"stage-2\">\n      <div class=\"stage-title\">Step 2 of 10</div>\n      <h1>What are we staining?</h1>\n      <p class=\"lead\">Pick the surface type. Each project type has its own measurement and pricing logic \u2014 you can bundle multiple projects at the end for 10% off.</p>\n\n      <div id=\"editingBanner\" style=\"display:none\"></div>\n      <div id=\"addingAnotherBanner\" style=\"display:none;\" class=\"alert info\" role=\"status\">\n        <span class=\"ico\">\u2795</span>\n        <div>\n          <strong>Adding another project to this quote</strong>\n          Pick the surface type for the new project. Changed your mind? Use the button on the right to cancel and return to the review screen.\n        </div>\n        <button class=\"btn-cancel-add\" onclick=\"cancelAddProject()\" type=\"button\">Cancel &amp; return to review</button>\n      </div>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83d\udce6</span>\n        <div class=\"tip-body\">\n          <strong>Bundle savings <span class=\"info-btn\" role=\"button\" tabindex=\"0\" data-info=\"bundle_discount\" aria-label=\"More info\">i</span></strong>\n          If you have more than one wood surface that needs staining \u2014 fence + deck, pergola + ceiling, etc. \u2014 you can add multiple projects to a single quote and an automatic <strong>10% bundle discount</strong> applies to the total. Each project is priced individually first, then the bundle discount comes off everything except prep labor.\n        </div>\n      </div>\n\n      <div class=\"card-grid cols-3\" id=\"projectTypeCards\"></div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" id=\"stage2Next\" onclick=\"nextStage()\" disabled>Next: Measurements <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 3: MEASUREMENTS -->\n    <section class=\"stage\" id=\"stage-3\">\n      <div class=\"stage-title\">Step 3 of 10</div>\n      <h1 id=\"measureTitle\">Measurements</h1>\n      <p class=\"lead\">Enter measurements as accurately as possible \u2014 this drives the base price. Not sure of exact numbers? Tap the help link below for tips.</p>\n      <div id=\"measureTip\"></div>\n      <div id=\"measureContainer\"></div>\n\n      <div style=\"margin-top: 12px; text-align: center;\">\n        <button type=\"button\" class=\"btn-link\" onclick=\"openMeasureTutorial()\" style=\"background: none; border: none; color: var(--green); font-weight: 700; font-size: 14px; cursor: pointer; padding: 8px 14px; text-decoration: underline;\">\ud83e\udd14 Don't know the exact measurements? Tap here for tips.</button>\n      </div>\n\n      <!-- WOOD AGE \u2014 3-option selector. Drives the condition recommendation on Step 4\n           and disables incompatible options (e.g. No Wash on 2+ year wood). -->\n      <div class=\"wood-age-section\">\n        <h3 style=\"font-size:16px;color:var(--navy);margin-bottom:6px;margin-top:24px;\">How old is the wood?</h3>\n        <p style=\"font-size:13px;color:var(--slate);margin-bottom:14px;\">Wood that's been exposed to weather more than 6 months has typically picked up surface greying, mildew, or UV damage. This drives the prep recommendation \u2014 and at 2+ years, a restoration wash is required because no-prep staining will fail. <span class=\"info-btn\" role=\"button\" tabindex=\"0\" data-info=\"six_month_rule\" aria-label=\"Why does this matter?\">i</span></p>\n        <div class=\"wood-age-buttons\" id=\"woodAgeButtons\">\n          <button type=\"button\" class=\"wood-age-btn\" data-wood-age=\"new\">\n            <span class=\"wa-ico\">\ud83c\udf31</span>\n            <span class=\"wa-label\">Brand-new<br><small>Under 6 months</small></span>\n          </button>\n          <button type=\"button\" class=\"wood-age-btn\" data-wood-age=\"weathered\">\n            <span class=\"wa-ico\">\ud83c\udf24\ufe0f</span>\n            <span class=\"wa-label\">Weathered<br><small>6 months \u2013 2 years</small></span>\n          </button>\n          <button type=\"button\" class=\"wood-age-btn\" data-wood-age=\"aged\">\n            <span class=\"wa-ico\">\ud83c\udf42</span>\n            <span class=\"wa-label\">Aged<br><small>2+ years old</small></span>\n          </button>\n        </div>\n      </div>\n\n      <!-- WAS PREVIOUSLY STAINED \u2014 moved from Step 5 so it can inform the condition recommendation -->\n      <div class=\"prev-stain-section\">\n        <h3 style=\"font-size:16px;color:var(--navy);margin-bottom:6px;margin-top:24px;\">Has this wood been stained before?</h3>\n        <p style=\"font-size:13px;color:var(--slate);margin-bottom:14px;\">This helps us recommend the right prep for Step 4 and the most compatible product on Step 5.</p>\n        <div class=\"toggle-row\" data-toggle=\"wasStained\">\n          <span class=\"box\"></span>\n          <span class=\"name\">\ud83e\udeb5 Yes, this wood has had stain applied to it before <span class=\"info-btn\" role=\"button\" tabindex=\"0\" data-info=\"why_prev_stain\" style=\"margin-left:8px;\" aria-label=\"More info\">i</span></span>\n        </div>\n\n        <div class=\"info-panel previous\" id=\"prevStainPanel\" style=\"display:none;\">\n          <h3>\ud83e\uddd0 What was previously used?</h3>\n          <p class=\"panel-hint\">Knowing what was used before helps us pick the right stain to recoat with. Switching stain types (oil \u2194 water) requires a full strip, while staying with the same type usually only needs a soft wash.</p>\n          <div class=\"form-grid\">\n            <div class=\"field\">\n              <label>Type Previously Used</label>\n              <select id=\"prevProductType\">\n                <option value=\"\">\u2014 Select type \u2014</option>\n                <option value=\"water\">Water-Based</option>\n                <option value=\"oil\">Oil-Based</option>\n                <option value=\"unsure\">Unsure</option>\n              </select>\n            </div>\n            <div class=\"field\"><label>Condition of existing finish</label>\n              <select id=\"prevCondition\">\n                <option value=\"\">\u2014 Select \u2014</option>\n                <option value=\"intact\">Intact (faded but not peeling)</option>\n                <option value=\"peeling\">Peeling, flaking, or chipping</option>\n                <option value=\"unsure\">Unsure</option>\n              </select>\n            </div>\n            <div class=\"field\"><label>Brand <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(if known)</span></label><select id=\"prevBrand\"><option value=\"\">\u2014 Select brand \u2014</option></select></div>\n            <div class=\"field\"><label>Transparency <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(if known)</span></label><select id=\"prevTransparency\"><option value=\"\">\u2014 Select transparency \u2014</option></select></div>\n            <div class=\"field\"><label>Product Name <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(if known)</span></label><input type=\"text\" id=\"prevProductName\" placeholder=\"e.g. SuperDeck Semi-Trans\" autocomplete=\"off\"></div>\n            <div class=\"field\"><label>Color / Notes <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(optional)</span></label><input type=\"text\" id=\"prevColorNotes\" placeholder=\"e.g. Cedar tone, applied 2020\" autocomplete=\"off\"></div>\n          </div>\n        </div>\n      </div>\n\n      <!-- REFERENCE PHOTOS \u2014 optional, but encouraged. Photos attach to\n           the project's line item in Jobber and show up on the\n           customer-facing quote so the rep + customer are looking at the\n           same wood. iPad camera works directly via the capture attr. -->\n      <div class=\"photos-section\">\n        <h3 style=\"font-size:16px;color:var(--navy);margin-bottom:6px;margin-top:24px;\">\ud83d\udcf7 Reference photos <span style=\"color:var(--slate);font-weight:500;font-size:13px;\">(optional, but recommended)</span></h3>\n        <p style=\"font-size:13px;color:var(--slate);margin-bottom:14px;\">Snap a few photos of the work area. Photos attach to the Jobber quote so the customer sees exactly what we're staining \u2014 and you get a record of pre-stain condition. Up to 8 photos, ~10 MB each.</p>\n        <input type=\"file\" id=\"photoInput\" accept=\"image/*\" capture=\"environment\" multiple style=\"display:none;\">\n        <div class=\"photo-upload-grid\" id=\"photoUploadGrid\"></div>\n        <button type=\"button\" class=\"btn btn-secondary photo-add-btn\" id=\"photoAddBtn\">\ud83d\udcf7 Add photos</button>\n      </div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" id=\"stage3Next\" onclick=\"nextStage()\">Next: Condition <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 4: CONDITION -->\n    <section class=\"stage\" id=\"stage-4\">\n      <div class=\"stage-title\">Step 4 of 10</div>\n      <h1>What's the current condition?</h1>\n      <p class=\"lead\">Prep is the biggest cost driver after measurement, and the condition tells us what kind of stain will work best on this wood.</p>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83d\udccb</span>\n        <div class=\"tip-body\">\n          <strong>Why prep matters</strong>\n          Improper prep is the #1 reason stain jobs fail early. Greyed wood has dead surface fibers and an unbalanced pH \u2014 without a wash and brightener, new stain can't bond properly. Previously stained wood needs the old finish stripped so the new product penetrates fresh wood. Spending an extra $300 on prep can be the difference between re-staining in 2 years vs. 5.\n        </div>\n      </div>\n\n      <!-- Recommendation banner \u2014 explains WHY we recommended this prep\n           level (similar pattern to the product step on Stage 5). -->\n      <div class=\"reco-banner\" id=\"conditionRecoBanner\" style=\"display:none\">\n        <span class=\"reco-ico\">\u2b50</span>\n        <div class=\"reco-content\" id=\"conditionRecoBannerText\"></div>\n      </div>\n\n      <div class=\"card-grid cols-3\" id=\"conditionCards\"></div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" id=\"stage4Next\" onclick=\"nextStage()\" disabled>Next: Product <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 5: PRODUCT + HOA + PREVIOUS STAIN -->\n    <section class=\"stage\" id=\"stage-5\">\n      <div class=\"stage-title\">Step 5 of 10</div>\n      <h1>Pick a product family.</h1>\n      <p class=\"lead\">Water vs. oil-based has a big impact on look, longevity, and compatibility with what's already on the wood. We'll recommend one based on the condition.</p>\n\n      <div class=\"reco-banner\" id=\"recoBanner\" style=\"display:none\">\n        <span class=\"reco-ico\">\u2b50</span>\n        <div class=\"reco-content\" id=\"recoBannerText\"></div>\n      </div>\n\n      <div class=\"product-choice-grid\" id=\"productChoiceCards\"><!-- rendered by renderProductCards() --></div>\n\n      <!-- \"wasStained\" block moved to Step 3 (Measurements) -->\n\n      <div class=\"info-panel highlighted\" id=\"hoaPanel\" style=\"display:none; margin-top:20px;\">\n        <h3>\ud83c\udfd8\ufe0f HOA-Required Color &amp; Product <span class=\"info-btn\" role=\"button\" tabindex=\"0\" data-info=\"hoa_explained\" aria-label=\"More info\">i</span></h3>\n        <p class=\"panel-hint\">Capture every detail of what the HOA requires so there's no dispute later. Your standard color picker will be skipped \u2014 we'll use exactly what they specify.</p>\n        <div class=\"form-grid\">\n          <div class=\"field\"><label>Brand</label><select id=\"hoaBrand\"><option value=\"\">\u2014 Select brand \u2014</option></select></div>\n          <div class=\"field\"><label>Transparency / Product Type</label><select id=\"hoaTransparency\"><option value=\"\">\u2014 Select transparency \u2014</option></select></div>\n          <div class=\"field\"><label>Specific Product Name</label><input type=\"text\" id=\"hoaProductName\" placeholder=\"e.g. SuperDeck Solid SD7-150\" autocomplete=\"off\"></div>\n          <div class=\"field\"><label>Required Color / Code</label><input type=\"text\" id=\"hoaColor\" placeholder=\"e.g. SW 3001 Shagbark\" autocomplete=\"off\"></div>\n        </div>\n        <div class=\"field\"><label>HOA Documentation Reference <span style=\"color:var(--slate);font-weight:500;text-transform:none;letter-spacing:0;\">(optional)</span></label><textarea id=\"hoaNotes\" placeholder=\"HOA approval doc # or other reference info\"></textarea></div>\n      </div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" id=\"stage5Next\" onclick=\"nextStage()\" disabled>Next: Tier <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 6: TIER -->\n    <section class=\"stage\" id=\"stage-6\">\n      <div class=\"stage-title\">Step 6 of 10</div>\n      <h1>Pick the tier. <span class=\"info-btn\" role=\"button\" tabindex=\"0\" data-info=\"tier_help\" aria-label=\"More info\" style=\"vertical-align:middle;width:22px;height:22px;font-size:13px;\">i</span></h1>\n      <p class=\"lead\"><strong>Performance is what we recommend for almost every homeowner.</strong> Compare the three side-by-side and notice the cost-per-year \u2014 that's where the value of going up a tier really shows.</p>\n\n      <div class=\"alert info\" id=\"productLockIndicator\"><span class=\"ico\">\ud83d\udca1</span><div id=\"productLockText\"></div></div>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83d\udcca</span>\n        <div class=\"tip-body\">\n          <strong>Reading the cost-per-year number</strong>\n          Each tier card shows a \"cost-per-year amortized\" number \u2014 the total project price divided by the expected lifespan. This is often the most useful way to compare tiers: a higher tier costs more upfront but spreads across more years, so the cost per year is sometimes <em>lower</em> than going cheap and re-doing the work sooner.\n        </div>\n      </div>\n\n      <!-- Previously-stained context \u2014 only renders when prev stain info is set -->\n      <div id=\"prevStainContext\"></div>\n\n      <div class=\"card-grid cols-3\" id=\"tierCards\"></div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" id=\"stage6Next\" onclick=\"nextStage()\" disabled>Next: Color <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 7: COLOR -->\n    <section class=\"stage\" id=\"stage-7\">\n      <div class=\"stage-title\">Step 7 of 10</div>\n      <h1 id=\"colorTitle\">Pick a color.</h1>\n      <p class=\"lead\" id=\"colorLead\">Show the customer the swatches below. Final appearance varies based on wood species and grain.</p>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83c\udfa8</span>\n        <div class=\"tip-body\">\n          <strong>About these colors</strong>\n          The swatches below are manufacturer reference samples on lighter wood. Final appearance varies with your specific wood species, grain, age, and lighting \u2014 a Cedar swatch can look noticeably different on Pressure-Treated Pine vs. older greyed lumber. We recommend looking at physical paint chips or color cards before locking in if you're between options.\n        </div>\n      </div>\n\n      <div class=\"color-grid\" id=\"colorGrid\"></div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" id=\"stage7Next\" onclick=\"nextStage()\" disabled>Next: Add-ons <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 8: ADD-ONS -->\n    <section class=\"stage\" id=\"stage-8\">\n      <div class=\"stage-title\">Step 8 of 10</div>\n      <h1>Any upgrades or add-ons?</h1>\n      <p class=\"lead\">Walk through the relevant options. Anything checked here adds to the running total at the top of the screen \u2014 the customer sees it in real time.</p>\n\n      <div id=\"addonsContainer\"></div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" onclick=\"nextStage()\">Next: Discounts <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 9: DISCOUNTS (NEW) -->\n    <section class=\"stage\" id=\"stage-9\">\n      <div class=\"stage-title\">Step 9 of 10</div>\n      <h1>Discounts &amp; savings.</h1>\n      <p class=\"lead\">Pick any that apply \u2014 most stack. Discounts stack up to <strong>10% off the project</strong>, with the Bundle discount applied separately on top when there are 2+ projects.</p>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83d\udcb8</span>\n        <div class=\"tip-body\">\n          <strong>How discounts work</strong>\n          Project-level discounts stack up to <strong>10% combined</strong>. Some are mutually exclusive \u2014 you can pick veteran <em>or</em> teacher (not both), and referral <em>or</em> repeat customer (not both). The <strong>Bundle discount</strong> (10% when 2+ projects are on the quote) stacks separately on top of everything.\n        </div>\n      </div>\n\n      <div id=\"discountsContainer\"></div>\n\n      <div class=\"stage-nav\">\n        <button class=\"btn btn-secondary\" onclick=\"prevStage()\"><span class=\"arr-l\">\u2190</span> Back</button>\n        <button class=\"btn btn-primary\" onclick=\"nextStage()\">Next: Review &amp; Quote <span class=\"arr-r\">\u2192</span></button>\n      </div>\n    </section>\n\n    <!-- STAGE 10: REVIEW -->\n    <section class=\"stage\" id=\"stage-10\">\n      <div class=\"stage-title\">Step 10 of 10</div>\n      <h1>Final breakdown.</h1>\n      <p class=\"lead\">Walk through this line-by-line with the customer. Adjust anything on the right and the price updates instantly. When they're ready, choose payment and generate the quote.</p>\n\n      <div class=\"tip-box\">\n        <span class=\"tip-ico\">\ud83d\udcdd</span>\n        <div class=\"tip-body\">\n          <strong>Review your quote</strong>\n          The breakdown below shows every cost line item \u2014 measurements, tier base, prep work, add-ons, and any discount. The panel on the right lets you toggle anything on or off and the total updates instantly. When you're ready, choose a payment option and we'll email you the PDF quote.\n        </div>\n      </div>\n\n      <div id=\"bundleStackBlock\" style=\"display:none\"></div>\n\n      <div class=\"final-grid\">\n        <div>\n          <div class=\"final-main\" id=\"breakdownMain\"></div>\n          <div class=\"action-bar\">\n            <div class=\"left\">\n              <button class=\"btn btn-secondary\" onclick=\"addAnotherProject()\">\uff0b Add Another Project (Bundle 10%)</button>\n            </div>\n            <div class=\"right\">\n              <button class=\"btn btn-primary\" onclick=\"finalizeQuote('upload')\" title=\"Save the quote and push it to Jobber as a Draft \u2014 you can open it from the next screen to send\">\u2713 Generate &amp; Upload to Jobber</button>\n            </div>\n          </div>\n          <div class=\"alert success\" style=\"margin-top:16px\">\n            <span class=\"ico\">\ud83d\udce6</span>\n            <div><strong>Bundle multiple projects?</strong>Click \"Add Another Project\" to start a second project \u2014 bundling 2+ projects automatically applies 10% off (best discount wins, no stacking).</div>\n          </div>\n        </div>\n        <aside class=\"final-side\" id=\"editPanel\"></aside>\n      </div>\n    </section>\n\n    <section class=\"stage\" id=\"stage-success\">\n      <div class=\"success-screen\">\n        <div class=\"success-icon\">\u2713</div>\n        <h1>Quote saved.</h1>\n        <p class=\"lead\" style=\"margin: 12px auto 20px;\">The quote is locked in and saved to your dashboard. It lands in Jobber as a <strong>Draft</strong> so you can see at a glance which quotes still need to be sent. Click <strong>\"\u2197 Open in Jobber\"</strong> below to review and send it to the customer.</p>\n        <div id=\"successJobberBlock\" style=\"max-width: 460px; margin: 0 auto 24px;\"></div>\n        <div style=\"display:flex; gap:12px; justify-content:center; flex-wrap:wrap;\">\n          <button class=\"btn btn-primary\" onclick=\"returnToDashboard()\">\u2190 Return to Dashboard</button>\n          <button class=\"btn btn-secondary\" onclick=\"resendCurrentQuoteFromSuccess()\">\ud83d\udd04 Re-send to Jobber</button>\n          <button class=\"btn btn-secondary\" onclick=\"resetQuote()\">\uff0b Start New Quote</button>\n        </div>\n      </div>\n    </section>\n\n    <!-- READ-ONLY VIEW \u2014 for finished, archived, or trashed quotes opened\n         from the dashboard. Sending locks the quote so concurrent edits\n         can't silently overwrite each other; reps can still duplicate\n         to edit a fresh copy. -->\n    <section class=\"stage\" id=\"stage-view\">\n      <div class=\"stage-title\" id=\"stageViewLabel\">VIEWING QUOTE</div>\n      <h1 id=\"stageViewTitle\">Quote summary</h1>\n      <p class=\"lead\" id=\"stageViewLead\">This quote is read-only. Duplicate it to make a new editable copy.</p>\n\n      <div class=\"view-actions\">\n        <button class=\"btn btn-primary\" onclick=\"returnToDashboard()\">\u2190 Return to Dashboard</button>\n        <button class=\"btn btn-secondary\" onclick=\"resendCurrentViewedToJobber()\">\ud83d\udd04 Re-send to Jobber</button>\n        <button class=\"btn btn-secondary\" onclick=\"duplicateCurrentForEdit()\">\ud83d\udccb Duplicate to edit</button>\n        <button class=\"btn btn-secondary\" onclick=\"generatePDF()\">\ud83d\udcc4 Download PDF</button>\n      </div>\n\n      <div id=\"viewSummary\" class=\"view-summary\"></div>\n    </section>\n\n  </main>\n</div>\n\n<!-- SIDE TRACKER PANEL -->\n<div class=\"side-tracker-tab\" id=\"sideTrackerTab\" onclick=\"openSideTracker()\">\n  Your Quote <div class=\"count\" id=\"sideTrackerCount\">0</div>\n</div>\n<div class=\"side-tracker-overlay\" id=\"sideTrackerOverlay\" onclick=\"closeSideTracker()\"></div>\n<aside class=\"side-tracker\" id=\"sideTracker\" aria-label=\"Quote progress tracker\">\n  <div class=\"side-tracker-header\">\n    <h3>\ud83d\udccb Your Quote</h3>\n    <button class=\"close-btn\" onclick=\"closeSideTracker()\" aria-label=\"Close\">\u00d7</button>\n  </div>\n  <div class=\"side-tracker-body\" id=\"sideTrackerBody\"></div>\n\n  <!-- Quote-level notes \u2014 between the items list and the footer. The\n       textarea starts compact (one line) and grows on focus / when typed\n       into so it doesn't dominate the panel when empty. -->\n  <div class=\"side-tracker-notes\">\n    <label for=\"quoteNotesField\">\ud83d\udcdd Quote notes</label>\n    <textarea id=\"quoteNotesField\" placeholder=\"Type notes here\u2026\"></textarea>\n  </div>\n\n  <div class=\"side-tracker-footer\">\n    <button class=\"btn-save-exit\" onclick=\"saveAndReturnToDashboard()\" title=\"Save this draft and return to the dashboard\">\ud83d\udcbe Save &amp; Exit</button>\n    <div class=\"tot-block\">\n      <span class=\"tot-label\">Running Total</span>\n      <span class=\"tot-amt\" id=\"sideTrackerTotal\">$0</span>\n    </div>\n  </div>\n</aside>\n\n<!-- INFO MODAL \u2014 uses native <dialog> so showModal() puts it in the browser's\n     top layer, escaping any containing-block / transform restrictions from\n     Wix's Custom Element wrapper. The ::backdrop pseudo-element handles the\n     overlay automatically. -->\n<dialog class=\"info-dialog\" id=\"infoModalDialog\">\n  <div class=\"info-modal-header\">\n    <h3 id=\"infoModalTitle\">Info</h3>\n    <button class=\"close-x\" onclick=\"closeInfoModal()\" aria-label=\"Close\">\u00d7</button>\n  </div>\n  <div class=\"info-modal-body\" id=\"infoModalBody\"></div>\n</dialog>\n\n<!-- MEASUREMENT TUTORIAL MODAL \u2014 same dialog approach -->\n<dialog class=\"info-dialog measure-dialog\" id=\"measureTutorialDialog\">\n  <div class=\"info-modal-header\">\n    <h3 id=\"measureTutorialTitle\">How to estimate measurements</h3>\n    <button class=\"close-x\" onclick=\"closeMeasureTutorial()\" aria-label=\"Close\">\u00d7</button>\n  </div>\n  <div class=\"info-modal-body\" id=\"measureTutorialBody\"></div>\n  <div style=\"padding: 12px 24px 20px; text-align: right; border-top: 1px solid var(--line);\">\n    <button class=\"btn btn-primary\" onclick=\"closeMeasureTutorial()\" style=\"padding: 10px 20px; font-size: 14px;\">Got it</button>\n  </div>\n</dialog>\n\n<!-- JOBBER INTEGRATION PANEL \u2014 connect / refresh / disconnect from\n     the OAuth-protected Jobber API. Opens via the small \"Jobber\" pill\n     in the header. -->\n<dialog class=\"info-dialog\" id=\"jobberPanelDialog\">\n  <div class=\"info-modal-header\">\n    <h3>Jobber integration</h3>\n    <button class=\"close-x\" onclick=\"closeJobberPanel()\" aria-label=\"Close\">\u00d7</button>\n  </div>\n  <div class=\"info-modal-body\" id=\"jobberPanelBody\">\n    <div id=\"jobberStatusBlock\" style=\"margin-bottom: 16px;\">Loading\u2026</div>\n    <div id=\"jobberActionsBlock\" style=\"display: flex; flex-direction: column; gap: 8px;\"></div>\n    <p style=\"margin-top: 18px; font-size: 12px; color: var(--slate); line-height: 1.5;\">\n      Once connected, sent quotes will push to Jobber automatically as new estimates.\n      The connection refreshes itself \u2014 you only need to use \"Refresh\" if something\n      looks stuck.\n    </p>\n  </div>\n</dialog>\n\n<!-- PROJECT-SWITCH CONFIRMATION \u2014 fires when the rep clicks a different\n     project type on Step 2 after meaningful data has been entered on\n     the current project. Defaults the primary action to \"Add as another\n     project\" so the safe path is one tap away. -->\n<dialog class=\"info-dialog\" id=\"projectSwitchDialog\">\n  <div class=\"info-modal-header\">\n    <h3>Switch project or add another?</h3>\n    <button class=\"close-x\" onclick=\"closeProjectSwitchDialog()\" aria-label=\"Close\">\u00d7</button>\n  </div>\n  <div class=\"info-modal-body\" id=\"projectSwitchBody\"></div>\n  <div class=\"project-switch-actions\">\n    <button class=\"btn btn-secondary\" onclick=\"closeProjectSwitchDialog()\">Cancel</button>\n    <button class=\"btn btn-ghost-danger\" onclick=\"confirmSwitchProject()\">Switch &amp; discard</button>\n    <button class=\"btn btn-primary\" onclick=\"confirmAddAnotherProject()\">\uff0b Add as another project</button>\n  </div>\n</dialog>\n\n<!-- PRICING ADMIN \u2014 edit tier rates, prep rates, bundle %, minimum job,\n     and per-discount rates. Saves to Wix Data (PricingRules collection)\n     and overrides are applied on top of the built-in defaults next\n     time the calc boots (or immediately, via in-memory merge below). -->\n<dialog class=\"info-dialog pricing-admin-dialog\" id=\"pricingAdminDialog\">\n  <div class=\"info-modal-header pa-header\">\n    <h3>\u2699\ufe0f Settings</h3>\n    <button class=\"close-x\" onclick=\"closePricingAdmin()\" aria-label=\"Close\">\u00d7</button>\n  </div>\n    <div class=\"pa-groups\">\n    <button class=\"pa-group-btn active\" id=\"paGroupPricing\" onclick=\"switchPaGroup('pricing')\">\ud83d\udcb2 Pricing</button>\n    <button class=\"pa-group-btn\" id=\"paGroupTeam\" onclick=\"switchPaGroup('team')\">\ud83d\udc65 Team</button>\n  </div>\n  <!-- Search any rate by name \u2014 jumps to the right tab and flashes the\n       field. The index is built from the tab renderers themselves, so\n       new fields are searchable automatically. -->\n  <div class=\"pa-search-row\" id=\"paSearchRow\">\n    <div class=\"pa-search-wrap\">\n      <input type=\"search\" id=\"paSearch\" placeholder=\"\ud83d\udd0e Find a rate \u2014 try \u201cpopcorn\u201d, \u201clift rental\u201d, \u201cveteran\u201d\u2026\" autocomplete=\"off\">\n      <div id=\"paSearchResults\" class=\"pa-search-results\" style=\"display:none;\"></div>\n    </div>\n    <span class=\"pa-legend\"><span class=\"pa-legend-chip\"></span> = edited from default \u2014 tap the \u21ba on a field to undo just that one</span>\n  </div>\n  <div class=\"pa-tabs\" id=\"pricingAdminTabs\">\n    <button class=\"pa-tab active\" data-pa-tab=\"tiers\">Base rates</button>\n    <button class=\"pa-tab\" data-pa-tab=\"interior\">\ud83c\udfa8 Interior</button>\n    <button class=\"pa-tab\" data-pa-tab=\"exteriorpaint\">\ud83c\udfe1 Exterior</button>\n    <button class=\"pa-tab\" data-pa-tab=\"cabinetpaint\">\ud83d\udeaa Cabinets</button>\n    <button class=\"pa-tab\" data-pa-tab=\"prep\">Prep</button>\n    <button class=\"pa-tab\" data-pa-tab=\"extras\">Project extras</button>\n    <button class=\"pa-tab\" data-pa-tab=\"addons\">Add-ons</button>\n    <button class=\"pa-tab\" data-pa-tab=\"discounts\">Discounts</button>\n    <button class=\"pa-tab\" data-pa-tab=\"diy\">DIY comparison</button>\n    <button class=\"pa-tab\" data-pa-tab=\"quote\">Quote rules</button>\n    <button class=\"pa-tab\" data-pa-tab=\"sw\">SW Edition</button>\n    <button class=\"pa-tab\" data-pa-tab=\"reps\">Reps</button>\n    <button class=\"pa-tab\" data-pa-tab=\"devices\">Devices</button>\n  </div>\n  <div class=\"info-modal-body pa-body\" id=\"pricingAdminBody\">Loading\u2026</div>\n  <div class=\"pa-footer\">\n    <div class=\"pa-meta\" id=\"pricingAdminMeta\">\n      <small style=\"color:var(--slate);\">Changes save to the cloud and apply to the employee, customer, and SW calculators on their next load.</small>\n    </div>\n    <span class=\"pa-dirty-pill\" id=\"paDirtyPill\" style=\"display:none;\">\u25cf Unsaved changes</span>\n    <button class=\"btn btn-secondary\" onclick=\"openInteriorPricingSheet()\" title=\"Print-ready interior pricing sheet built from the CURRENT rates (including any overrides saved here)\">\ud83d\udcc4 Pricing sheet</button>\n    <button class=\"btn btn-secondary\" id=\"paResetBtn\" onclick=\"resetPricingAdmin()\" title=\"Wipe all overrides \u2014 every calculator falls back to the built-in defaults\">Reset to defaults</button>\n    <button class=\"btn btn-primary\" id=\"paSaveBtn\" onclick=\"savePricingAdmin()\" title=\"Save \u2014 applies to all three calculators on their next load\">\ud83d\udcbe Save</button>\n    <button class=\"btn btn-secondary\" onclick=\"closePricingAdmin()\">Close</button>\n  </div>\n</dialog>";
 
   function initCalculator(__doc, __host) {
 
@@ -137,6 +137,123 @@ const PRICING = {
   // is the same.
   barn:    { tiers: { essential: 3.40, performance: 4.25, showcase: 5.55 }, heightPremium: 1.30, liftRentalPerDay: 400, trimRate: 1.50, cupolaFlat: 200, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
   ceiling: { tiers: { essential: 3.40, performance: 4.25, showcase: 5.55 }, tngPremium: 0.50, beamRate: 8.00, fixtureRemoval: 50, fanRemoval: 100, furnitureProtFlat: 100, prep: { no_wash: 0, soft_wash: 1.25, strip_sand: 2.85 }, unit: 'sq ft' },
+  // INTERIOR PAINTING — priced per room from the room-by-room builder on
+  // Step 3. `tiers` is the WALL rate in $ per wall sq ft (2 coats,
+  // openings deducted). Component rates are per their own unit and scale
+  // with tier relative to the Performance wall rate (same pattern as
+  // deck railing/stairs). Drywall repair + extras are per-room adders.
+  // Rates seeded from 2025–26 national averages (Angi/HomeAdvisor/
+  // HomeGuide/Fixr — see painting-calc-framework.md) and editable here.
+  interior: {
+    // Wall rates sit at the middle of US walls-only averages
+    // ($1.50–$3.50 per wall sq ft, Angi/HomeAdvisor/HomeGuide 2025–26),
+    // with SC trending slightly under national — Performance anchors at
+    // $2.00 and the ladder keeps the 0.85× / 1.20× tier spread.
+    tiers: { essential: 1.70, performance: 2.00, showcase: 2.40 },   // $/wall sq ft — SuperPaint / Duration Home / Emerald
+    rates: {
+      ceiling:      1.75,   // $/sq ft of ceiling (floor area)
+      trim:         2.50,   // $/ln ft baseboard + door/window casing pass
+      crown:        3.50,   // $/ln ft crown molding
+      door:         125,    // per door — slab both sides + jamb (casing rides the trim rate)
+      window:       65,     // per SINGLE window — sash/sill/apron detail work
+      windowDouble: 100,    // per DOUBLE (wide/mulled) window — bigger casing run + two sashes
+      closet:       175,    // per closet interior (walls + shelf + rod wall)
+      // Accent walls are measurement-based: width (captured on the room
+      // card) × ceiling height × $/sq ft, floored at the minimum. A
+      // 6 ft nook and an 18 ft great-room wall shouldn't cost the same.
+      accentWallPerSqFt: 4.00,
+      accentWallMin:     175
+    },
+    // Drywall severity rates are for a STANDARD room and auto-scale
+    // with room size (gross wall sq ft ÷ drywallRefWallSqFt, clamped
+    // ×0.7–×1.6) — a powder bath and a great room shouldn't pay the
+    // same repair charge. Ref = 12×12×8 ft room = 384 gross wall sq ft.
+    drywall: { none: 0, minor: 85, moderate: 225, major: 475 },
+    drywallRefWallSqFt: 384,
+    // Bathrooms price walls at a premium — mirrors, vanities, toilets,
+    // towel bars, and tight cut-ins slow the wall work way down.
+    bathroomWallMult: 1.20,
+    // Per-room multi-area discount: pick `minAreas`+ paint areas in one
+    // room (walls/ceiling/trim/crown/accent/closet/shelving — doors and
+    // windows don't count) and that room gets `rate` off its painting.
+    // Repairs and removals (drywall, popcorn, wallpaper) are excluded
+    // from the discounted base.
+    roomBundle: { minAreas: 3, rate: 0.10 },
+    extras: {
+      popcorn:     4.00,    // $/sq ft ceiling — scrape, skim, stain-block prime + refinish
+      wallpaper:   2.00,    // $/sq ft wall — removal + wall prep
+      boldColor:   0.50,    // $/wall sq ft — drastic color change / extra coat
+      // Built-ins are measurement-based: $/ln ft of unit face with a
+      // minimum that covers the typical single bookcase. Width is
+      // captured on the room card when the option is toggled on.
+      builtinsPerLnFt: 45,
+      builtinsMin:     175,
+      // Closet/pantry/laundry shelving & rod runs — painted per ln ft
+      // of shelf run. Primary chip on Walk-in Closet rooms, available
+      // under less-common options everywhere else.
+      shelvingPerLnFt: 12,
+      vaultedMult: 1.15     // labor multiplier on walls+ceiling+trim when vaulted / 2-story
+    },
+    // Interior projects carry their own job minimum — small one-room
+    // touch-up quotes don't cover setup/masking/cleanup below this.
+    minimumJob: 800,
+    unit: 'room'
+  },
+  exterior: {
+    // Per paintable SIDING sq ft, 2 coats, pressure wash included.
+    // National exterior averages run $1.50–$4.00/sq ft (Angi/HomeGuide
+    // 2025–26); SC trends under national, and the interior anchor
+    // discipline carries over: Performance anchors mid-market with the
+    // familiar ~0.85×/1.20× tier spread. SW exterior lineup mirrors
+    // interior: SuperPaint Ext / Duration Ext / Emerald Ext.
+    tiers: { essential: 1.90, performance: 2.25, showcase: 2.70 },   // $/siding sq ft
+    // Substrate multiplies the siding rate — porous/masonry surfaces
+    // drink paint and cut slower.
+    substrate: { vinyl: 0.90, wood: 1.00, fiber_cement: 1.05, stucco: 1.15, brick: 1.20 },
+    highWorkMult: 1.15,        // sides with avg height ≥ 14 ft — ladder/staging work
+    highWorkAtFt: 14,
+    // Peeling-paint prep per side (scrape, sand, spot-prime) — $/sq ft
+    // ON TOP of the siding rate. Wash is always included.
+    peel: { none: 0, light: 0.40, heavy: 0.90 },
+    rates: {
+      trimFascia:  3.00,   // $/ln ft — casings, corner boards, fascia runs
+      soffit:      2.50,   // $/ln ft of eave/soffit run (typical 12–24" depth)
+      gutters:     2.25,   // $/ln ft — gutters + downspouts painted
+      windowTrim:  65,     // per window — exterior sash + trim detail
+      shutter:     40,     // per shutter — remove, paint both faces, rehang
+      door:        175,    // per entry door — slab both faces + jamb + casing
+      garage1:     200,    // 1-car garage door
+      garage2:     325,    // 2-car garage door
+      porchCeiling: 1.75,  // $/sq ft porch/patio ceiling
+      railing:     5.50,   // $/ln ft porch + step railings
+      column:      70      // per column / porch post
+    },
+    minimumJob: 1500,
+    unit: 'sq ft'
+  },
+  cabinet: {
+    // Priced by FACE COUNT (doors + drawers + panels), the industry
+    // standard — never "per kitchen." Door rate is the tier anchor;
+    // other pieces scale with it. Tiers are process + product:
+    // Essential = ProClassic brushed & rolled · Performance = Emerald
+    // Urethane with doors sprayed · Showcase = full spray finish.
+    tiers: { essential: 85, performance: 100, showcase: 125 },   // per door
+    pieceRates: {          // at Performance; scale with door-rate multiplier
+      drawer:    40,       // per drawer front
+      endPanel:  60,       // per exposed end / island panel
+      glassDoor: 70       // per glass-front door (frame only)
+    },
+    crownPerLnFt: 6,       // cabinet crown / light rail, flat across tiers
+    insideBox:   30,       // per box interior when requested
+    // Existing-finish prep multipliers on the piece subtotal. Painted
+    // is the baseline; stained needs adhesion priming; slick factory
+    // coatings need the heaviest scuff + bonding primer; raw wood has
+    // no old finish to fight.
+    finishMult: { painted: 1.0, stained: 1.15, factory: 1.20, unfinished: 0.90 },
+    oakGrainPerPiece:  15,   // grain-fill for a glass-smooth finish on open-grain oak
+    minimumJob: 1200,
+    unit: 'piece'
+  },
   stainUpgrades: [
     { id: 'citronella',  name: 'EXPERT Natural Defense additive', restr: 'Oil only', product: 'oil',
       priceType: 'per_unit',
@@ -167,7 +284,15 @@ const PRICING = {
     { id: 'pdf_quote', name: 'Detailed PDF quote emailed to you', priceType: 'flat', rate: 0,
       desc: 'You leave with a line-by-line PDF of every cost — measurements, tier, prep, add-ons, discounts. Easy to share with a spouse or partner, or pull up later for a referral.', defaultOn: true },
     { id: 'message_support', name: '7-day message support', priceType: 'flat', rate: 0,
-      desc: "Direct text-message line to the project lead, available 7 days a week — before, during, and after the job. Questions about cure time, first wash, weather, anything — straight answer, no phone tag.", defaultOn: true }
+      desc: "Direct text-message line to the project lead, available 7 days a week — before, during, and after the job. Questions about cure time, first wash, weather, anything — straight answer, no phone tag.", defaultOn: true },
+    // Interior-only complimentary services — `projects` limits which
+    // project types show the row in the "Included free" section.
+    { id: 'sw_color_consult', name: 'Color consultation with SW samples', priceType: 'flat', rate: 0,
+      desc: 'We bring Sherwin-Williams color decks and brushout samples to help land the palette before any paint is ordered.', defaultOn: true, projects: ['interior', 'exterior', 'cabinet'] },
+    { id: 'ext_wash_included', name: 'Full pressure wash before painting', priceType: 'flat', rate: 0,
+      desc: 'Every exterior paint job starts with a full soft/pressure wash of the painted surfaces — proper adhesion starts with a clean substrate. Always included.', defaultOn: true, projects: ['exterior'] },
+    { id: 'cab_labeling', name: 'Doors labeled, removed & re-hung', priceType: 'flat', rate: 0,
+      desc: 'Every door and drawer front is labeled, removed, finished flat, and re-hung with hinges adjusted. Included on every cabinet job.', defaultOn: true, projects: ['cabinet'] }
   ],
   projectAddons: {
     fence: [
@@ -211,10 +336,49 @@ const PRICING = {
       { id: 'fan_remove', name: 'Ceiling fans (mask & work around)', priceType: 'each', rate: 100, qtyLabel: 'fans' },
       { id: 'wood_patch', name: 'Wood patching / filler repair', priceType: 'each', rate: 40, qtyLabel: 'planks' },
       { id: 'plank_replace', name: 'Damaged plank replacement', priceType: 'each', rate: 30, qtyLabel: 'planks' }
+    ],
+    interior: [
+      { id: 'int_banister', name: 'Stair railing / banister painting', priceType: 'flat', rate: 250,
+        desc: 'Handrail, balusters, and newel posts — sanded, primed as needed, and finished in semi-gloss enamel.' },
+      { id: 'int_stairwell', name: 'Two-story foyer / stairwell walls', priceType: 'flat', rate: 300,
+        desc: 'Tall-wall work over stairs — plank + ladder setup, extension poles, and careful cut-ins at height.' },
+      { id: 'int_extra_door', name: 'Extra doors (both sides + jamb)', priceType: 'each', rate: 125, qtyLabel: 'doors' ,
+        desc: 'Doors beyond the ones counted in the rooms — garage entry, exterior door interiors, French door pairs.' },
+      { id: 'int_window_sash', name: 'Window sash painting (beyond casing)', priceType: 'each', rate: 55, qtyLabel: 'windows',
+        desc: 'Full window detail — sash, sill, and apron, not just the casing trim.' },
+      { id: 'int_furniture', name: 'Heavy furniture moving (2-man crew)', priceType: 'each', rate: 150, qtyLabel: 'hours',
+        desc: 'Billed per hour for a 2-man crew: beds, dressers, sofas moved, covered, and put back. Pieces under ~200 lb only — no pianos, safes, or appliance disconnects. Light furniture moving is always included free.' }
+    ],
+    exterior: [
+      { id: 'ext_rot_repair', name: 'Carpentry / wood-rot repair (2-man crew)', priceType: 'each', rate: 85, qtyLabel: 'hours',
+        desc: 'Billed per hour + materials: rotted trim boards, fascia sections, and siding patches replaced before paint. Anything structural gets referred out.' },
+      { id: 'ext_wash_extra', name: 'Bonus pressure washing (driveway / walkway / patio)', priceType: 'each', rate: 75, qtyLabel: 'areas',
+        desc: 'The house wash is included — this adds flatwork areas while the equipment is on site.' },
+      { id: 'ext_caulk_full', name: 'Full re-caulk package (windows, doors, joints)', priceType: 'each', rate: 8, qtyLabel: 'openings',
+        desc: 'Cut out failed caulk and re-seal every window and door perimeter — priced per opening.' },
+      { id: 'ext_fixture_hw', name: 'House numbers / light fixture reinstall & swap', priceType: 'each', rate: 15, qtyLabel: 'pieces',
+        desc: 'Remove, mask, and reinstall — or swap in customer-supplied new hardware.' }
+    ],
+    cabinet: [
+      { id: 'cab_hardware', name: 'New hardware install (knobs & pulls)', priceType: 'each', rate: 8, qtyLabel: 'pieces',
+        desc: 'Customer-supplied knobs/pulls installed on existing holes — priced per piece.' },
+      { id: 'cab_hole_drill', name: 'Drill / relocate hardware holes', priceType: 'each', rate: 8, qtyLabel: 'holes',
+        desc: 'New hole placement with a jig, old holes filled and finished — priced per hole.' },
+      { id: 'cab_soft_close', name: 'Soft-close hinge upgrade', priceType: 'each', rate: 12, qtyLabel: 'hinges',
+        desc: 'Swap in customer-supplied soft-close hinges while doors are off — priced per hinge.' }
     ]
   },
   bundleDiscount: 0.10,
   minimumJob: 500,
+  // Prep-service floors — small jobs still incur the fixed chemistry,
+  // setup, and truck costs that don't scale with footage. Charge =
+  // max(floor, footage × prep rate). `default` covers every stain
+  // project; a per-project entry overrides it (deck restoration
+  // floors at $300 per Adrian — the per-sq-ft scaling wins above it).
+  prepMinimums: {
+    default: { soft_wash: 250, strip_sand: 400 },
+    deck:    { strip_sand: 300 }
+  },
   // DIY comparison knobs — all the retail prices and rules-of-thumb
   // that feed the "How does DIY actually compare?" panel on Review.
   // Every value here is editable from Settings → DIY tab, so when
@@ -229,6 +393,42 @@ const PRICING = {
       water: { essential: 320, performance: 385, showcase: 407 },
       oil:   { essential: 264, performance: 264, showcase: 450 }
     },
+    // Interior paint — SW per-GALLON list prices (what a homeowner pays
+    // at the counter, no contractor discount): SuperPaint / Duration
+    // Home / Emerald Interior for walls, plus ceiling paint and trim
+    // enamel as their own products. Every distinct COLOR is a separate
+    // bucket purchase rounded up to whole gallons — that's what makes
+    // multi-color jobs eat paint. Coverage: SW TDS says 350–400 sq ft
+    // per gallon per coat; 325 effective accounts for cut-in, texture,
+    // and the can you don't quite finish. Full 2-coat job planned.
+    interiorPaint: {
+      // Verified SW.com homeowner list prices (1 gal), July 2026.
+      perGal: { essential: 83.49, performance: 95.99, showcase: 101.49 },
+      ceilingPerGal: 63.99,   // SW Premium Ceiling Paint (list)
+      // Trim uses the SAME tiered wall product as a comp (semi-gloss),
+      // so no separate trim price — see computeInteriorPaintPlan.
+      coverageSqFtPerGal: 325,
+      coats: 2
+    },
+    exteriorPaint: {
+      // Verified SW.com homeowner list prices (1 gal), July 2026:
+      // SuperPaint Exterior / Duration Exterior / Emerald Exterior.
+      perGal: { essential: 86.99, performance: 111.49, showcase: 117.99 },
+      // Exterior surfaces are rougher — TDS coverage 250–400; 300
+      // effective per coat covers texture + cut-in.
+      coverageSqFtPerGal: 300,
+      coats: 2
+    },
+    cabinetPaint: {
+      // Verified SW.com list, July 2026: ProClassic Waterborne $106.99,
+      // Emerald Urethane Trim Enamel $130.49 (Performance AND Showcase
+      // — Showcase is the same enamel with a full spray process).
+      perGal: { essential: 106.99, performance: 130.49, showcase: 130.49 },
+      primerPerGal: 69.99,     // bonding/adhesion primer (verify at counter)
+      coverageSqFtPerGal: 350,
+      coats: 2,
+      primerCoats: 1
+    },
     citronellaPerPail:        100,  // EXPERT Natural Defense additive
     sodiumMetasilicatePerPail: 90,  // 5gal cleaner powder
     oxalicAcidPerPail:         90,  // 5gal brightener powder
@@ -241,11 +441,26 @@ const PRICING = {
     // project with a couple decent brushes, 1-2 rollers + nap covers,
     // 2 drop cloths and masking for well under $100. These numbers now
     // match what you'd actually walk out of Home Depot with.
-    projectTools:        { fence: 40, deck: 110, pergola: 90, barn: 90, ceiling: 85 },
+    projectTools:        { fence: 40, deck: 110, pergola: 90, barn: 90, ceiling: 85, interior: 120, exterior: 220, cabinet: 160 },
+    // Interior DIY supplies — itemized and scaled PER ROOM (a 2-room
+    // touch-up and an 8-room repaint don't buy the same pile). These
+    // replace the flat projectTools.interior number in the comparison.
+    // Deliberately no sprayers or pro equipment — this is the honest
+    // brush-and-roller homeowner kit.
+    interiorSupplies: {
+      kitBase:     65,   // brushes, rollers, trays & applicator pads — starter kit
+      kitPerRoom:  10,   // extra roller covers + pads per room
+      tapePerRoom:  9,   // painter's tape + masking paper/film per room
+      dropsBase:   30,   // canvas drop cloths + plastic sheeting — base
+      dropsPerRoom: 6,   // added floor/furniture coverage per room
+      repairKit:   35    // repair compound, sanding sponges, caulk & putty knife
+    },
     // Square-feet-per-hour (or lnft-per-hour for fence) divisors for
     // estimating DIY labor time. Higher = faster work. Tuned to a
     // weekend-warrior pace, not a contractor pace.
-    projectTimeDivisor:  { fence: 16, deck: 24, pergola: 22, barn: 18, ceiling: 15 }
+    // interior divisor is sq ft of painted surface (walls+ceilings) per
+    // DIY hour — cut-in, rolling, and recoat wait folded in.
+    projectTimeDivisor:  { fence: 16, deck: 24, pergola: 22, barn: 18, ceiling: 15, interior: 28, exterior: 20, cabinet: 6 }
   }
 };
 
@@ -258,6 +473,13 @@ const PRICING = {
 const DISCOUNTS = [
   { id: 'bundle',         label: 'Bundle (2+ Projects)',          sub: 'Auto-applied when 2+ projects are in this quote. Stacks with everything else below.', rate: 0.10, autoCheck: () => state.bundledProjects.length >= 1 && !!state.activeProject.type, locked: true,
     img: 'https://images.unsplash.com/photo-1649270767492-9deecf622a06?w=400&q=80&auto=format&fit=crop' },
+  // Volume break for big interior repaints. Auto-applies when the
+  // active interior project has 4+ rooms (totalDiscountRate adds it
+  // without a selection); also selectable manually here for near-miss
+  // jobs. Counts INSIDE the 10% project-discount cap — it can never
+  // push the stack past 10% (bundle still stacks separately on top).
+  { id: 'whole_house',    label: '4+ Room Discount (Interior)', sub: 'Interior projects with 4 or more rooms. Auto-applied at 4+ rooms; can be added manually below that. Counts inside the 10% cap — it does not stack past it.', rate: 0.05,
+    img: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400&q=80&auto=format&fit=crop' },
   { id: 'vet_responder',  label: 'Veteran / First Responder',      sub: 'For active military, veterans, police, fire, and EMS. Mutually exclusive with Senior and Teacher — pick one.', rate: 0.05, group: 'service_appreciation',
     img: 'https://images.unsplash.com/photo-1562884328-39da45501a9c?w=400&q=80&auto=format&fit=crop' },
   { id: 'senior',         label: 'Senior (65+)',                   sub: 'For homeowners 65 and over. Mutually exclusive with Veteran/First Responder and Teacher — pick one.', rate: 0.05, group: 'service_appreciation',
@@ -757,16 +979,136 @@ const TIER_META = {
       cons: ['Highest up-front cost', 'Semi-transparent only — 8 colors'],
       bestFor: 'Customers who want the longest-lasting finish and the strongest warranty'
     }
+  },
+  // INTERIOR PAINTING — Sherwin-Williams interior lineup, cheapest → most.
+  // The tier ids stay essential/performance/showcase so every existing
+  // pricing / review / edit-panel code path works unchanged; only the
+  // customer-facing product names differ.
+  interior_paint: {
+    explain: "All three are premium Sherwin-Williams interior paints — the difference is coverage, washability, and how the finish holds up to scrubbing and traffic over the years.",
+    essential: {
+      product: 'SW SuperPaint Interior',
+      badge: 'Budget Friendly',
+      badgeClass: 'flag-green',
+      tagline: 'Paint + primer in one — dependable everyday finish',
+      life: 'Great for low-traffic rooms',
+      details: 'Sherwin-Williams SuperPaint Interior Acrylic — paint and primer in one with strong hide and smooth application. A dependable, budget-friendly professional finish for bedrooms, offices, and low-traffic spaces.',
+      pros: ['Best value in the SW pro lineup', 'Paint + primer in one', 'Strong one-product hide', 'Low VOC, quick recoat'],
+      cons: ['Less scrub-resistant than Duration or Emerald', 'Bold color changes may need an extra coat'],
+      bestFor: 'Bedrooms, offices, and low-traffic rooms on a budget'
+    },
+    performance: {
+      product: 'SW Duration Home',
+      badge: 'Most Popular',
+      badgeClass: 'flag-blue',
+      tagline: 'Scrubbable, stain-resistant — our go-to for most homes',
+      life: 'Stands up to busy households',
+      details: 'Sherwin-Williams Duration Home Interior — advanced stain-resistant technology in a thicker, more washable film. Marks, fingerprints, and everyday scuffs wipe clean without burnishing the finish. Our most-recommended interior paint for families.',
+      pros: ['Washable + scrubbable finish', 'Advanced stain-resistant technology', 'Excellent touch-up blending', 'Mildew-resistant coating', 'Smooth, uniform appearance'],
+      cons: ['Costs more than SuperPaint'],
+      bestFor: 'Hallways, kitchens, kids\' rooms — anywhere that gets touched daily'
+    },
+    showcase: {
+      product: 'SW Emerald Interior',
+      badge: 'Top of the Line',
+      badgeClass: 'flag-gold',
+      tagline: 'SW\'s best interior paint — richest finish, maximum durability',
+      life: 'SW\'s most durable interior finish',
+      details: 'Sherwin-Williams Emerald Interior Acrylic Latex — the top of the SW line. Best-in-class washability and burnish resistance, exceptional hide in fewer coats, anti-microbial mildew resistance, and a luxuriously smooth finish. Backed by a Sherwin-Williams lifetime limited warranty.',
+      pros: ['SW\'s most durable interior finish', 'Lifetime limited manufacturer warranty', 'Best-in-class washability + burnish resistance', 'Exceptional hide — richest color development', 'Anti-microbial mildew resistance'],
+      cons: ['Highest up-front cost'],
+      bestFor: 'Forever homes, deep colors, and high-traffic showpiece spaces'
+    }
+  },
+  // EXTERIOR PAINTING — the SW exterior lineup, cheapest → most.
+  exterior_paint: {
+    explain: "All three are premium Sherwin-Williams exterior paints — the difference is film build, flexibility in temperature swings, and how many years the color and gloss hold up to SC sun.",
+    essential: {
+      product: 'SW SuperPaint Exterior',
+      badge: 'Budget Friendly',
+      badgeClass: 'flag-green',
+      tagline: 'Dependable exterior acrylic — paint + primer in one',
+      life: '7–10 year repaint cycle',
+      details: 'Sherwin-Williams SuperPaint Exterior Acrylic Latex — dependable all-acrylic protection with built-in primer, strong hide, and VinylSafe color options. A proven, budget-friendly exterior finish.',
+      pros: ['Best value in the SW exterior lineup', 'Paint + primer in one', 'VinylSafe colors for vinyl siding', 'Strong one-product hide'],
+      cons: ['Shorter repaint cycle than Duration or Emerald', 'Less flexible film in temperature swings'],
+      bestFor: 'Budget-focused repaints and rentals that still deserve real SW quality'
+    },
+    performance: {
+      product: 'SW Duration Exterior',
+      badge: 'Most Popular',
+      badgeClass: 'flag-blue',
+      tagline: 'Thick, flexible coat — SW\'s go-to exterior for the Southeast',
+      life: '10+ year repaint cycle',
+      details: 'Sherwin-Williams Duration Exterior Acrylic Coating — PermaLast technology lays down a thicker, more flexible coat that resists peeling and blistering through humid summers and freeze snaps. One-coat self-priming on repaints in most colors.',
+      pros: ['PermaLast thick-build technology', 'Outstanding peel + blister resistance', 'Self-priming on sound repaints', 'Lifetime limited warranty while you own the home'],
+      cons: ['Costs more than SuperPaint'],
+      bestFor: 'Most homes — the durability sweet spot for SC humidity and sun'
+    },
+    showcase: {
+      product: 'SW Emerald Exterior',
+      badge: 'Top of the Line',
+      badgeClass: 'flag-gold',
+      tagline: 'SW\'s best exterior — richest color, longest hold',
+      life: 'SW\'s most durable exterior finish',
+      details: 'Sherwin-Williams Emerald Exterior Acrylic Latex — the flagship. Exceptional hide and color retention, strongest resistance to blistering, peeling, chalking, and fading, and application down to 35°F extends the season. Backed by SW\'s best exterior warranty.',
+      pros: ['SW\'s most durable exterior paint', 'Best-in-class fade + chalk resistance', 'Exceptional hide — deepest color development', 'Applies in temps down to 35°F'],
+      cons: ['Highest up-front cost'],
+      bestFor: 'Forever homes, deep/bold colors, and full-sun exposures'
+    }
+  },
+  // CABINET PAINTING — product + process tiers.
+  cabinet_paint: {
+    explain: "Cabinet finishes are product AND process. Every tier includes degrease, scuff-sand, adhesion primer, and two enamel coats — the difference is the enamel itself and how much of the job is sprayed to a factory-smooth finish.",
+    essential: {
+      product: 'SW ProClassic Enamel — brushed & rolled',
+      badge: 'Budget Friendly',
+      badgeClass: 'flag-green',
+      tagline: 'Classic trim enamel, hand-applied',
+      life: 'Durable satin enamel finish',
+      details: 'Sherwin-Williams ProClassic Waterborne Acrylic Enamel applied by brush and fine-nap roller. Self-leveling formula minimizes brush marks. A proven, budget-friendly cabinet refresh.',
+      pros: ['Most affordable full-prep option', 'Self-leveling — minimal brush marks', 'Durable, washable enamel', 'Full degrease + prime prep included'],
+      cons: ['Light hand-applied texture vs. spraying', 'Softer film than Emerald Urethane'],
+      bestFor: 'Budget refreshes, laundry rooms, and painted-before cabinets'
+    },
+    performance: {
+      product: 'SW Emerald Urethane — doors sprayed',
+      badge: 'Most Popular',
+      badgeClass: 'flag-blue',
+      tagline: 'Urethane-modified enamel, doors sprayed flat',
+      life: 'Kitchen-proof urethane finish',
+      details: 'Sherwin-Williams Emerald Urethane Trim Enamel — a urethane-modified enamel that cures into a harder, kitchen-proof film. Doors and drawer fronts come off, get labeled, and are SPRAYED flat for a smooth factory feel; frames are brushed tight.',
+      pros: ['Urethane-hard, chip-resistant film', 'Doors + drawers sprayed — smooth faces', 'Excellent blocking (doors don\'t stick)', 'The go-to for busy kitchens'],
+      cons: ['Costs more than ProClassic', 'Frames show minor hand texture up close'],
+      bestFor: 'Most kitchens — the durability + finish sweet spot'
+    },
+    showcase: {
+      product: 'SW Emerald Urethane — full spray finish',
+      badge: 'Factory Finish',
+      badgeClass: 'flag-gold',
+      tagline: 'Everything sprayed — the closest thing to new cabinets',
+      life: 'Showroom-grade finish',
+      details: 'The same Emerald Urethane Trim Enamel with the full spray treatment: doors and drawers sprayed flat off-site, frames and boxes masked and sprayed in place with dust containment. Glass-smooth on every surface — the closest result to factory-new cabinetry without replacing them.',
+      pros: ['Sprayed EVERYTHING — no brush texture anywhere', 'Showroom-grade, light-catching finish', 'Full dust containment + masking', 'Urethane-hard film throughout'],
+      cons: ['Highest cost — most masking + spray labor'],
+      bestFor: 'Showpiece kitchens, islands, and dark colors that show every ripple'
+    }
   }
 };
 
 /* ============================================================
    PROJECT META — with image URLs
    ============================================================ */
+// Card order = display order on Step 2 (3-column grid): stains up
+// top, the three PAINTING types together on row 2, barn + wooden
+// ceiling (the rarer stain jobs) bring up the rear — per Adrian.
 const PROJECT_META = {
   fence:   { name: 'Fence',          icon: '🪵', unit: 'ln ft', img: 'https://static.wixstatic.com/media/6616da_70b75370c79a48b39d20cdb5c99c5323~mv2.jpg', desc: 'Linear feet × height. Both sides standard. Privacy, shadowbox, board-on-board, farm fence.', badge: 'Most common' },
   deck:    { name: 'Deck',           icon: '🌳', unit: 'sq ft', img: 'https://static.wixstatic.com/media/6616da_3dac2dabdd894c3abcf3491e2b954996~mv2.jpg', desc: 'Flat surface sq ft + railings + stairs. Optional underneath staining and lattice walls.', badge: 'Most common' },
   pergola: { name: 'Pergola',        icon: '⛱️', unit: 'sq ft', img: 'https://static.wixstatic.com/media/6616da_ab2a8aeff2ec435b8f8385c1c0454c91~mv2.jpg', desc: 'Total surface sq ft — top + bottom of beams + posts. Plant tarping included.' },
+  interior: { name: 'Interior Painting', icon: '🎨', unit: 'room', img: 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=600&q=80&auto=format&fit=crop', desc: 'Walk the house room by room — walls, ceilings, trim, crown, and repairs quoted per room. Sherwin-Williams paints.', badge: 'New' },
+  exterior: { name: 'Exterior Painting', icon: '🏡', unit: 'sq ft', img: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&q=80&auto=format&fit=crop', desc: 'Side-by-side siding measurements plus trim, windows, doors, shutters, and gutters. Pressure wash included. SW exterior paints.', badge: 'New' },
+  cabinet: { name: 'Cabinet Painting', icon: '🚪', unit: 'piece', img: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=600&q=80&auto=format&fit=crop', desc: 'Count doors, drawers, and panels area by area. Degrease, prime, and spray-grade enamel finishes. ProClassic & Emerald Urethane.', badge: 'New' },
   barn:    { name: 'Barn',           icon: '🏚️', unit: 'sq ft', img: 'https://images.unsplash.com/photo-1625512078789-f89843023df6?w=600&q=80&auto=format&fit=crop', desc: 'Siding sq ft. Height premium above 12 ft. Optional lift rental for tall walls.' },
   ceiling: { name: 'Wooden Ceiling', icon: '🏠', unit: 'sq ft', img: 'https://static.wixstatic.com/media/6616da_36be1e29989c4a349547c1bf70ed16ec~mv2.jpg', desc: 'Porch ceilings, exposed beams, T&G. Easier than exterior — protected from weather.' }
 };
@@ -796,6 +1138,3055 @@ const CONDITION_META = {
     img: 'https://images.unsplash.com/photo-1776346515127-0a6eec4395c2?w=600&q=80&auto=format&fit=crop'
   }
 };
+
+/* ============================================================
+   INTERIOR PAINTING MODULE
+   ============================================================
+   Everything interior-specific lives here: the room-type catalog,
+   the room-by-room measurements builder (Step 3), SW paint tier
+   cards (Step 6), the whole-house color planner (Step 7), pricing,
+   and the review / Jobber description builders. The stain project
+   types never touch this code — each shared function branches to
+   the interior implementation via isInterior() and falls through
+   to the original logic otherwise.
+
+   All interior data rides INSIDE project.measurements (rooms[] and
+   colorPlan) so cloud saves, resume, bundling, duplication, and the
+   Jobber payload all work with zero schema changes.
+   ============================================================ */
+
+function isInterior(p) { return ((p || state.activeProject) || {}).type === 'interior'; }
+
+// Room-type catalog. `sizes` are the quick-select dimension buttons
+// (typical US room sizes, cross-checked against the framework spec);
+// `h` is the default ceiling height. Nothing is pre-selected on a new
+// room — the rep walks the room with the homeowner and taps exactly
+// what's being painted. `wallFactor` discounts wall area for rooms
+// where cabinetry/tile permanently covers a chunk of the walls.
+const INTERIOR_ROOM_TYPES = {
+  bedroom:         { label: 'Bedroom',          icon: '🛏️', sizes: ['10x10','11x12','12x12'], h: 8 },
+  master_bedroom:  { label: 'Master Bedroom',   icon: '🛌', sizes: ['12x14','14x16','16x18'], h: 9 },
+  bathroom:        { label: 'Bathroom',         icon: '🛁', sizes: ['5x8','8x8'],             h: 8, wallFactor: 0.75 },
+  master_bathroom: { label: 'Master Bathroom',  icon: '🚿', sizes: ['8x10','10x12'],          h: 9, wallFactor: 0.75 },
+  walkin:          { label: 'Walk-in Closet',   icon: '👗', sizes: ['5x6','6x8','8x10'],      h: 8 },
+  kitchen:         { label: 'Kitchen',          icon: '🍳', sizes: ['10x12','12x14','14x16'], h: 8, wallFactor: 0.65 },
+  living:          { label: 'Living Room',      icon: '🛋️', sizes: ['14x16','16x18','18x20'], h: 9 },
+  dining:          { label: 'Dining Room',      icon: '🍽️', sizes: ['11x12','12x14','14x16'], h: 8 },
+  office:          { label: 'Office / Study',   icon: '💼', sizes: ['10x10','10x12','12x12'], h: 8 },
+  laundry:         { label: 'Laundry Room',     icon: '🧺', sizes: ['6x8','8x10'],            h: 8 },
+  foyer:           { label: 'Foyer / Entry',    icon: '🚪', sizes: ['6x8','8x10','10x12'],    h: 9 },
+  hallway:         { label: 'Hallway',          icon: '🚶', sizes: ['4x10','4x14','4x18'],    h: 8 },
+  stairwell:       { label: 'Stairwell',        icon: '🪜', sizes: ['4x12','8x12'],           h: 12 },
+  other:           { label: 'Other / Custom',   icon: '📐', sizes: [],                        h: 8 }
+};
+
+// Openings deducted from wall sq ft when walls are painted (standard
+// estimating practice: a door eats ~20 sq ft, a single window ~14, a
+// double/mulled window ~24).
+const INTERIOR_DOOR_SQFT = 20;
+const INTERIOR_WINDOW_SQFT = 14;
+const INTERIOR_WINDOW_DOUBLE_SQFT = 24;
+
+const INTERIOR_DRYWALL_META = {
+  none:     { label: 'None',     hint: 'Walls are sound — nothing to patch before paint.' },
+  minor:    { label: 'Minor',    hint: 'Nail holes, dings, hairline cracks — repair, sand, spot-prime.' },
+  moderate: { label: 'Moderate', hint: 'A few real patches (up to ~6"), popped screws, seam cracks — mesh + mud, sanded flush.' },
+  major:    { label: 'Major',    hint: 'Large holes, water-stained sections, corner-bead damage — cut-out repairs, stain-block primer.' }
+};
+
+// Popular SW interior colors for the quick-pick swatches, organized by
+// family. Rendered as a compact accordion: each family shows a strip of
+// tiny preview squares; tapping the family expands it to full swatches.
+// Hex values are close approximations for on-screen preview only —
+// final color approval always happens against a physical SW chip.
+const INTERIOR_PAINT_COLORS = [
+  { label: 'Whites & Off-Whites', colors: [
+    { name: 'High Reflective White', code: 'SW 7757', hex: '#F7F7F1' },
+    { name: 'Extra White',      code: 'SW 7006', hex: '#EEEFEA' },
+    { name: 'Pure White',       code: 'SW 7005', hex: '#EDECE6' },
+    { name: 'Snowbound',        code: 'SW 7004', hex: '#EDEAE4' },
+    { name: 'Alabaster',        code: 'SW 7008', hex: '#EDEAE0' },
+    { name: 'Greek Villa',      code: 'SW 7551', hex: '#F0EBDD' },
+    { name: 'Westhighland White', code: 'SW 7566', hex: '#F1EEE3' },
+    { name: 'Shoji White',      code: 'SW 7042', hex: '#E6E0D2' },
+    { name: 'White Duck',       code: 'SW 7010', hex: '#E4DDCC' },
+    { name: 'Eider White',      code: 'SW 7014', hex: '#E2DED5' },
+    { name: 'Aesthetic White',  code: 'SW 7035', hex: '#E4DFD3' },
+    { name: 'Origami White',    code: 'SW 7636', hex: '#E7E3D7' },
+    { name: 'Creamy',           code: 'SW 7012', hex: '#F1EAD8' },
+    { name: 'Ivory Lace',       code: 'SW 7013', hex: '#F0EADB' }
+  ]},
+  { label: 'Grays', colors: [
+    { name: 'Agreeable Gray',   code: 'SW 7029', hex: '#D1CBC1' },
+    { name: 'Repose Gray',      code: 'SW 7015', hex: '#CCC9C0' },
+    { name: 'Light French Gray',code: 'SW 0055', hex: '#C4C4C0' },
+    { name: 'Passive',          code: 'SW 7064', hex: '#CBCCC9' },
+    { name: 'Crushed Ice',      code: 'SW 7647', hex: '#D8D7D2' },
+    { name: 'On the Rocks',     code: 'SW 7671', hex: '#D2D3CD' },
+    { name: 'Big Chill',        code: 'SW 7648', hex: '#C5C7C4' },
+    { name: 'Silver Strand',    code: 'SW 7057', hex: '#C8CCC6' },
+    { name: 'Gray Screen',      code: 'SW 7071', hex: '#BEC2C1' },
+    { name: 'Mindful Gray',     code: 'SW 7016', hex: '#BCB7AC' },
+    { name: 'Online',           code: 'SW 7072', hex: '#B2B4B0' },
+    { name: 'Dorian Gray',      code: 'SW 7017', hex: '#ACA79B' },
+    { name: 'Gauntlet Gray',    code: 'SW 7019', hex: '#7E7A72' },
+    { name: 'Grizzle Gray',     code: 'SW 7068', hex: '#66686B' }
+  ]},
+  { label: 'Greiges & Beiges', colors: [
+    { name: 'Accessible Beige', code: 'SW 7036', hex: '#D1C7B8' },
+    { name: 'Anew Gray',        code: 'SW 7030', hex: '#C2BAAB' },
+    { name: 'Worldly Gray',     code: 'SW 7043', hex: '#CEC6B8' },
+    { name: 'Drift of Mist',    code: 'SW 9166', hex: '#DDD9CE' },
+    { name: 'Modern Gray',      code: 'SW 7632', hex: '#D6CFC4' },
+    { name: 'Natural Linen',    code: 'SW 9109', hex: '#DED5C2' },
+    { name: 'Shiitake',         code: 'SW 9173', hex: '#CBBFAD' },
+    { name: 'Balanced Beige',   code: 'SW 7037', hex: '#C0B3A2' },
+    { name: 'Perfect Greige',   code: 'SW 6073', hex: '#B7A99A' },
+    { name: 'Loggia',           code: 'SW 7506', hex: '#C0B3A0' },
+    { name: 'Kilim Beige',      code: 'SW 6106', hex: '#D7C5AC' },
+    { name: 'Mega Greige',      code: 'SW 7031', hex: '#ABA091' },
+    { name: 'Barcelona Beige',  code: 'SW 7530', hex: '#C5B49A' },
+    { name: 'Nomadic Desert',   code: 'SW 6107', hex: '#C6B296' }
+  ]},
+  { label: 'Creams & Soft Yellows', colors: [
+    { name: 'Dover White',      code: 'SW 6385', hex: '#F0E9D5' },
+    { name: 'Navajo White',     code: 'SW 6126', hex: '#EAE0CB' },
+    { name: 'Napery',           code: 'SW 6386', hex: '#EFE2C4' },
+    { name: 'Ivoire',           code: 'SW 6127', hex: '#E3D5B8' },
+    { name: 'Jersey Cream',     code: 'SW 6379', hex: '#F1E0B6' },
+    { name: 'Friendly Yellow',  code: 'SW 6680', hex: '#F2E3AE' },
+    { name: 'Glad Yellow',      code: 'SW 6694', hex: '#F5DFA1' }
+  ]},
+  { label: 'Blues & Navys', colors: [
+    { name: 'Misty',            code: 'SW 6232', hex: '#C5CDCC' },
+    { name: 'Upward',           code: 'SW 6239', hex: '#A9B7C0' },
+    { name: 'Sleepy Blue',      code: 'SW 6225', hex: '#BCC8C8' },
+    { name: 'Krypton',          code: 'SW 6247', hex: '#B6C0C2' },
+    { name: 'Stardew',          code: 'SW 9138', hex: '#AEBBBF' },
+    { name: 'Aleutian',         code: 'SW 6241', hex: '#9FB0BE' },
+    { name: 'Distance',         code: 'SW 6243', hex: '#6E7B87' },
+    { name: 'Smoky Blue',       code: 'SW 7604', hex: '#5D7283' },
+    { name: 'Endless Sea',      code: 'SW 9150', hex: '#49657A' },
+    { name: 'Charcoal Blue',    code: 'SW 2739', hex: '#3C4653' },
+    { name: 'Naval',            code: 'SW 6244', hex: '#2F3A4A' },
+    { name: 'Salty Dog',        code: 'SW 9177', hex: '#263B4F' }
+  ]},
+  { label: 'Aquas & Coastal', colors: [
+    { name: 'Sea Salt',         code: 'SW 6204', hex: '#CDD6CC' },
+    { name: 'Waterscape',       code: 'SW 6470', hex: '#C6D9D4' },
+    { name: 'Tidewater',        code: 'SW 6477', hex: '#C0D2CC' },
+    { name: 'Watery',           code: 'SW 6478', hex: '#B4CCC9' },
+    { name: 'Raindrop',         code: 'SW 6485', hex: '#B0C9CE' },
+    { name: 'Rain',             code: 'SW 6219', hex: '#C0CDC9' },
+    { name: 'Drizzle',          code: 'SW 6479', hex: '#8FAFB0' },
+    { name: 'Grand Canal',      code: 'SW 6488', hex: '#3A656E' },
+    { name: 'Really Teal',      code: 'SW 6489', hex: '#1F6E79' }
+  ]},
+  { label: 'Greens & Sages', colors: [
+    { name: 'Rainwashed',       code: 'SW 6211', hex: '#C3D2CB' },
+    { name: 'Comfort Gray',     code: 'SW 6205', hex: '#BEC5BC' },
+    { name: 'Softened Green',   code: 'SW 6177', hex: '#C3C3AC' },
+    { name: 'Oyster Bay',       code: 'SW 6206', hex: '#AFB9AD' },
+    { name: 'Clary Sage',       code: 'SW 6178', hex: '#B2B49C' },
+    { name: 'Acacia Haze',      code: 'SW 9132', hex: '#A6A891' },
+    { name: 'Evergreen Fog',    code: 'SW 9130', hex: '#95978A' },
+    { name: 'Retreat',          code: 'SW 6207', hex: '#7C8A7E' },
+    { name: 'Dried Thyme',      code: 'SW 6186', hex: '#757B67' },
+    { name: 'Rosemary',         code: 'SW 6187', hex: '#64705F' },
+    { name: 'Pewter Green',     code: 'SW 6208', hex: '#5F6B5D' },
+    { name: 'Ripe Olive',       code: 'SW 6209', hex: '#45483A' }
+  ]},
+  { label: 'Blush, Clay & Terracotta', colors: [
+    { name: 'Intimate White',   code: 'SW 6322', hex: '#ECDDD3' },
+    { name: 'Malted Milk',      code: 'SW 6057', hex: '#DEC9BA' },
+    { name: 'Rosy Outlook',     code: 'SW 6316', hex: '#E9CFC5' },
+    { name: 'Redend Point',     code: 'SW 9081', hex: '#B5988C' },
+    { name: 'Persimmon',        code: 'SW 6339', hex: '#D68A6A' },
+    { name: 'Cavern Clay',      code: 'SW 7701', hex: '#AC6B53' },
+    { name: 'Baked Clay',       code: 'SW 6340', hex: '#C67F5F' },
+    { name: 'Roycroft Adobe',   code: 'SW 0040', hex: '#9A6851' }
+  ]},
+  { label: 'Reds & Burgundies', colors: [
+    { name: 'Heartthrob',       code: 'SW 6866', hex: '#A93A3E' },
+    { name: 'Red Bay',          code: 'SW 6321', hex: '#8C4741' },
+    { name: 'Fireweed',         code: 'SW 6328', hex: '#7F3B37' },
+    { name: 'Wild Currant',     code: 'SW 7583', hex: '#74383E' },
+    { name: 'Carriage Door',    code: 'SW 7594', hex: '#6E3C38' },
+    { name: 'Borscht',          code: 'SW 7578', hex: '#6E3A44' }
+  ]},
+  { label: 'Purples & Plums', colors: [
+    { name: 'Veiled Violet',    code: 'SW 6268', hex: '#C7C0CB' },
+    { name: 'Beguiling Mauve',  code: 'SW 6269', hex: '#B9ADBA' },
+    { name: 'Ash Violet',       code: 'SW 6549', hex: '#B5AAB5' },
+    { name: 'Expressive Plum',  code: 'SW 6271', hex: '#8F7A8B' },
+    { name: 'Plum Brown',       code: 'SW 6272', hex: '#6A5260' },
+    { name: 'Blackberry',       code: 'SW 7577', hex: '#55394B' }
+  ]},
+  { label: 'Bold & Accent', colors: [
+    { name: 'Urbane Bronze',    code: 'SW 7048', hex: '#54504A' },
+    { name: 'Iron Ore',         code: 'SW 7069', hex: '#434341' },
+    { name: 'Tricorn Black',    code: 'SW 6258', hex: '#2F2F30' },
+    { name: 'Peppercorn',       code: 'SW 7674', hex: '#575452' },
+    { name: 'Cyberspace',       code: 'SW 7076', hex: '#44484D' },
+    { name: 'Caviar',           code: 'SW 6990', hex: '#303339' },
+    { name: 'Rock Bottom',      code: 'SW 7062', hex: '#46494B' },
+    { name: 'Cascades',         code: 'SW 7623', hex: '#2E3C39' },
+    { name: 'Sealskin',         code: 'SW 7675', hex: '#4A423C' }
+  ]}
+];
+// Ceiling whites — shown as the first family on the CEILING picker
+// only. "Untinted" = straight ceiling-white base with no tint added —
+// the most popular ceiling spec (SW 7005/7007 carry a touch of tint).
+const INTERIOR_CEILING_WHITES = { label: 'Ceiling Whites', colors: [
+  { name: 'Untinted Ceiling White', code: 'no tint', hex: '#F5F4EE' },
+  { name: 'Ceiling Bright White',   code: 'SW 7007', hex: '#F2F1EA' },
+  { name: 'High Reflective White',  code: 'SW 7757', hex: '#F7F7F1' },
+  { name: 'Extra White',            code: 'SW 7006', hex: '#EEEFEA' },
+  { name: 'Pure White',             code: 'SW 7005', hex: '#EDECE6' }
+]};
+const INTERIOR_DEFAULT_CEILING = { name: 'Untinted Ceiling White', code: 'no tint', hex: '#F5F4EE' };
+const INTERIOR_DEFAULT_TRIM    = { name: 'Extra White', code: 'SW 7006', hex: '#EEEFEA' };
+
+// Sheen options per surface, with the SC-standard default first.
+// Sheen is a spec captured for the paint order + Jobber quote — it
+// doesn't change the price. Walls default eggshell, ceilings flat,
+// trim semi-gloss (what most interior jobs spec).
+const INTERIOR_SHEENS = {
+  wall:    ['Flat', 'Matte', 'Eggshell', 'Satin', 'Semi-Gloss'],
+  ceiling: ['Flat', 'Matte'],
+  trim:    ['Satin', 'Semi-Gloss', 'Gloss']
+};
+const INTERIOR_DEFAULT_SHEEN = { wall: 'Eggshell', ceiling: 'Flat', trim: 'Semi-Gloss' };
+
+// --- Room state helpers ----------------------------------------
+
+let __intRoomSeq = 1;
+function makeInteriorRoom(typeId) {
+  const T = INTERIOR_ROOM_TYPES[typeId] || INTERIOR_ROOM_TYPES.other;
+  const rooms = interiorRooms();
+  const sameType = rooms.filter(r => r.type === typeId).length;
+  const label = sameType > 0 ? `${T.label} ${sameType + 1}` : T.label;
+  const firstSize = T.sizes[0] || '';
+  const [L, W] = firstSize ? firstSize.split('x').map(Number) : [0, 0];
+  // Everything starts blank — the rep selects surfaces, counts, and
+  // repairs while physically walking the room with the homeowner.
+  return {
+    id: 'room-' + (Date.now()) + '-' + (__intRoomSeq++),
+    type: typeId,
+    label,
+    len: L || 0, wid: W || 0, height: T.h || 8,
+    sizePreset: firstSize || 'custom',
+    surfaces: {
+      walls:   false,
+      ceiling: false,
+      trim:    false,
+      crown:   false,
+      accent:  false,
+      closet:  false,
+      doors:   0,
+      windows: 0,        // single windows
+      windowsDouble: 0   // double / mulled windows — wider casing, two sashes
+    },
+    drywall: 'none',
+    extras: { popcorn: false, wallpaper: false, boldColor: false, builtins: false, shelving: false, vaulted: false },
+    accentColor: null,   // { name, code } — captured when the accent chip is on
+    accentWidthFt: 0,    // accent wall width; 0 falls back to the room's width
+    builtinLnFt: 0,      // built-in unit face; 0 falls back to a typical 4 ln ft
+    shelfLnFt: 0,        // shelving & rod runs; 0 falls back to a typical 8 ln ft
+    notes: '',
+    _open: true
+  };
+}
+
+function interiorRooms() {
+  const m = state.activeProject.measurements;
+  if (!Array.isArray(m.rooms)) m.rooms = [];
+  return m.rooms;
+}
+
+// Keep derived fields on measurements in sync so generic code paths
+// (per-unit addons, dashboards, DIY compare) that read m.sqft keep
+// working: m.sqft = total painted WALL sq ft across all rooms.
+function syncInteriorDerived() {
+  const m = state.activeProject.measurements;
+  const rooms = interiorRooms();
+  m.roomCount = rooms.length;
+  m.sqft = rooms.reduce((s, r) => s + (interiorRoomAreas(r).paintedWall || 0), 0);
+}
+
+// --- Geometry + pricing ----------------------------------------
+
+function interiorRoomAreas(room) {
+  const T = INTERIOR_ROOM_TYPES[room.type] || INTERIOR_ROOM_TYPES.other;
+  const L = +room.len || 0, W = +room.wid || 0, H = +room.height || 8;
+  const perim = 2 * (L + W);
+  const wallFactor = T.wallFactor || 1;
+  const grossWall = Math.round(perim * H * wallFactor);
+  const openings = (room.surfaces.doors || 0) * INTERIOR_DOOR_SQFT
+                 + (room.surfaces.windows || 0) * INTERIOR_WINDOW_SQFT
+                 + (room.surfaces.windowsDouble || 0) * INTERIOR_WINDOW_DOUBLE_SQFT;
+  const wallArea = Math.max(grossWall - openings, 0);
+  const ceilArea = Math.round(L * W);
+  return { perim, grossWall, wallArea, ceilArea, paintedWall: room.surfaces.walls ? wallArea : 0 };
+}
+
+// Full per-room price at a given tier. Returns { total, lines[] } —
+// lines are { label, amount } pairs reused by the room card tooltip,
+// the review breakdown, and the Jobber description.
+function computeInteriorRoomCost(room, tierId) {
+  const P = PRICING.interior;
+  const t = tierId || state.activeProject.tier || 'performance';
+  const a = interiorRoomAreas(room);
+  if (!a.perim) return { total: 0, lines: [] };
+  const wallRate = P.tiers[t] || P.tiers.performance;
+  const mult = wallRate / P.tiers.performance;   // component rates scale with tier
+  const s = room.surfaces;
+  const lines = [];
+  let scaled = 0;   // portion subject to the vaulted-ceiling labor multiplier
+  let flat = 0;
+  let remediation = 0;  // repairs/removals — excluded from the multi-area discount base
+
+  // Painted AREAS for the per-room multi-area discount. Doors and
+  // windows deliberately don't count (per Adrian) — the discount
+  // rewards adding surfaces, not openings.
+  const areaCount = ['walls', 'ceiling', 'trim', 'crown', 'accent', 'closet'].filter(k => s[k]).length
+                  + (room.extras.shelving ? 1 : 0);
+
+  // Bathrooms carry a wall premium — mirrors, vanities, toilets, and
+  // towel bars mean far more cut-in per sq ft than an open bedroom.
+  const isBath = room.type === 'bathroom' || room.type === 'master_bathroom';
+  const bathMult = isBath ? ((P.bathroomWallMult > 0) ? P.bathroomWallMult : 1.20) : 1;
+
+  if (s.walls)   { const v = a.wallArea * wallRate * bathMult;   scaled += v; lines.push({ label: `Walls — ${a.wallArea} sq ft${isBath && bathMult !== 1 ? ` (bathroom +${Math.round((bathMult - 1) * 100)}%)` : ''}`, amount: v }); }
+  if (s.ceiling) { const v = a.ceilArea * P.rates.ceiling * mult; scaled += v; lines.push({ label: `Ceiling — ${a.ceilArea} sq ft`, amount: v }); }
+  if (s.trim)    { const v = a.perim * P.rates.trim * mult;       scaled += v; lines.push({ label: `Trim & baseboards — ${a.perim} ln ft`, amount: v }); }
+  if (s.crown)   { const v = a.perim * P.rates.crown * mult;      scaled += v; lines.push({ label: `Crown molding — ${a.perim} ln ft`, amount: v }); }
+  if (room.extras.vaulted && scaled > 0) {
+    const bump = scaled * (P.extras.vaultedMult - 1);
+    scaled += bump;
+    lines.push({ label: 'Vaulted / 2-story height', amount: bump });
+  }
+  if (s.doors)   { const v = s.doors * P.rates.door * mult;       flat += v; lines.push({ label: `Doors — ${s.doors}`, amount: v }); }
+  if (s.windows) { const v = s.windows * P.rates.window * mult;   flat += v; lines.push({ label: `Single windows — ${s.windows}`, amount: v }); }
+  if (s.windowsDouble) { const v = s.windowsDouble * (P.rates.windowDouble || P.rates.window * 1.5) * mult; flat += v; lines.push({ label: `Double windows — ${s.windowsDouble}`, amount: v }); }
+  if (s.closet)  { const v = P.rates.closet * mult;               flat += v; lines.push({ label: 'Closet interior', amount: v }); }
+  if (s.accent)  {
+    // Measurement-based: accent width (captured on the card, defaults
+    // to the room's width) × ceiling height, floored at the minimum.
+    const aw = +room.accentWidthFt || +room.wid || 0;
+    const accentArea = Math.round(aw * (+room.height || 8));
+    const rate = (P.rates.accentWallPerSqFt != null) ? P.rates.accentWallPerSqFt : 4.00;
+    const minA = (P.rates.accentWallMin != null) ? P.rates.accentWallMin : 175;
+    const v = Math.max(accentArea * rate * mult, minA);
+    flat += v;
+    const colorNote = room.accentColor && room.accentColor.name ? ` in ${room.accentColor.name}${room.accentColor.code ? ` (${room.accentColor.code})` : ''}` : '';
+    lines.push({ label: `Accent wall — ${aw} ft wide (${accentArea} sq ft)${colorNote}`, amount: v });
+  }
+  if (room.drywall && room.drywall !== 'none') {
+    // Sized to the room: the severity rate covers a STANDARD room
+    // (drywallRefWallSqFt of gross wall — 12×12×8 default). Bigger
+    // rooms scale up, smaller rooms scale down, clamped ×0.7–×1.6 so
+    // a powder bath still covers mud/sand/prime setup and a great
+    // room doesn't run away.
+    const ref = (P.drywallRefWallSqFt > 0) ? P.drywallRefWallSqFt : 384;
+    const sizeMult = Math.min(1.6, Math.max(0.7, a.grossWall / ref));
+    const v = Math.round((P.drywall[room.drywall] || 0) * sizeMult);
+    flat += v;
+    remediation += v;
+    lines.push({ label: `Drywall repairs — ${(INTERIOR_DRYWALL_META[room.drywall] || {}).label || room.drywall} (×${sizeMult.toFixed(2)} room size)`, amount: v });
+  }
+  if (room.extras.popcorn)   { const v = a.ceilArea * P.extras.popcorn;  flat += v; remediation += v; lines.push({ label: `Popcorn ceiling removal — ${a.ceilArea} sq ft`, amount: v }); }
+  if (room.extras.wallpaper) { const v = a.wallArea * P.extras.wallpaper; flat += v; remediation += v; lines.push({ label: `Wallpaper removal — ${a.wallArea} sq ft`, amount: v }); }
+  if (room.extras.boldColor) { const v = a.wallArea * P.extras.boldColor; flat += v; lines.push({ label: 'Bold color change (extra coat)', amount: v }); }
+  if (room.extras.builtins)  {
+    // Measurement-based: linear feet of unit face, floored at the
+    // minimum — a typical single bookcase lands right at the floor.
+    const bl = +room.builtinLnFt || 4;
+    const rate = (P.extras.builtinsPerLnFt != null) ? P.extras.builtinsPerLnFt : 45;
+    const minB = (P.extras.builtinsMin != null) ? P.extras.builtinsMin : 175;
+    const v = Math.max(bl * rate * mult, minB);
+    flat += v;
+    lines.push({ label: `Built-ins / bookcases — ${bl} ln ft`, amount: v });
+  }
+  if (room.extras.shelving) {
+    // Shelving & rod runs — walk-in closets, pantries, laundry.
+    // Measured in ln ft of shelf run; defaults to a typical 8 ln ft.
+    const sl = +room.shelfLnFt || 8;
+    const rate = (P.extras.shelvingPerLnFt != null) ? P.extras.shelvingPerLnFt : 12;
+    const v = sl * rate * mult;
+    flat += v;
+    lines.push({ label: `Shelving & rod runs — ${sl} ln ft`, amount: v });
+  }
+
+  // Per-room multi-area discount — 3+ painted areas in this room take
+  // 10% off the room's PAINTING (repairs/removals stay full price).
+  // Shown as its own negative line so the customer sees the reward.
+  const RB = P.roomBundle || { minAreas: 3, rate: 0.10 };
+  let bundleApplied = false;
+  if (areaCount >= (RB.minAreas || 3) && (RB.rate || 0) > 0) {
+    const base = scaled + flat - remediation;
+    if (base > 0) {
+      const disc = base * RB.rate;
+      flat -= disc;
+      bundleApplied = true;
+      lines.push({ label: `Multi-area discount — ${areaCount} areas painted (${Math.round(RB.rate * 100)}% off)`, amount: -disc });
+    }
+  }
+
+  return { total: Math.round(scaled + flat), lines, areaCount, bundleApplied };
+}
+
+function computeInteriorBase(tierId) {
+  return interiorRooms().reduce((sum, r) => sum + computeInteriorRoomCost(r, tierId).total, 0);
+}
+
+// --- STEP 3: room-by-room measurements builder -------------------
+
+function renderInteriorMeasurements() {
+  const container = __doc.getElementById('measureContainer');
+  const rooms = interiorRooms();
+  syncInteriorDerived();
+
+  const roomCards = rooms.map(r => interiorRoomCardHtml(r)).join('');
+  const totals = rooms.length
+    ? `<div class="int-summary-bar" id="intSummaryBar">${interiorSummaryText()}</div>`
+    : '';
+
+  container.innerHTML = `
+    <div class="int-builder">
+      <div class="int-room-list" id="intRoomList">
+        ${roomCards || `
+          <div class="int-empty">
+            <div style="font-size:34px;">🏠</div>
+            <strong>Walk the house with the homeowner.</strong>
+            <span>Add each room below as you go — size, what we're painting, repairs, and notes. Every room becomes its own detail block on the quote.</span>
+          </div>`}
+      </div>
+      ${totals}
+      <div class="int-add-section">
+        <div class="int-add-title">＋ Add a room</div>
+        <div class="int-add-grid">
+          ${Object.entries(INTERIOR_ROOM_TYPES).map(([id, T]) => `
+            <button type="button" class="int-add-chip" data-add-room="${id}">
+              <span class="ico">${T.icon}</span><span>${T.label}</span>
+            </button>`).join('')}
+        </div>
+      </div>
+    </div>`;
+
+  attachInteriorBuilderListeners();
+}
+
+function interiorSummaryText() {
+  const rooms = interiorRooms();
+  const wallSqFt = rooms.reduce((s, r) => s + interiorRoomAreas(r).paintedWall, 0);
+  const est = computeInteriorBase(state.activeProject.tier);
+  const tm = (TIER_META.interior_paint[state.activeProject.tier] || {}).product || '';
+  return `<strong>${rooms.length} room${rooms.length === 1 ? '' : 's'}</strong> · ${wallSqFt.toLocaleString()} wall sq ft` +
+         ` · <strong>≈ $${est.toLocaleString()}</strong> <small>at ${tm} pricing — final tier picked on Step 6</small>`;
+}
+
+function interiorRoomCardHtml(room) {
+  const T = INTERIOR_ROOM_TYPES[room.type] || INTERIOR_ROOM_TYPES.other;
+  const a = interiorRoomAreas(room);
+  const cost = computeInteriorRoomCost(room, state.activeProject.tier);
+  const s = room.surfaces;
+  const sizeChips = T.sizes.map(sz => `
+    <button type="button" class="int-chip ${room.sizePreset === sz ? 'on' : ''}" data-size="${sz}">${sz.replace('x', ' × ')}</button>`).join('');
+  const isCustomSize = room.sizePreset === 'custom';
+  const heights = [8, 9, 10];
+  const isCustomH = !heights.includes(+room.height);
+
+  const surfChip = (key, label) => `
+    <button type="button" class="int-chip ${s[key] ? 'on' : ''}" data-surface="${key}">${s[key] ? '✓ ' : ''}${label}</button>`;
+  const counter = (key, label) => `
+    <div class="int-counter">
+      <span class="lbl">${label}</span>
+      <button type="button" class="ic-btn" data-count="${key}" data-delta="-1">−</button>
+      <span class="ic-val">${s[key] || 0}</span>
+      <button type="button" class="ic-btn" data-count="${key}" data-delta="1">＋</button>
+    </div>`;
+  const extraChip = (key, label) => `
+    <button type="button" class="int-chip small ${room.extras[key] ? 'on' : ''}" data-extra="${key}">${room.extras[key] ? '✓ ' : ''}${label}</button>`;
+
+  const dw = room.drywall || 'none';
+  const anyExtras = Object.values(room.extras).some(Boolean);
+  const isWalkin = room.type === 'walkin';
+
+  // Multi-area nudge — appears from the FIRST selected area so the
+  // homeowner sees the reward path, flips green when it's earned.
+  const RB = PRICING.interior.roomBundle || { minAreas: 3, rate: 0.10 };
+  const rbPct = Math.round((RB.rate || 0.10) * 100);
+  const need = Math.max(0, (RB.minAreas || 3) - (cost.areaCount || 0));
+  const nudge = !cost.areaCount ? '' : (need === 0
+    ? `<div class="int-nudge on">✓ Multi-area discount — ${rbPct}% off this room's painting</div>`
+    : `<div class="int-nudge">💡 Pick ${need} more area${need === 1 ? '' : 's'} for ${rbPct}% off this room</div>`);
+
+  const shelfInput = `
+        <div class="int-accent-color" style="display:${room.extras.shelving ? 'flex' : 'none'}; margin-top:10px;">
+          <span class="int-inline-lbl">Shelving runs:</span>
+          <input type="number" min="0" step="0.5" data-shelf-lnft value="${+room.shelfLnFt || 8}" style="width:84px;"> <span class="int-inline-lbl">ln ft of shelf &amp; rod</span>
+        </div>`;
+
+  return `
+  <div class="int-room-card ${room._open ? 'open' : ''}" data-room-id="${room.id}">
+    <div class="int-room-head" data-room-toggle>
+      <span class="irh-ico">${T.icon}</span>
+      <input class="irh-label" value="${escapeHtml(room.label)}" data-room-label aria-label="Room name" onclick="event.stopPropagation()">
+      <span class="irh-meta" data-room-meta>${room.len || '?'} × ${room.wid || '?'} × ${room.height} ft · ${a.wallArea} wall sq ft</span>
+      <span class="irh-price" data-room-price>$${cost.total.toLocaleString()}</span>
+      <button type="button" class="irh-dup" data-room-dup title="Duplicate this room">⧉</button>
+      <button type="button" class="irh-x" data-room-remove title="Remove this room">×</button>
+      <span class="irh-chev">${room._open ? '▾' : '▸'}</span>
+    </div>
+    <div class="int-room-body" style="display:${room._open ? 'block' : 'none'}">
+      <div class="int-sec">
+        <div class="int-sec-title">📐 Size</div>
+        <div class="int-chip-row">
+          ${sizeChips}
+          <button type="button" class="int-chip ${isCustomSize ? 'on' : ''}" data-size="custom">Custom…</button>
+        </div>
+        <div class="int-custom-size" style="display:${isCustomSize ? 'flex' : 'none'}">
+          <div class="ics-field"><label>Length (ft)</label><input type="number" min="0" step="0.5" value="${room.len || ''}" data-dim="len"></div>
+          <div class="ics-field"><label>Width (ft)</label><input type="number" min="0" step="0.5" value="${room.wid || ''}" data-dim="wid"></div>
+        </div>
+        <div class="int-chip-row" style="margin-top:8px;">
+          <span class="int-inline-lbl">Ceiling height:</span>
+          ${heights.map(h => `<button type="button" class="int-chip ${+room.height === h && !isCustomH ? 'on' : ''}" data-height="${h}">${h} ft</button>`).join('')}
+          <button type="button" class="int-chip ${isCustomH ? 'on' : ''}" data-height="custom">Custom…</button>
+          <input type="number" min="6" step="0.5" class="int-height-input" value="${room.height}" data-dim="height" style="display:${isCustomH ? 'inline-block' : 'none'}">
+        </div>
+      </div>
+
+      <div class="int-sec">
+        <div class="int-sec-title">🖌️ What we're painting</div>
+        <div class="int-chip-row">
+          ${surfChip('walls', 'Walls')}
+          ${surfChip('ceiling', 'Ceiling')}
+          ${surfChip('trim', 'Trim & baseboards')}
+          ${surfChip('crown', 'Crown molding')}
+          ${surfChip('accent', 'Accent wall')}
+          ${isWalkin ? `
+          <button type="button" class="int-chip ${room.extras.shelving ? 'on' : ''}" data-extra="shelving">${room.extras.shelving ? '✓ ' : ''}Shelving &amp; rods</button>`
+          : surfChip('closet', 'Closet interior')}
+        </div>
+        ${nudge}
+        ${isWalkin ? shelfInput : ''}
+        <div class="int-counter-row">
+          ${counter('doors', '🚪 Doors')}
+          ${counter('windows', '🪟 Single windows')}
+          ${counter('windowsDouble', '🪟 Double windows')}
+        </div>
+        <div class="int-accent-color" style="display:${s.accent ? 'flex' : 'none'}">
+          <span class="int-inline-lbl">Accent wall:</span>
+          <input type="number" min="0" step="0.5" data-accent-width value="${+room.accentWidthFt || +room.wid || ''}" style="width:76px;" title="Accent wall width in feet"> <span class="int-inline-lbl">ft wide ×</span>
+          <span class="int-inline-lbl">${+room.height || 8} ft tall</span>
+          <input type="text" data-accent-name placeholder="Color name — e.g. Naval" value="${escapeHtml((room.accentColor && room.accentColor.name) || '')}">
+          <input type="text" data-accent-code placeholder="SW code" value="${escapeHtml((room.accentColor && room.accentColor.code) || '')}">
+        </div>
+      </div>
+
+      <div class="int-sec">
+        <div class="int-sec-title">🩹 Drywall repairs</div>
+        <div class="int-seg" role="group">
+          ${Object.entries(INTERIOR_DRYWALL_META).map(([k, meta]) => `
+            <button type="button" class="int-seg-btn ${dw === k ? 'on' : ''}" data-drywall="${k}">${meta.label}</button>`).join('')}
+        </div>
+        <div class="int-seg-hint">${(INTERIOR_DRYWALL_META[dw] || {}).hint || ''}</div>
+      </div>
+
+      <details class="int-more" ${anyExtras ? 'open' : ''}>
+        <summary>⚙️ Less-common options ${anyExtras ? '<span class="int-more-count">' + Object.values(room.extras).filter(Boolean).length + ' selected</span>' : ''}</summary>
+        <div class="int-chip-row" style="margin-top:10px;">
+          ${extraChip('popcorn', 'Popcorn ceiling removal')}
+          ${extraChip('wallpaper', 'Wallpaper removal')}
+          ${extraChip('boldColor', 'Bold color change (+1 coat)')}
+          ${extraChip('builtins', 'Built-ins / bookcases')}
+          ${isWalkin ? '' : extraChip('shelving', 'Shelving & rod runs')}
+          ${extraChip('vaulted', 'Vaulted / 2-story ceiling')}
+        </div>
+        <div class="int-accent-color" style="display:${room.extras.builtins ? 'flex' : 'none'}; margin-top:10px;">
+          <span class="int-inline-lbl">Built-in width:</span>
+          <input type="number" min="0" step="0.5" data-builtin-lnft value="${+room.builtinLnFt || 4}" style="width:84px;"> <span class="int-inline-lbl">ln ft of unit face</span>
+        </div>
+        ${isWalkin ? '' : shelfInput}
+      </details>
+
+      <div class="int-sec">
+        <div class="int-sec-title">📷 Room photos <small style="font-weight:500;color:var(--slate);">— attach to this room on the Jobber quote</small></div>
+        <div class="int-photo-strip">
+          ${(state.activeProject.referencePhotos || []).map((ph, i) => ({ ph, i }))
+            .filter(x => x.ph && x.ph.roomId === room.id)
+            .map(x => `<span class="int-thumb ${x.ph.uploading ? 'uploading' : ''}" style="background-image:url('${x.ph.url}')"><button type="button" class="int-thumb-x" data-photo-remove="${x.i}" title="Remove photo">×</button></span>`).join('')}
+          <button type="button" class="int-photo-add" data-room-photo>📷 Add</button>
+        </div>
+      </div>
+
+      <div class="int-sec">
+        <div class="int-sec-title">📝 Room notes <small style="font-weight:500;color:var(--slate);">— goes on the Jobber quote under this room</small></div>
+        <textarea class="int-notes" data-room-notes placeholder="e.g. patch TV mount holes, keep outlet covers, customer supplying accent color…">${escapeHtml(room.notes || '')}</textarea>
+      </div>
+    </div>
+  </div>`;
+}
+
+function attachInteriorBuilderListeners() {
+  const container = __doc.getElementById('measureContainer');
+  if (!container) return;
+
+  // Add-room chips
+  container.querySelectorAll('[data-add-room]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const rooms = interiorRooms();
+      rooms.forEach(r => { r._open = false; });      // collapse others; new room gets focus
+      rooms.push(makeInteriorRoom(btn.dataset.addRoom));
+      renderInteriorMeasurements();
+      updateRunningTotal();
+      const cards = __doc.querySelectorAll('#intRoomList .int-room-card');
+      const last = cards[cards.length - 1];
+      if (last) try { last.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
+    });
+  });
+
+  // Per-card wiring
+  container.querySelectorAll('.int-room-card').forEach(card => {
+    const room = interiorRooms().find(r => r.id === card.dataset.roomId);
+    if (!room) return;
+    const rerender = () => { renderInteriorMeasurements(); updateRunningTotal(); };
+
+    // Header: collapse/expand + remove (undo-able) + duplicate + label editing
+    card.querySelector('[data-room-toggle]').addEventListener('click', (e) => {
+      if (e.target.closest('[data-room-label]') || e.target.closest('[data-room-remove]') || e.target.closest('[data-room-dup]')) return;
+      room._open = !room._open;
+      rerender();
+    });
+    card.querySelector('[data-room-remove]').addEventListener('click', () => {
+      // No "are you sure" — remove immediately with an Undo window.
+      const rooms = interiorRooms();
+      const idx = rooms.indexOf(room);
+      rooms.splice(idx, 1);
+      rerender();
+      sssToast(`${room.label} removed`, 'Undo', () => {
+        const list = interiorRooms();
+        list.splice(Math.min(idx, list.length), 0, room);
+        renderInteriorMeasurements();
+        updateRunningTotal();
+      }, () => {
+        // Undo window expired — drop the room's photos for good.
+        const photos = state.activeProject.referencePhotos || [];
+        state.activeProject.referencePhotos = photos.filter(ph => !ph || ph.roomId !== room.id);
+        triggerAutoSave();
+      });
+    });
+    card.querySelector('[data-room-dup]').addEventListener('click', () => {
+      const rooms = interiorRooms();
+      const copy = JSON.parse(JSON.stringify(room));
+      copy.id = 'room-' + Date.now() + '-' + (__intRoomSeq++);
+      // "Bedroom 2" numbering off the label base; notes/photos stay
+      // room-specific so they don't duplicate.
+      const base = (room.label || '').replace(/\s+\d+$/, '').trim() || 'Room';
+      let maxN = 1;
+      rooms.forEach(r => {
+        const m2 = (r.label || '').match(new RegExp('^' + base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:\\s+(\\d+))?$'));
+        if (m2) maxN = Math.max(maxN, m2[1] ? +m2[1] : 1);
+      });
+      copy.label = `${base} ${maxN + 1}`;
+      copy.notes = '';
+      copy._open = true;
+      room._open = false;
+      rooms.splice(rooms.indexOf(room) + 1, 0, copy);
+      rerender();
+      const el = __doc.querySelector(`[data-room-id="${copy.id}"]`);
+      if (el) try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
+    });
+    card.querySelector('[data-room-label]').addEventListener('input', (e) => {
+      room.label = e.target.value;
+    });
+
+    // Accent wall color — free text, captured live (no rerender)
+    card.querySelectorAll('[data-accent-name], [data-accent-code]').forEach(inp => inp.addEventListener('input', () => {
+      const name = card.querySelector('[data-accent-name]').value.trim();
+      const code = card.querySelector('[data-accent-code]').value.trim();
+      room.accentColor = name || code ? { name, code } : null;
+    }));
+
+    // Accent width + built-in width — measurement-based pricing inputs;
+    // live price refresh without a rerender (keeps typing focus).
+    const accentW = card.querySelector('[data-accent-width]');
+    if (accentW) accentW.addEventListener('input', (e) => {
+      room.accentWidthFt = +e.target.value || 0;
+      refreshInteriorRoomCardHeader(card, room);
+    });
+    const shelfW = card.querySelector('[data-shelf-lnft]');
+    if (shelfW) shelfW.addEventListener('input', (e) => {
+      room.shelfLnFt = +e.target.value || 0;
+      refreshInteriorRoomCardHeader(card, room);
+    });
+    const builtinW = card.querySelector('[data-builtin-lnft]');
+    if (builtinW) builtinW.addEventListener('input', (e) => {
+      room.builtinLnFt = +e.target.value || 0;
+      refreshInteriorRoomCardHeader(card, room);
+    });
+
+    // Per-room photos — shared hidden input, tagged with this room's id
+    const photoBtn = card.querySelector('[data-room-photo]');
+    if (photoBtn) photoBtn.addEventListener('click', () => openInteriorRoomPhotoPicker(room));
+    card.querySelectorAll('[data-photo-remove]').forEach(btn => btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const i = +btn.dataset.photoRemove;
+      const photos = state.activeProject.referencePhotos || [];
+      if (photos[i]) { photos.splice(i, 1); rerender(); triggerAutoSave(); }
+    }));
+
+    // Size preset chips
+    card.querySelectorAll('[data-size]').forEach(chip => chip.addEventListener('click', () => {
+      const v = chip.dataset.size;
+      room.sizePreset = v;
+      if (v !== 'custom') {
+        const [L, W] = v.split('x').map(Number);
+        room.len = L; room.wid = W;
+      }
+      rerender();
+    }));
+
+    // Height chips
+    card.querySelectorAll('[data-height]').forEach(chip => chip.addEventListener('click', () => {
+      const v = chip.dataset.height;
+      if (v !== 'custom') room.height = +v;
+      else {
+        // Reveal the input; nudge to a non-preset value so the chip state sticks
+        if ([8, 9, 10].includes(+room.height)) room.height = 12;
+      }
+      rerender();
+    }));
+
+    // Dimension inputs (custom L/W + custom height) — live update, no rerender
+    card.querySelectorAll('[data-dim]').forEach(inp => inp.addEventListener('input', (e) => {
+      room[e.target.dataset.dim] = +e.target.value || 0;
+      refreshInteriorRoomCardHeader(card, room);
+    }));
+
+    // Surface chips
+    card.querySelectorAll('[data-surface]').forEach(chip => chip.addEventListener('click', () => {
+      const k = chip.dataset.surface;
+      room.surfaces[k] = !room.surfaces[k];
+      rerender();
+    }));
+
+    // Door/window counters
+    card.querySelectorAll('[data-count]').forEach(btn => btn.addEventListener('click', () => {
+      const k = btn.dataset.count;
+      room.surfaces[k] = Math.max(0, (room.surfaces[k] || 0) + (+btn.dataset.delta));
+      rerender();
+    }));
+
+    // Drywall severity
+    card.querySelectorAll('[data-drywall]').forEach(btn => btn.addEventListener('click', () => {
+      room.drywall = btn.dataset.drywall;
+      rerender();
+    }));
+
+    // Extras
+    card.querySelectorAll('[data-extra]').forEach(chip => chip.addEventListener('click', () => {
+      const k = chip.dataset.extra;
+      room.extras[k] = !room.extras[k];
+      rerender();
+    }));
+
+    // Notes — live, no rerender
+    const notes = card.querySelector('[data-room-notes]');
+    if (notes) notes.addEventListener('input', (e) => { room.notes = e.target.value; });
+  });
+
+  applyNumericInputMode(container);
+}
+
+// --- Styled alert (replaces window.alert in the quote flow) ------
+// Native alerts show "localhost says…" / "wix.com says…" chrome and
+// feel broken in front of a customer. This reuses the calc's dialog
+// styling; created lazily so it works in both the raw page and the
+// Custom Element build.
+function sssAlert(title, message) {
+  let dlg = __doc.getElementById('sssAlertDialog');
+  if (!dlg) {
+    dlg = document.createElement('dialog');
+    dlg.id = 'sssAlertDialog';
+    dlg.className = 'info-dialog sss-alert-dialog';
+    dlg.innerHTML = `
+      <div class="info-modal-header"><h3 id="sssAlertTitle">Heads up</h3><button type="button" class="close-x" aria-label="Close">×</button></div>
+      <div class="info-modal-body" id="sssAlertBody" style="font-size:14px; line-height:1.6;"></div>
+      <div style="padding: 0 24px 20px; text-align: right;"><button type="button" class="btn btn-primary" id="sssAlertOk" style="padding:10px 24px; font-size:14px;">OK</button></div>`;
+    __doc.appendChild(dlg);
+    dlg.querySelector('.close-x').addEventListener('click', () => dlg.close());
+    dlg.querySelector('#sssAlertOk').addEventListener('click', () => dlg.close());
+  }
+  dlg.querySelector('#sssAlertTitle').textContent = title || 'Heads up';
+  dlg.querySelector('#sssAlertBody').textContent = message || '';
+  if (typeof dlg.showModal === 'function') { if (!dlg.open) dlg.showModal(); }
+  else alert(message);
+}
+
+// --- Toast with undo (bottom snackbar) ---------------------------
+// One toast at a time. `onAction` runs if the button is tapped inside
+// the window; `onExpire` runs if it times out untouched.
+let __sssToastTimer = null;
+function sssToast(message, actionLabel, onAction, onExpire, ms) {
+  const old = __doc.getElementById('sssToast');
+  if (old) old.remove();
+  if (__sssToastTimer) { clearTimeout(__sssToastTimer); __sssToastTimer = null; }
+  const el = document.createElement('div');
+  el.id = 'sssToast';
+  el.className = 'sss-toast';
+  el.innerHTML = `<span class="st-msg"></span>${actionLabel ? `<button type="button" class="st-action">${actionLabel}</button>` : ''}`;
+  el.querySelector('.st-msg').textContent = message;
+  __doc.appendChild(el);
+  const done = (expired) => {
+    if (__sssToastTimer) { clearTimeout(__sssToastTimer); __sssToastTimer = null; }
+    el.classList.remove('show');
+    setTimeout(() => { try { el.remove(); } catch (e) {} }, 250);
+    if (expired && typeof onExpire === 'function') try { onExpire(); } catch (e) {}
+  };
+  const act = el.querySelector('.st-action');
+  if (act) act.addEventListener('click', () => { done(false); if (typeof onAction === 'function') try { onAction(); } catch (e) {} });
+  requestAnimationFrame(() => el.classList.add('show'));
+  __sssToastTimer = setTimeout(() => done(true), ms || 8000);
+}
+
+// --- Per-room photos ---------------------------------------------
+// Reuses the project-level pipeline (downscale → upload → Wix Media
+// URL) — the only difference is a roomId stamp so the photo rides on
+// that room's Jobber line. All photos still live in referencePhotos,
+// so cloud saves and the existing Jobber attachment plumbing are
+// untouched.
+let __intPhotoTargetRoomId = null;
+function openInteriorRoomPhotoPicker(room) {
+  __intPhotoTargetRoomId = room.id;
+  let input = __doc.getElementById('intRoomPhotoInput');
+  if (!input) {
+    input = document.createElement('input');
+    input.type = 'file';
+    input.id = 'intRoomPhotoInput';
+    input.accept = 'image/*';
+    input.multiple = true;
+    input.setAttribute('capture', 'environment');
+    input.style.display = 'none';
+    __doc.appendChild(input);
+    input.addEventListener('change', onInteriorRoomPhotosPicked);
+  }
+  input.click();
+}
+
+async function onInteriorRoomPhotosPicked(e) {
+  const files = Array.from(e.target.files || []);
+  e.target.value = '';
+  const roomId = __intPhotoTargetRoomId;
+  if (!roomId) return;
+  for (const f of files) {
+    if (!state.activeProject.referencePhotos) state.activeProject.referencePhotos = [];
+    if (state.activeProject.referencePhotos.length >= PHOTO_MAX_COUNT) {
+      sssToast(`Photo limit reached (${PHOTO_MAX_COUNT} per project)`);
+      break;
+    }
+    if (f.size > PHOTO_MAX_BYTES) {
+      sssToast(`"${f.name}" is too large — limit is ${PHOTO_MAX_BYTES / 1024 / 1024} MB per photo`);
+      continue;
+    }
+    const photo = {
+      name: f.name || `photo_${Date.now()}.jpg`,
+      size: f.size, uploading: true, failed: false, errorMsg: '',
+      url: '', previewDataUrl: '',
+      roomId
+    };
+    state.activeProject.referencePhotos.push(photo);
+    Promise.race([
+      processAndUploadPhoto(f, photo),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('upload_timeout_60s')), 60000))
+    ]).catch(err => {
+      console.warn('[SSS Photos] room photo upload failed:', err);
+      photo.uploading = false; photo.failed = true;
+      photo.errorMsg = (err && err.message) ? err.message : String(err);
+      sssToast('Photo upload failed — check connection and retry');
+      refreshInteriorPhotoStrips();
+    });
+  }
+  refreshInteriorPhotoStrips();
+}
+
+// Re-render the builder so room photo strips reflect upload state.
+// Cheap and safe: only fires when the interior builder is on screen.
+function refreshInteriorPhotoStrips() {
+  if (!isInterior()) return;
+  if (!__doc.querySelector('#intRoomList')) return;
+  renderInteriorMeasurements();
+}
+
+// Phones/iPads: open the number pad instead of the full keyboard on
+// every numeric field inside a just-rendered container.
+function applyNumericInputMode(container) {
+  if (!container) return;
+  container.querySelectorAll('input[type="number"]').forEach(i => i.setAttribute('inputmode', 'decimal'));
+}
+
+// Lightweight header refresh while typing dimensions — keeps focus.
+function refreshInteriorRoomCardHeader(card, room) {
+  const a = interiorRoomAreas(room);
+  const cost = computeInteriorRoomCost(room, state.activeProject.tier);
+  const meta = card.querySelector('[data-room-meta]');
+  const price = card.querySelector('[data-room-price]');
+  if (meta) meta.textContent = `${room.len || '?'} × ${room.wid || '?'} × ${room.height} ft · ${a.wallArea} wall sq ft`;
+  if (price) price.textContent = `$${cost.total.toLocaleString()}`;
+  const bar = __doc.getElementById('intSummaryBar');
+  if (bar) bar.innerHTML = interiorSummaryText();
+  syncInteriorDerived();
+  updateRunningTotal();
+}
+
+// --- STEP 6: SW interior paint tier cards ------------------------
+
+function renderInteriorTierCards() {
+  __doc.getElementById('productLockText').innerHTML =
+    `<strong>🎨 Interior Painting</strong> — all three levels are premium <strong>Sherwin-Williams interior paints</strong>, priced from the rooms on Step 3.`;
+
+  const previouslyCompleted = state.maxStageReached >= 10 && state.activeProject.tierConfirmed;
+  if (!validateMeasurements() && !previouslyCompleted) {
+    __doc.getElementById('tierCards').innerHTML = `
+      <div style="grid-column: 1 / -1; padding: 32px 28px; background: var(--gold-pale); border: 2px dashed var(--gold); border-radius: var(--radius-lg); text-align: center;">
+        <h3 style="color: var(--navy); margin-bottom: 8px;">🏠 Add at least one room before paint prices can be calculated</h3>
+        <p style="color: #5a4a1f; font-size: 14px; margin-bottom: 16px;">Paint level prices are calculated from the rooms you add on the measurements step.</p>
+        <button class="btn btn-primary" onclick="showStage(3)" style="padding: 12px 24px;">← Go back to Step 3: Rooms</button>
+      </div>`;
+    __doc.getElementById('stage6Next').disabled = true;
+    return;
+  }
+
+  const meta = TIER_META.interior_paint;
+  const rooms = interiorRooms();
+  const sample = computeSampleTierPrices('interior_paint');
+
+  const INCLUDED = [
+    '✓ Floors, furniture &amp; fixtures fully masked and protected',
+    '✓ All prep from your room walk-through (patching, caulk, spot-prime)',
+    '✓ Two coats, brushed &amp; rolled — cut-in by hand',
+    '✓ Daily cleanup + full walk-through at the end',
+    '✓ Free 30-day touch-up visit',
+    '✓ Fully insured &amp; licensed in South Carolina'
+  ];
+
+  __doc.getElementById('tierCards').innerHTML = ['essential', 'performance', 'showcase'].map(t => {
+    const tm = meta[t];
+    const isSelected = state.activeProject.tierConfirmed && state.activeProject.tier === t;
+    const totalPrice = sample[t];
+    const perRoom = rooms.length ? Math.round(totalPrice / rooms.length) : 0;
+    const prosHtml = tm.pros.map((p, i) => `<li${i === 0 ? ' class="standout"' : ''}>${p}</li>`).join('');
+    return `
+      <button class="tier-card ${isSelected ? 'selected' : ''}" data-tier="${t}">
+        ${tm.badge ? `<div class="reco-flag ${tm.badgeClass}">${tm.badge}</div>` : ''}
+        <div class="tier-name">${t}</div>
+        <div class="tier-product">${tm.product}</div>
+        <div class="tier-tagline">${tm.tagline}</div>
+        <div class="tier-price">$${Math.round(totalPrice).toLocaleString()}<span style="font-size:14px;color:var(--slate);font-weight:600;"> total</span></div>
+        <div class="tier-cost-per-year">${rooms.length} room${rooms.length === 1 ? '' : 's'} · ≈ $${perRoom.toLocaleString()}/room avg</div>
+        <div class="tier-life">🛡️ ${tm.life}${tm.details ? `<div class="tier-life-tooltip">${tm.details}</div>` : ''}</div>
+        <ul class="tier-pros">${prosHtml}</ul>
+        ${tm.cons.length ? `<ul class="tier-cons">${tm.cons.map(c => `<li>${c}</li>`).join('')}</ul>` : ''}
+        <div class="whats-included">
+          <div class="whats-included-label">What's included</div>
+          <ul>${INCLUDED.map(i => `<li>${i}</li>`).join('')}</ul>
+        </div>
+        <div class="best-for"><strong>Best for</strong>${tm.bestFor}</div>
+      </button>`;
+  }).join('');
+
+  __doc.querySelectorAll('#tierCards .tier-card').forEach(card => {
+    card.addEventListener('click', () => {
+      state.activeProject.tier = card.dataset.tier;
+      state.activeProject.tierConfirmed = true;
+      __doc.querySelectorAll('#tierCards .tier-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      __doc.getElementById('stage6Next').disabled = false;
+      updateRunningTotal();
+    });
+  });
+  __doc.getElementById('stage6Next').disabled = !state.activeProject.tierConfirmed;
+  __doc.getElementById('stage6Next').innerHTML = 'Next: Colors <span class="arr-r">→</span>';
+}
+
+// --- STEP 7: whole-house color planner ---------------------------
+
+function interiorColorPlan() {
+  const m = state.activeProject.measurements;
+  if (!m.colorPlan) {
+    m.colorPlan = {
+      mode: null,
+      wall: null,
+      ceiling: { ...INTERIOR_DEFAULT_CEILING },
+      trim:    { ...INTERIOR_DEFAULT_TRIM },
+      wallSheen:    INTERIOR_DEFAULT_SHEEN.wall,
+      ceilingSheen: INTERIOR_DEFAULT_SHEEN.ceiling,
+      trimSheen:    INTERIOR_DEFAULT_SHEEN.trim,
+      perRoom: {}
+    };
+  }
+  return m.colorPlan;
+}
+
+// Keep selectedColor in sync as a plain-language summary so every
+// existing consumer (side tracker, PDF, dashboard, Jobber fallback)
+// shows something sensible without knowing about color plans.
+function syncInteriorSelectedColor() {
+  const cp = interiorColorPlan();
+  if (!cp.mode) { state.activeProject.selectedColor = null; return; }
+  if (cp.mode === 'perRoom') {
+    // Every room needs its own wall color before the step is complete.
+    const rooms = interiorRooms();
+    const allPicked = rooms.length > 0 && rooms.every(r => cp.perRoom[r.id]);
+    state.activeProject.selectedColor = allPicked
+      ? { name: `Room-by-room colors · ceilings ${cp.ceiling.name}`, code: '', brand: 'Sherwin-Williams' }
+      : null;
+    return;
+  }
+  if (!cp.wall) { state.activeProject.selectedColor = null; return; }
+  const name = cp.mode === 'single'
+    ? `${cp.wall.name} — walls & ceilings`
+    : `${cp.wall.name} walls / ${cp.ceiling.name} ceilings`;
+  state.activeProject.selectedColor = { name, code: cp.wall.code || '', brand: 'Sherwin-Williams' };
+}
+
+function renderInteriorColorStage() {
+  const cp = interiorColorPlan();
+  __doc.getElementById('colorTitle').textContent = '🎨 Pick the colors.';
+  __doc.getElementById('colorLead').textContent =
+    'Choose how colors work across the house, then pick from popular Sherwin-Williams colors — or type any SW color name/code. Final approval always happens against a physical SW chip.';
+
+  // The static Stage-7 tip box is written for stain swatches (wood
+  // species, greyed lumber, etc). Swap in interior copy — and stash
+  // the original so the stain path can restore it if the rep switches
+  // project types mid-quote.
+  const tipBody = __doc.querySelector('#stage-7 .tip-box .tip-body');
+  if (tipBody) {
+    if (!tipBody.dataset.stainHtml) tipBody.dataset.stainHtml = tipBody.innerHTML;
+    tipBody.innerHTML = `<strong>About these colors &amp; sheens</strong>
+      On-screen swatches are close approximations — sheen, lighting, and wall texture all shift how a color reads in the room. We bring physical Sherwin-Williams chips (or brushout samples) for final approval before any paint is ordered. Set the sheen for walls, ceilings, and trim below — the defaults (eggshell walls, flat ceilings, semi-gloss trim) suit most jobs.`;
+  }
+
+  const modeCard = (mode, ico, title, sub) => `
+    <button type="button" class="int-mode-card ${cp.mode === mode ? 'on' : ''}" data-color-mode="${mode}">
+      <span class="imc-ico">${ico}</span>
+      <span class="imc-title">${title}</span>
+      <span class="imc-sub">${sub}</span>
+    </button>`;
+
+  let pickers = '';
+  if (cp.mode === 'single') {
+    pickers = `
+      ${interiorColorPickerHtml('wall', 'One color for walls & ceilings', cp.wall, false, 'wall')}
+      ${interiorColorPickerHtml('trim', 'Trim color', cp.trim, true, 'trim')}`;
+  } else if (cp.mode === 'split') {
+    pickers = `
+      ${interiorColorPickerHtml('wall', 'Wall color — whole house', cp.wall, false, 'wall')}
+      ${interiorColorPickerHtml('ceiling', 'Ceiling color — whole house', cp.ceiling, true, 'ceiling')}
+      ${interiorColorPickerHtml('trim', 'Trim color', cp.trim, true, 'trim')}`;
+  } else if (cp.mode === 'perRoom') {
+    const rooms = interiorRooms();
+    const picked = rooms.filter(r => cp.perRoom[r.id]).length;
+    pickers = `
+      ${interiorColorPickerHtml('ceiling', 'Ceiling color — whole house', cp.ceiling, true, 'ceiling')}
+      ${interiorColorPickerHtml('trim', 'Trim color', cp.trim, true, 'trim')}
+      <div class="int-sec" style="margin-top:18px;">
+        <div class="int-sec-title">🚪 Wall color, room by room <small style="font-weight:500;color:var(--slate);">— tap each room and pick its color (${picked}/${rooms.length} picked)</small></div>
+        <div class="int-wall-sheen-standalone">${interiorSheenRowHtml('wall', cp.wallSheen)}<span class="int-sheen-note">Applies to all room walls</span></div>
+        ${rooms.length ? rooms.map(r => interiorRoomColorRowHtml(r, cp)).join('') : '<p style="font-size:13px;color:var(--slate);">No rooms yet — add rooms on Step 3 first.</p>'}
+      </div>`;
+  }
+
+  __doc.getElementById('colorGrid').innerHTML = `
+    <div class="int-color-planner">
+      <div class="int-mode-grid">
+        ${modeCard('single', '🎯', 'One color everywhere', 'Walls and ceilings in the same color — fastest, most seamless look.')}
+        ${modeCard('split', '🏠', 'Walls + ceiling colors', 'One wall color through the house, ceilings in a ceiling white. The classic.')}
+        ${modeCard('perRoom', '🚪', 'Room-by-room', 'Walk the rooms and pick each one’s wall color individually.')}
+      </div>
+      <div id="intColorPickers">${pickers}</div>
+    </div>`;
+
+  attachInteriorColorListeners();
+  syncInteriorSelectedColor();
+  const nextBtn = __doc.getElementById('stage7Next');
+  if (nextBtn) nextBtn.disabled = !state.activeProject.selectedColor;
+}
+
+// Which color family is expanded, per picker target ('wall', 'ceiling',
+// 'trim', 'room:<id>'). Transient UI state — not persisted with the quote.
+let __intOpenFam = {};
+
+function interiorColorFamilies(target) {
+  return target === 'ceiling' ? [INTERIOR_CEILING_WHITES, ...INTERIOR_PAINT_COLORS] : INTERIOR_PAINT_COLORS;
+}
+
+function interiorSwatchGridHtml(target, selected) {
+  const sel = selected || {};
+  const fams = interiorColorFamilies(target);
+  // Default-open the family holding the current selection; otherwise
+  // everything starts collapsed to tiny preview strips.
+  let openLbl = __intOpenFam[target];
+  if (openLbl === undefined) {
+    const holder = fams.find(g => g.colors.some(c => c.code === sel.code && c.name === sel.name));
+    openLbl = holder ? holder.label : null;
+  }
+  const groups = fams.map(g => {
+    const isOpen = g.label === openLbl;
+    const hasSel = g.colors.some(c => c.code === sel.code && c.name === sel.name);
+    const body = isOpen ? `
+      <div class="int-fam-body">
+        <div class="int-sw-row">
+          ${g.colors.map(c => `
+            <button type="button" class="int-swatch ${sel.code === c.code && sel.name === c.name ? 'on' : ''}"
+                    data-swatch-target="${target}" data-name="${escapeHtml(c.name)}" data-code="${c.code}" data-hex="${c.hex}"
+                    title="${escapeHtml(c.name)} ${c.code}">
+              <span class="sw-chip" style="background:${c.hex}"></span>
+              <span class="sw-name">${c.name}</span>
+              <span class="sw-code">${c.code}</span>
+            </button>`).join('')}
+        </div>
+      </div>` : '';
+    return `
+      <div class="int-fam ${isOpen ? 'open' : ''}">
+        <button type="button" class="int-fam-head" data-fam-target="${escapeHtml(target)}" data-fam="${escapeHtml(g.label)}">
+          <span class="int-fam-lbl">${g.label}${hasSel ? ' <span class="int-fam-sel">✓</span>' : ''}</span>
+          <span class="int-fam-mini">${g.colors.map(c => `<span class="mini-chip" style="background:${c.hex}" title="${escapeHtml(c.name)} ${c.code}"></span>`).join('')}</span>
+          <span class="irh-chev">${isOpen ? '▾' : '▸'}</span>
+        </button>
+        ${body}
+      </div>`;
+  }).join('');
+  const isCustom = sel.name && !fams.some(g => g.colors.some(c => c.code === sel.code && c.name === sel.name));
+  return `
+    ${groups}
+    <div class="int-sw-custom">
+      <span class="int-inline-lbl">Custom SW color:</span>
+      <input type="text" class="int-custom-color-name" data-custom-target="${target}" placeholder="Color name — e.g. Silvermist" value="${isCustom ? escapeHtml(sel.name || '') : ''}">
+      <input type="text" class="int-custom-color-code" data-custom-target="${target}" placeholder="SW code — e.g. SW 7621" value="${isCustom ? escapeHtml(sel.code || '') : ''}">
+    </div>`;
+}
+
+// Segmented sheen selector for a surface role ('wall' | 'ceiling' |
+// 'trim'). `current` is the selected sheen; falls back to the default.
+function interiorSheenRowHtml(role, current) {
+  const opts = INTERIOR_SHEENS[role] || [];
+  const sel = current || INTERIOR_DEFAULT_SHEEN[role];
+  return `
+    <div class="int-sheen-row">
+      <span class="int-inline-lbl">Sheen:</span>
+      <div class="int-seg int-sheen-seg">
+        ${opts.map(s => `<button type="button" class="int-seg-btn ${s === sel ? 'on' : ''}" data-sheen-role="${role}" data-sheen="${s}">${s}</button>`).join('')}
+      </div>
+    </div>`;
+}
+
+function interiorColorPickerHtml(target, title, selected, collapsed, sheenRole) {
+  const sel = selected || {};
+  const cp = interiorColorPlan();
+  const sheenKey = sheenRole ? sheenRole + 'Sheen' : null;
+  const chip = sel.name
+    ? `<span class="int-picked"><span class="sw-chip" style="background:${sel.hex || '#eee'}"></span>${escapeHtml(sel.name)}${sel.code ? ` <small>${sel.code}</small>` : ''}${sheenKey ? ` · ${escapeHtml(cp[sheenKey] || INTERIOR_DEFAULT_SHEEN[sheenRole])}` : ''}</span>`
+    : `<span class="int-picked none">Not picked yet</span>`;
+  return `
+    <details class="int-color-picker" data-picker="${target}" ${collapsed && sel.name ? '' : 'open'}>
+      <summary><strong>${title}</strong>${chip}</summary>
+      <div class="int-picker-body">
+        ${sheenRole ? interiorSheenRowHtml(sheenRole, cp[sheenKey]) : ''}
+        ${interiorSwatchGridHtml(target, sel)}
+      </div>
+    </details>`;
+}
+
+function interiorRoomColorRowHtml(room, cp) {
+  const T = INTERIOR_ROOM_TYPES[room.type] || INTERIOR_ROOM_TYPES.other;
+  const picked = cp.perRoom[room.id];
+  const isOpen = !!room._colorOpen;
+  return `
+    <div class="int-room-color-row ${picked ? 'overridden' : ''}" data-room-color="${room.id}">
+      <div class="ircr-head" data-room-color-toggle="${room.id}">
+        <span class="irh-ico">${T.icon}</span>
+        <span class="ircr-name">${escapeHtml(room.label)}</span>
+        <span class="int-picked">${picked ? `<span class="sw-chip" style="background:${picked.hex || '#eee'}"></span>${escapeHtml(picked.name)}${picked.code ? ` <small>${escapeHtml(picked.code)}</small>` : ''}` : '<span class="none">Tap to pick a color</span>'}</span>
+        <span class="irh-chev">${isOpen ? '▾' : '▸'}</span>
+      </div>
+      <div class="ircr-body" style="display:${isOpen ? 'block' : 'none'}">
+        ${interiorSwatchGridHtml('room:' + room.id, picked || {})}
+      </div>
+    </div>`;
+}
+
+function attachInteriorColorListeners() {
+  const grid = __doc.getElementById('colorGrid');
+  if (!grid) return;
+  const cp = interiorColorPlan();
+
+  grid.querySelectorAll('[data-color-mode]').forEach(btn => btn.addEventListener('click', () => {
+    cp.mode = btn.dataset.colorMode;
+    // Entering room-by-room: open the first room still needing a color
+    // so the rep can start picking immediately.
+    if (cp.mode === 'perRoom') {
+      const rooms = interiorRooms();
+      rooms.forEach(r => { r._colorOpen = false; });
+      const first = rooms.find(r => !cp.perRoom[r.id]);
+      if (first) first._colorOpen = true;
+    }
+    renderInteriorColorStage();
+  }));
+
+  grid.querySelectorAll('[data-room-color-toggle]').forEach(head => head.addEventListener('click', () => {
+    const room = interiorRooms().find(r => r.id === head.dataset.roomColorToggle);
+    if (room) { room._colorOpen = !room._colorOpen; renderInteriorColorStage(); }
+  }));
+
+  // Family accordion — expand/collapse a color family within a picker.
+  grid.querySelectorAll('[data-fam-target]').forEach(head => head.addEventListener('click', () => {
+    const target = head.dataset.famTarget;
+    const fam = head.dataset.fam;
+    __intOpenFam[target] = (__intOpenFam[target] === fam) ? null : fam;
+    renderInteriorColorStage();
+  }));
+
+  // Sheen selection — spec only, no price change, so no full re-render:
+  // just repaint the segmented buttons + the picker summary chip.
+  grid.querySelectorAll('[data-sheen-role]').forEach(btn => btn.addEventListener('click', () => {
+    const role = btn.dataset.sheenRole;
+    cp[role + 'Sheen'] = btn.dataset.sheen;
+    // Highlight the chosen button within this segmented control.
+    const seg = btn.closest('.int-sheen-seg');
+    if (seg) seg.querySelectorAll('[data-sheen-role]').forEach(b => b.classList.toggle('on', b === btn));
+    syncInteriorSelectedColor();
+    triggerAutoSave();
+  }));
+
+  grid.querySelectorAll('.int-swatch').forEach(sw => sw.addEventListener('click', () => {
+    const target = sw.dataset.swatchTarget;
+    const color = { name: sw.dataset.name, code: sw.dataset.code, hex: sw.dataset.hex };
+    // Collapse the family after picking — the choice shows on the
+    // picker summary chip, keeping the step compact.
+    __intOpenFam[target] = null;
+    if (target.startsWith('room:')) {
+      const roomId = target.slice(5);
+      cp.perRoom[roomId] = color;
+      const room = interiorRooms().find(r => r.id === roomId);
+      if (room) room._colorOpen = false;
+      // Auto-open the next room that still needs a color — walk the
+      // house top to bottom without extra taps.
+      const next = interiorRooms().find(r => !cp.perRoom[r.id]);
+      if (next) next._colorOpen = true;
+    } else {
+      cp[target] = color;
+    }
+    renderInteriorColorStage();
+  }));
+
+  // Custom color text inputs — update state live without re-render
+  grid.querySelectorAll('.int-custom-color-name, .int-custom-color-code').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const target = inp.dataset.customTarget;
+      const wrap = inp.closest('.int-sw-custom');
+      const name = wrap.querySelector('.int-custom-color-name').value.trim();
+      const code = wrap.querySelector('.int-custom-color-code').value.trim();
+      if (!name) return;
+      const color = { name, code, hex: '#e8e3da', custom: true };
+      if (target.startsWith('room:')) cp.perRoom[target.slice(5)] = color;
+      else cp[target] = color;
+      syncInteriorSelectedColor();
+      const nextBtn = __doc.getElementById('stage7Next');
+      if (nextBtn) nextBtn.disabled = !state.activeProject.selectedColor;
+    });
+    inp.addEventListener('change', () => renderInteriorColorStage());
+  });
+}
+
+// --- Review / bundling / Jobber description ----------------------
+
+function describeInteriorRoomShort(room) {
+  const s = room.surfaces;
+  const bits = [];
+  if (s.walls) bits.push('walls');
+  if (s.ceiling) bits.push('ceiling');
+  if (s.trim) bits.push('trim');
+  if (s.crown) bits.push('crown');
+  if (s.accent) bits.push('accent wall');
+  if (s.closet) bits.push('closet');
+  if (s.doors) bits.push(`${s.doors} door${s.doors > 1 ? 's' : ''}`);
+  if (s.windows) bits.push(`${s.windows} single window${s.windows > 1 ? 's' : ''}`);
+  if (s.windowsDouble) bits.push(`${s.windowsDouble} double window${s.windowsDouble > 1 ? 's' : ''}`);
+  const extras = [];
+  if (room.drywall && room.drywall !== 'none') extras.push(`${(INTERIOR_DRYWALL_META[room.drywall] || {}).label.toLowerCase()} drywall repairs`);
+  if (room.extras.popcorn) extras.push('popcorn removal');
+  if (room.extras.wallpaper) extras.push('wallpaper removal');
+  if (room.extras.boldColor) extras.push('bold color change');
+  if (room.extras.builtins) extras.push('built-ins');
+  if (room.extras.shelving) extras.push('shelving & rods');
+  if (room.extras.vaulted) extras.push('vaulted');
+  return bits.join(', ') + (extras.length ? ` · ${extras.join(', ')}` : '');
+}
+
+function describeInteriorMeasurementLines(p) {
+  const proj = p || state.activeProject;
+  const rooms = (proj.measurements && proj.measurements.rooms) || [];
+  const tier = proj.tier || 'performance';
+  const lines = rooms.map(r => {
+    const T = INTERIOR_ROOM_TYPES[r.type] || INTERIOR_ROOM_TYPES.other;
+    const cost = computeInteriorRoomCost(r, tier);
+    return {
+      label: `${T.icon} ${r.label}`,
+      value: `${r.len} × ${r.wid} × ${r.height} ft · ${describeInteriorRoomShort(r)} · $${cost.total.toLocaleString()}`
+    };
+  });
+  const wallSqFt = rooms.reduce((s, r) => s + interiorRoomAreas(r).paintedWall, 0);
+  lines.push({ label: 'Whole house', value: `${rooms.length} room${rooms.length === 1 ? '' : 's'} · ${wallSqFt.toLocaleString()} wall sq ft` });
+  return lines;
+}
+
+function interiorColorPlanSummary(m) {
+  const cp = (m && m.colorPlan) || {};
+  if (!cp.mode) return '';
+  const c = (col) => col ? `${col.name}${col.code ? ` (${col.code})` : ''}` : '—';
+  const ws = cp.wallSheen    || INTERIOR_DEFAULT_SHEEN.wall;
+  const cs = cp.ceilingSheen || INTERIOR_DEFAULT_SHEEN.ceiling;
+  const ts = cp.trimSheen    || INTERIOR_DEFAULT_SHEEN.trim;
+  if (cp.mode === 'perRoom') return `Wall colors picked per room (${ws}, listed under each room) · ceilings ${c(cp.ceiling)} (${cs}) · trim ${c(cp.trim)} (${ts})`;
+  if (!cp.wall) return '';
+  if (cp.mode === 'single') return `${c(cp.wall)} on walls & ceilings (${ws}) · trim ${c(cp.trim)} (${ts})`;
+  return `Walls ${c(cp.wall)} (${ws}) · ceilings ${c(cp.ceiling)} (${cs}) · trim ${c(cp.trim)} (${ts})`;
+}
+
+// Paint plan — how many gallons of WHICH paints/colors an interior
+// project actually consumes. Every distinct color is its own bucket
+// rounded up to whole gallons (you can't pool coverage across colors),
+// and ceilings/trim are separate products from wall paint. Shared by
+// the DIY comparison and the Jobber "paint order" section so the two
+// never disagree.
+//
+// Per-room contributions:
+//   walls  → room's wall color (per-room color in perRoom mode), wall
+//            paint at the tier's $/gal; closets ride the wall bucket
+//            (~120 sq ft each); bold-color-change adds a third coat.
+//   ceiling→ ceiling paint bucket (also when popcorn removal is on —
+//            a scraped ceiling gets refinished even if "ceiling" wasn't
+//            toggled). In "one color everywhere" mode ceilings join the
+//            wall bucket instead (same paint, same color).
+//   trim   → trim enamel bucket: baseboard ~0.5 sq ft/ln ft, crown
+//            ~0.4, doors ~40 sq ft each (both sides), windows ~15.
+function computeInteriorPaintPlan(p) {
+  const m = p.measurements || {};
+  const rooms = m.rooms || [];
+  const cp = m.colorPlan || {};
+  const cfg = (PRICING.diy && PRICING.diy.interiorPaint) || {};
+  const coats = (typeof cfg.coats === 'number') ? cfg.coats : 2;
+  const coverage = (typeof cfg.coverageSqFtPerGal === 'number') ? cfg.coverageSqFtPerGal : 325;
+  const tierKey = p.tier || 'performance';
+  const WALL_NAMES = { essential: 'SW SuperPaint Interior', performance: 'SW Duration Home', showcase: 'SW Emerald Interior' };
+  const WALL_URLS = {
+    essential:   'https://www.sherwin-williams.com/homeowners/products/superpaint-interior-acrylic-latex',
+    performance: 'https://www.sherwin-williams.com/homeowners/products/duration-home-interior-acrylic-latex',
+    showcase:    'https://www.sherwin-williams.com/homeowners/products/emerald-interior-acrylic-latex-paint'
+  };
+  const wallGal = (cfg.perGal && typeof cfg.perGal[tierKey] === 'number') ? cfg.perGal[tierKey]
+    : ({ essential: 83.49, performance: 95.99, showcase: 101.49 })[tierKey];
+  const wallName = WALL_NAMES[tierKey] || 'SW interior paint';
+  const wallUrl  = WALL_URLS[tierKey] || '';
+  // Sheens come from the color plan (rep-selected on Step 7), falling
+  // back to the surface defaults. Shown on the paint order + Jobber
+  // quote; they don't affect price.
+  const wallSheen    = (cp.wallSheen    || INTERIOR_DEFAULT_SHEEN.wall).toLowerCase();
+  const ceilingSheen = (cp.ceilingSheen || INTERIOR_DEFAULT_SHEEN.ceiling).toLowerCase();
+  const trimSheen    = (cp.trimSheen    || INTERIOR_DEFAULT_SHEEN.trim).toLowerCase();
+  const PRODUCTS = {
+    walls:   { product: wallName, perGal: wallGal, url: wallUrl, roleLabel: 'walls', sheen: wallSheen },
+    ceiling: { product: 'SW Premium Ceiling Paint', perGal: (typeof cfg.ceilingPerGal === 'number') ? cfg.ceilingPerGal : 63.99, url: 'https://www.sherwin-williams.com/homeowners/products/premium-ceiling-paint', roleLabel: 'ceilings', sheen: ceilingSheen },
+    // Trim uses the SAME tiered wall product as a comp — per the rep's
+    // call, we don't spec a separate enamel line.
+    trim:    { product: wallName, perGal: wallGal, url: wallUrl, roleLabel: 'trim & doors', sheen: trimSheen }
+  };
+
+  const buckets = {};   // key: role|colorName|colorCode
+  let scopeArea = 0;    // single-coat painted area — drives the DIY hours
+  const add = (role, color, coatArea, roomLabel) => {
+    if (coatArea <= 0) return;
+    const cName = (color && color.name) || 'color TBD';
+    const cCode = (color && color.code) || '';
+    const key = `${role}|${cName}|${cCode}`;
+    if (!buckets[key]) buckets[key] = { role, ...PRODUCTS[role], colorName: cName, colorCode: cCode, coatArea: 0, rooms: [] };
+    buckets[key].coatArea += coatArea;
+    if (roomLabel && !buckets[key].rooms.includes(roomLabel)) buckets[key].rooms.push(roomLabel);
+  };
+
+  rooms.forEach(r => {
+    const a = interiorRoomAreas(r);
+    const wallColor = (cp.mode === 'perRoom') ? (cp.perRoom && cp.perRoom[r.id]) : cp.wall;
+    const wallCoats = coats + (r.extras && r.extras.boldColor ? 1 : 0);
+    if (r.surfaces.walls) {
+      let mainWall = a.wallArea;
+      // A named accent color is its own bucket — the measured accent
+      // wall (width × height) in a color that can't pool with the rest.
+      if (r.surfaces.accent && r.accentColor && r.accentColor.name) {
+        const aw = +r.accentWidthFt || +r.wid || 0;
+        const accentArea = Math.min(Math.round(aw * (+r.height || 8)), a.wallArea);
+        mainWall -= accentArea;
+        add('walls', r.accentColor, accentArea * wallCoats, r.label);
+      }
+      add('walls', wallColor, mainWall * wallCoats, r.label);
+      scopeArea += a.wallArea;
+    }
+    if (r.surfaces.closet) { add('walls', wallColor, 120 * coats, r.label);            scopeArea += 120; }
+    const paintCeiling = r.surfaces.ceiling || (r.extras && r.extras.popcorn);
+    if (paintCeiling) {
+      if (cp.mode === 'single') add('walls', cp.wall, a.ceilArea * coats, r.label);
+      else                      add('ceiling', cp.ceiling, a.ceilArea * coats, r.label);
+      scopeArea += a.ceilArea;
+    }
+    let trimArea = 0;
+    if (r.surfaces.trim)  trimArea += a.perim * 0.5;
+    if (r.surfaces.crown) trimArea += a.perim * 0.4;
+    trimArea += (r.surfaces.doors || 0) * 40
+              + (r.surfaces.windows || 0) * 15
+              + (r.surfaces.windowsDouble || 0) * 24;
+    if (trimArea > 0) { add('trim', cp.trim, trimArea * coats, r.label); scopeArea += trimArea; }
+  });
+
+  const list = Object.values(buckets).map(b => ({
+    ...b,
+    gallons: Math.max(1, Math.ceil(b.coatArea / coverage))
+  }));
+  // Walls first, then ceilings, then trim — reads like a paint order.
+  const ROLE_ORDER = { walls: 0, ceiling: 1, trim: 2 };
+  list.sort((x, y) => (ROLE_ORDER[x.role] - ROLE_ORDER[y.role]) || (y.coatArea - x.coatArea));
+  list.forEach(b => { b.cost = b.gallons * b.perGal; });
+
+  return {
+    buckets: list,
+    totalGallons: list.reduce((s, b) => s + b.gallons, 0),
+    totalCost: list.reduce((s, b) => s + b.cost, 0),
+    scopeArea: Math.round(scopeArea)
+  };
+}
+
+// Jobber line item for an interior project — replaces the stain-centric
+// builder wholesale. Every room becomes its own block with dimensions,
+// scope, repairs, colors, and the rep's notes.
+function buildInteriorJobberLineItem(p, idx, total) {
+  const m = p.measurements || {};
+  const rooms = m.rooms || [];
+  const cp = m.colorPlan || {};
+  const tierMeta = TIER_META.interior_paint[p.tier] || {};
+  const name = `Interior Painting — ${rooms.length} room${rooms.length === 1 ? '' : 's'}${total > 1 ? ` (#${idx + 1})` : ''}`;
+  const lines = [];
+  const pushSection = (heading) => { lines.push(''); lines.push(heading); };
+  const kv = (label, value) => `${label}: ${value}`;
+
+  lines.push(kv('Paint', `${tierMeta.product || 'Sherwin-Williams interior'} — 2 coats, brushed & rolled`));
+  const colorSummary = interiorColorPlanSummary(m);
+  if (colorSummary) lines.push(kv('Colors', colorSummary));
+
+  // Estimated paint order — one line per product+color bucket so the
+  // crew can order without re-deriving gallons from room dimensions.
+  // Whole-gallon rounding per color is intentional: separate colors
+  // can't share a can.
+  try {
+    const plan = computeInteriorPaintPlan(p);
+    if (plan.buckets.length) {
+      pushSection('PAINT (ESTIMATED ORDER)');
+      plan.buckets.forEach(b => {
+        const roomsNote = (b.role === 'walls' && plan.buckets.filter(x => x.role === 'walls').length > 1)
+          ? ` — ${b.rooms.join(', ')}` : '';
+        lines.push(`  - ${b.product}, ${b.sheen} — ${b.colorName}${b.colorCode ? ` (${b.colorCode})` : ''}: ~${b.gallons} gal ${b.roleLabel}${roomsNote}`);
+      });
+      lines.push(`  Total: ~${plan.totalGallons} gal across ${plan.buckets.length} paint${plan.buckets.length === 1 ? '' : 's'}/color${plan.buckets.length === 1 ? '' : 's'}`);
+    }
+  } catch (e) { /* paint plan is informational — never block the push */ }
+
+  pushSection('ROOM-BY-ROOM SCOPE');
+  rooms.forEach((r, i) => {
+    const T = INTERIOR_ROOM_TYPES[r.type] || INTERIOR_ROOM_TYPES.other;
+    const cost = computeInteriorRoomCost(r, p.tier);
+    lines.push(`  ${i + 1}. ${r.label} — ${r.len} × ${r.wid} ft, ${r.height} ft ceilings ($${cost.total.toLocaleString()})`);
+    cost.lines.forEach(cl => lines.push(`     - ${cl.label}`));
+    const roomColor = (cp.mode === 'perRoom' && cp.perRoom) ? cp.perRoom[r.id] : null;
+    if (roomColor) lines.push(`     - Wall color: ${roomColor.name}${roomColor.code ? ` (${roomColor.code})` : ''}`);
+    const roomPhotos = (p.referencePhotos || []).filter(ph => ph && ph.roomId === r.id && ph.url).length;
+    if (roomPhotos) lines.push(`     - Photos: ${roomPhotos} attached`);
+    if (r.notes && r.notes.trim()) lines.push(`     - Note: ${r.notes.trim()}`);
+  });
+
+  // Project add-ons (from Step 8)
+  const addonIds = Object.keys(p.addons || {});
+  if (addonIds.length) {
+    pushSection('ADD-ONS');
+    addonIds.forEach(id => {
+      const def = (PRICING.projectAddons.interior || []).find(a => a.id === id) ||
+                  PRICING.serviceAddons.find(a => a.id === id);
+      if (!def) return;
+      const stored = p.addons[id];
+      const qty = (typeof stored === 'object' && stored.qty) ? stored.qty : 1;
+      const qtyStr = (def.priceType === 'each' && qty > 1) ? ` × ${qty}` : '';
+      lines.push(`  - ${def.name}${qtyStr}`);
+    });
+  }
+
+  if (p.customAddons && p.customAddons.length) {
+    pushSection('CUSTOM ITEMS');
+    p.customAddons.forEach(ca => {
+      const price = ca.rate ? ` ($${Math.round(ca.rate).toLocaleString()})` : '';
+      lines.push(`  - ${ca.name || 'Custom item'}${price}`);
+    });
+  }
+
+  const whDef = (typeof DISCOUNTS !== 'undefined') ? DISCOUNTS.find(d => d.id === 'whole_house') : null;
+  const wholeHouseApplies = whDef && rooms.length >= 4;
+  if ((p.selectedDiscounts && p.selectedDiscounts.length) || wholeHouseApplies) {
+    pushSection('DISCOUNTS APPLIED');
+    if (wholeHouseApplies) lines.push(`  - ${whDef.label} — ${Math.round(whDef.rate * 100)}% off (auto-applied)`);
+    (p.selectedDiscounts || []).filter(id => !(id === 'whole_house' && wholeHouseApplies)).forEach(id => {
+      const def = (typeof DISCOUNTS !== 'undefined') ? DISCOUNTS.find(d => d.id === id) : null;
+      const label = def ? (def.label || def.name) : id;
+      const ratePct = def && typeof def.rate === 'number' && def.rate > 0 ? ` — ${Math.round(def.rate * 100)}% off` : '';
+      lines.push(`  - ${label}${ratePct}`);
+    });
+    const projDiscountAmount = Number((p._cached && p._cached.discountAmount) || p.discountAmount) || 0;
+    if (projDiscountAmount > 0) lines.push(`  - Savings on this line: $${projDiscountAmount.toFixed(2)}`);
+  }
+
+  lines.push('');
+  lines.push(kv('Warranty', tierMeta.product === 'SW Emerald Interior'
+    ? 'Sherwin-Williams Emerald lifetime limited warranty + our free 30-day touch-up visit'
+    : 'Manufacturer warranty per Sherwin-Williams + our free 30-day touch-up visit'));
+
+  const photos = (p.referencePhotos || []).filter(ph => ph && ph.url);
+  return { name, description: lines.join('\n'), referencePhotoUrls: photos.map(ph => ph.url) };
+}
+
+// Live pricing sheet — generated from whatever PRICING/DISCOUNTS hold
+// RIGHT NOW (including saved Settings overrides), so the printed sheet
+// can never drift from what the calculator actually charges. Opened
+// from Settings; the popup is print-ready.
+function openInteriorPricingSheet() {
+  const P = PRICING.interior;
+  const ip = (PRICING.diy && PRICING.diy.interiorPaint) || {};
+  const wh = DISCOUNTS.find(d => d.id === 'whole_house');
+  const money = (n) => '$' + (+n).toFixed(2).replace(/\.00$/, '');
+  const tierMult = (t) => (P.tiers[t] / P.tiers.performance);
+
+  // Worked example computed by the real engine, so the sheet's math is
+  // the calculator's math by construction.
+  const exRoom = {
+    type: 'bedroom', label: 'Bedroom', len: 12, wid: 12, height: 8, sizePreset: '12x12',
+    surfaces: { walls: true, ceiling: true, trim: true, crown: false, accent: false, closet: false, doors: 1, windows: 1, windowsDouble: 0 },
+    drywall: 'minor', extras: { popcorn: false, wallpaper: false, boldColor: false, builtins: false, vaulted: false }, accentColor: null, notes: ''
+  };
+  const ex = computeInteriorRoomCost(exRoom, 'performance');
+  const exRows = ex.lines.map(l => `<tr><td>${escapeHtml(l.label)}</td><td class="num">${l.amount < 0 ? '−$' + Math.abs(l.amount).toFixed(2) : '$' + l.amount.toFixed(2)}</td></tr>`).join('');
+
+  const addonRows = (PRICING.projectAddons.interior || []).map(a => {
+    const price = a.priceType === 'each'
+      ? `${money(a.rate)} per ${a.qtyLabel === 'hours' ? 'hour' : (a.qtyLabel || 'each').replace(/s$/, '')}`
+      : `${money(a.rate)} flat`;
+    return `<tr><td>${escapeHtml(a.name)}</td><td class="num">${price}</td></tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>SSS Painting Pricing — live export</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a2540;margin:0;padding:28px;line-height:1.5;}
+    h1{font-size:20px;border-bottom:3px solid #2d6e4e;padding-bottom:10px;} h1 small{font-weight:500;color:#5a6378;font-size:12px;display:block;}
+    h2{font-size:14px;color:#2d6e4e;text-transform:uppercase;letter-spacing:.05em;margin:22px 0 6px;}
+    table{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0;} th{text-align:left;background:#1a2540;color:#fff;padding:6px 9px;font-size:11px;text-transform:uppercase;}
+    td{padding:6px 9px;border-bottom:1px solid #ece9e3;} .num{text-align:right;white-space:nowrap;} tr:nth-child(even) td{background:#faf9f6;}
+    .note{font-size:12px;color:#5a6378;} .total td{font-weight:800;border-top:2px solid #1a2540;}
+    @media print{ body{padding:0;} table{break-inside:avoid;} }
+  </style></head><body>
+  <h1>Painting Pricing — live export<small>Generated from the calculator's current rates · ${new Date().toLocaleDateString()} · includes any Settings overrides</small></h1>
+
+  <h2 style="font-size:15px;background:#1a2540;color:#fff;padding:8px 12px;border-radius:6px;margin-top:26px;letter-spacing:.08em;">INTERIOR PAINTING</h2>
+  <h2>Wall rates (per wall sq ft) & tier scaling</h2>
+  <table><tr><th>Level</th><th class="num">Walls $/sq ft</th><th class="num">Tier multiplier</th></tr>
+    <tr><td>Essential — SW SuperPaint</td><td class="num">${money(P.tiers.essential)}</td><td class="num">${tierMult('essential').toFixed(2)}×</td></tr>
+    <tr><td>Performance — SW Duration Home (anchor)</td><td class="num">${money(P.tiers.performance)}</td><td class="num">1.00×</td></tr>
+    <tr><td>Showcase — SW Emerald</td><td class="num">${money(P.tiers.showcase)}</td><td class="num">${tierMult('showcase').toFixed(2)}×</td></tr>
+  </table>
+  <p class="note">Wall area = 2 × (L+W) × height × wall factor (kitchen 0.65, baths 0.75) − 20 sq ft per door − 14 per single window − 24 per double window. Bathrooms price walls at ×${P.bathroomWallMult || 1.20} (mirrors, vanities, tight cut-ins). Rates below scale with the tier multiplier unless marked flat.</p>
+  <p class="note"><strong>Per-room multi-area discount:</strong> pick ${(P.roomBundle && P.roomBundle.minAreas) || 3}+ areas in one room (walls / ceiling / trim / crown / accent / closet / shelving — doors &amp; windows don't count) and that room's painting takes ${Math.round(((P.roomBundle && P.roomBundle.rate) || 0.10) * 100)}% off. Repairs and removals stay full price.</p>
+
+  <h2>Per-room line rates (at Performance)</h2>
+  <table><tr><th>Line</th><th class="num">Rate</th></tr>
+    <tr><td>Ceiling (per ceiling sq ft)</td><td class="num">${money(P.rates.ceiling)}</td></tr>
+    <tr><td>Trim & baseboards (per ln ft of perimeter)</td><td class="num">${money(P.rates.trim)}</td></tr>
+    <tr><td>Crown molding (per ln ft)</td><td class="num">${money(P.rates.crown)}</td></tr>
+    <tr><td>Door — slab both sides + jamb (each)</td><td class="num">${money(P.rates.door)}</td></tr>
+    <tr><td>Single window (each)</td><td class="num">${money(P.rates.window)}</td></tr>
+    <tr><td>Double window (each)</td><td class="num">${money(P.rates.windowDouble)}</td></tr>
+    <tr><td>Closet interior (each)</td><td class="num">${money(P.rates.closet)}</td></tr>
+    <tr><td>Accent wall — width × height, captured on the room card (per accent sq ft)</td><td class="num">${money(P.rates.accentWallPerSqFt != null ? P.rates.accentWallPerSqFt : 4)} · ${money(P.rates.accentWallMin != null ? P.rates.accentWallMin : 175)} min</td></tr>
+  </table>
+
+  <h2>Drywall repairs (at a standard room — auto-scales with size)</h2>
+  <table><tr><th>Level</th><th class="num">Price</th></tr>
+    <tr><td>Minor — nail holes, dings, hairline cracks</td><td class="num">${money(P.drywall.minor)}</td></tr>
+    <tr><td>Moderate — patches to ~6", seam cracks</td><td class="num">${money(P.drywall.moderate)}</td></tr>
+    <tr><td>Major — large holes, water damage, corner bead</td><td class="num">${money(P.drywall.major)}</td></tr>
+  </table>
+  <p class="note">Prices cover a standard ${P.drywallRefWallSqFt || 384} gross-wall-sq-ft room (12×12×8). The charge scales with the room's gross wall area, clamped ×0.7 (small baths) to ×1.6 (great rooms) — a big living room pays more than a powder bath for the same severity.</p>
+
+  <h2>Less-common options</h2>
+  <table><tr><th>Option</th><th class="num">Rate</th></tr>
+    <tr><td>Popcorn ceiling removal (per ceiling sq ft, incl. stain-block prime)</td><td class="num">${money(P.extras.popcorn)}</td></tr>
+    <tr><td>Wallpaper removal (per wall sq ft)</td><td class="num">${money(P.extras.wallpaper)}</td></tr>
+    <tr><td>Bold color change / extra coat (per wall sq ft)</td><td class="num">${money(P.extras.boldColor)}</td></tr>
+    <tr><td>Built-ins / bookcases — width captured on the room card (per ln ft of face)</td><td class="num">${money(P.extras.builtinsPerLnFt != null ? P.extras.builtinsPerLnFt : 45)} · ${money(P.extras.builtinsMin != null ? P.extras.builtinsMin : 175)} min</td></tr>
+    <tr><td>Shelving &amp; rod runs — walk-in closets, pantries, laundry (per ln ft of run)</td><td class="num">${money(P.extras.shelvingPerLnFt != null ? P.extras.shelvingPerLnFt : 12)}</td></tr>
+    <tr><td>Vaulted / 2-story ceiling (multiplier on walls+ceiling+trim+crown)</td><td class="num">×${P.extras.vaultedMult}</td></tr>
+  </table>
+
+  <h2>Project add-ons</h2>
+  <table><tr><th>Add-on</th><th class="num">Price</th></tr>${addonRows}</table>
+
+  <h2>Discounts & floor</h2>
+  <p class="note">Project discounts stack to ${(DISCOUNT_STACK_CAP * 100).toFixed(0)}% max.${wh ? ` ${wh.label}: −${(wh.rate * 100).toFixed(0)}% — auto at 4+ rooms, manually addable below that, always inside the cap (never stacks past ${(DISCOUNT_STACK_CAP * 100).toFixed(0)}%).` : ''} Bundle (2+ projects): −${(PRICING.bundleDiscount * 100).toFixed(0)}% separately on top. Per-room multi-area discount (above) applies inside the room price before any of these. Floors: interior painting $${P.minimumJob || PRICING.minimumJob} · stain projects $${PRICING.minimumJob}.</p>
+
+  <h2>Paint plan (DIY panel + Jobber paint order)</h2>
+  <p class="note">Gallons per color bucket = roundup(area × ${ip.coats || 2} coats ÷ ${ip.coverageSqFtPerGal || 325} sq ft/gal). Walls &amp; trim at SW list, by tier: SuperPaint ${money((ip.perGal || {}).essential || 83.49)} / Duration Home ${money((ip.perGal || {}).performance || 95.99)} / Emerald ${money((ip.perGal || {}).showcase || 101.49)} per gal (trim is the same tiered product in semi-gloss). Ceiling: SW Premium Ceiling Paint ${money(ip.ceilingPerGal || 63.99)}/gal. Every distinct color rounds up to whole gallons separately.</p>
+
+  <h2>Worked example — 12×12×8 bedroom · walls, ceiling, trim (3 areas → multi-area discount), 1 door, 1 single window, minor repairs · Performance</h2>
+  <table>${exRows}<tr class="total"><td>Room total</td><td class="num">$${ex.total.toLocaleString()}</td></tr></table>
+
+  <h2 style="font-size:15px;background:#1a2540;color:#fff;padding:8px 12px;border-radius:6px;margin-top:26px;letter-spacing:.08em;">EXTERIOR PAINTING</h2>
+  ${(() => {
+    const E = PRICING.exterior;
+    const eg = (PRICING.diy && PRICING.diy.exteriorPaint) || {};
+    const exm = { sides: [
+      { label: 'Front', len: 40, height: 10, substrate: 'wood', peel: 'none' },
+      { label: 'Back', len: 40, height: 10, substrate: 'wood', peel: 'none' },
+      { label: 'Left side', len: 30, height: 10, substrate: 'wood', peel: 'none' },
+      { label: 'Right side', len: 30, height: 10, substrate: 'wood', peel: 'none' }
+    ], ext: { trimFascia: 0, soffit: 0, gutters: 140, windows: 6, shutters: 4, doors: 1, garage1: 0, garage2: 0, porchCeilingSqFt: 0, railingLnFt: 0, columns: 0 } };
+    const exc = computeExteriorCost('performance', exm);
+    const exRows2 = exc.lines.map(l => `<tr><td>${escapeHtml(l.label)}</td><td class="num">$${l.amount.toFixed(2)}</td></tr>`).join('');
+    return `
+  <h2>Siding rates (per sq ft) &amp; multipliers</h2>
+  <table><tr><th>Level</th><th class="num">Siding $/sq ft</th></tr>
+    <tr><td>Essential — SW SuperPaint Exterior</td><td class="num">${money(E.tiers.essential)}</td></tr>
+    <tr><td>Performance — SW Duration Exterior (anchor)</td><td class="num">${money(E.tiers.performance)}</td></tr>
+    <tr><td>Showcase — SW Emerald Exterior</td><td class="num">${money(E.tiers.showcase)}</td></tr>
+  </table>
+  <p class="note">Per side: length × avg height × siding rate × substrate (vinyl ×${E.substrate.vinyl} · wood ×${E.substrate.wood} · Hardie ×${E.substrate.fiber_cement} · stucco ×${E.substrate.stucco} · brick ×${E.substrate.brick}) × high-work ×${E.highWorkMult} when avg height ≥ ${E.highWorkAtFt} ft. Peeling prep adds ${money(E.peel.light)} (light) or ${money(E.peel.heavy)} (heavy) per sq ft on that side. Wash always included.</p>
+  <h2>House details (at Performance — scale with level)</h2>
+  <table><tr><th>Line</th><th class="num">Rate</th></tr>
+    <tr><td>Trim, casings &amp; fascia (per ln ft)</td><td class="num">${money(E.rates.trimFascia)}</td></tr>
+    <tr><td>Soffits / eaves (per ln ft)</td><td class="num">${money(E.rates.soffit)}</td></tr>
+    <tr><td>Gutters + downspouts (per ln ft)</td><td class="num">${money(E.rates.gutters)}</td></tr>
+    <tr><td>Window trim (each)</td><td class="num">${money(E.rates.windowTrim)}</td></tr>
+    <tr><td>Shutter (each)</td><td class="num">${money(E.rates.shutter)}</td></tr>
+    <tr><td>Entry door (each)</td><td class="num">${money(E.rates.door)}</td></tr>
+    <tr><td>Garage door — 1-car / 2-car (each)</td><td class="num">${money(E.rates.garage1)} / ${money(E.rates.garage2)}</td></tr>
+    <tr><td>Porch ceiling (per sq ft)</td><td class="num">${money(E.rates.porchCeiling)}</td></tr>
+    <tr><td>Railings (per ln ft)</td><td class="num">${money(E.rates.railing)}</td></tr>
+    <tr><td>Columns / posts (each)</td><td class="num">${money(E.rates.column)}</td></tr>
+    <tr><td>Exterior job minimum</td><td class="num">$${E.minimumJob}</td></tr>
+  </table>
+  <p class="note">DIY paint at SW list: SuperPaint Ext ${money((eg.perGal || {}).essential || 86.99)} / Duration Ext ${money((eg.perGal || {}).performance || 111.49)} / Emerald Ext ${money((eg.perGal || {}).showcase || 117.99)} per gal · 2 coats at ${eg.coverageSqFtPerGal || 300} sq ft/gal effective.</p>
+  <h2>Worked example — 40×30 one-story wood house · 6 windows, 4 shutters, 1 door, 140 ln ft gutters · Performance</h2>
+  <table>${exRows2}<tr class="total"><td>Project total</td><td class="num">$${exc.total.toLocaleString()}</td></tr></table>`;
+  })()}
+
+  <h2 style="font-size:15px;background:#1a2540;color:#fff;padding:8px 12px;border-radius:6px;margin-top:26px;letter-spacing:.08em;">CABINET PAINTING</h2>
+  ${(() => {
+    const C = PRICING.cabinet;
+    const cg = (PRICING.diy && PRICING.diy.cabinetPaint) || {};
+    const fm = C.finishMult || {};
+    const cxa = { type: 'kitchen', label: 'Kitchen', doors: 18, drawers: 7, glassDoors: 0, endPanels: 2, crownLnFt: 0, insideBoxes: 0, finish: 'painted', oakGrain: false, thermofoil: false };
+    const cxc = computeCabinetAreaCost(cxa, 'performance');
+    const cxRows = cxc.lines.map(l => `<tr><td>${escapeHtml(l.label)}</td><td class="num">$${l.amount.toFixed(2)}</td></tr>`).join('');
+    return `
+  <h2>Per-piece rates by level</h2>
+  <table><tr><th>Piece</th><th class="num">ProClassic (brush)</th><th class="num">Emerald Ure. (spray doors)</th><th class="num">Full spray</th></tr>
+    <tr><td>Door (each)</td><td class="num">${money(C.tiers.essential)}</td><td class="num">${money(C.tiers.performance)}</td><td class="num">${money(C.tiers.showcase)}</td></tr>
+  </table>
+  <p class="note">Drawer front ${money(C.pieceRates.drawer)} · end/island panel ${money(C.pieceRates.endPanel)} · glass-door frame ${money(C.pieceRates.glassDoor)} (at Performance — they scale with the door multiplier). Cabinet crown ${money(C.crownPerLnFt)}/ln ft flat · box interior ${money(C.insideBox)} flat · oak grain-fill ${money(C.oakGrainPerPiece)} per door/drawer.</p>
+  <h2>Existing-finish prep multipliers</h2>
+  <table><tr><th>Finish found</th><th class="num">Multiplier</th></tr>
+    <tr><td>Painted before (baseline)</td><td class="num">×${fm.painted != null ? fm.painted : 1.0}</td></tr>
+    <tr><td>Stained / lacquered — adhesion prime</td><td class="num">×${fm.stained != null ? fm.stained : 1.15}</td></tr>
+    <tr><td>Factory finish — heaviest scuff + bonding primer</td><td class="num">×${fm.factory != null ? fm.factory : 1.2}</td></tr>
+    <tr><td>Unfinished / raw wood — lighter prep</td><td class="num">×${fm.unfinished != null ? fm.unfinished : 0.9}</td></tr>
+  </table>
+  <p class="note">Thermofoil doors get FLAGGED, not priced — strip/swap/decline is an on-site call. Cabinet job minimum $${C.minimumJob}. DIY at SW list: ProClassic ${money((cg.perGal || {}).essential || 106.99)} / Emerald Urethane ${money((cg.perGal || {}).performance || 130.49)} per gal + primer ${money(cg.primerPerGal || 69.99)}.</p>
+  <h2>Worked example — medium kitchen (18 doors, 7 drawers, 2 end panels, painted before) · Performance</h2>
+  <table>${cxRows}<tr class="total"><td>Kitchen total</td><td class="num">$${cxc.total.toLocaleString()}</td></tr></table>`;
+  })()}
+
+  <p class="note">Printed sheets go stale the moment a rate changes in Settings — re-export after edits. Generated by the calculator.</p>
+  <scr${''}ipt>setTimeout(function(){ try { window.print(); } catch (e) {} }, 400);<\/script>
+  <\/body><\/html>`;
+
+  const win = window.open('', '_blank');
+  if (!win) { sssAlert('Popup blocked', 'Allow popups for this site to open the pricing sheet, then try again.'); return; }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+}
+
+/* ============================================================
+   EXTERIOR + CABINET PAINTING MODULES
+   ============================================================
+   Built on the interior framework: all data rides INSIDE
+   project.measurements (sides[]/areas[] + colorPlan) so saves,
+   resume, bundling, and the Jobber payload need zero schema
+   changes. Both types skip the Condition + Product stages the
+   same way interior does; prep lives in the measurement builder.
+   The measurement UIs reuse the int-* CSS classes wholesale.
+   ============================================================ */
+
+function isExterior(p) { return ((p || state.activeProject) || {}).type === 'exterior'; }
+function isCabinet(p)  { return ((p || state.activeProject) || {}).type === 'cabinet'; }
+// One gate for "SW paint project that skips Condition/Product stages".
+function isPaintProject(p) { return isInterior(p) || isExterior(p) || isCabinet(p); }
+
+/* ---------------- EXTERIOR ---------------- */
+
+const EXTERIOR_SIDE_PRESETS = ['Front', 'Back', 'Left side', 'Right side', 'Gable / dormer', 'Other'];
+const EXTERIOR_HEIGHTS = [
+  { label: '1 story',  ft: 10 },
+  { label: '1.5 story', ft: 13 },
+  { label: '2 story',  ft: 19 },
+  { label: '2.5+ story', ft: 22 }
+];
+const EXTERIOR_SUBSTRATES = {
+  vinyl:        { label: 'Vinyl' },
+  wood:         { label: 'Wood / LP' },
+  fiber_cement: { label: 'Hardie / fiber-cement' },
+  stucco:       { label: 'Stucco' },
+  brick:        { label: 'Brick / masonry' }
+};
+const EXTERIOR_PEEL_META = {
+  none:  { label: 'Sound',  hint: 'Existing paint is tight — wash and go.' },
+  light: { label: 'Light peeling', hint: 'Scattered peeling — scrape, feather-sand, spot-prime.' },
+  heavy: { label: 'Heavy peeling', hint: 'Widespread failure — aggressive scrape/sand + primer.' }
+};
+const EXTERIOR_SHEENS = {
+  body: ['Flat', 'Satin', 'Gloss'],
+  trim: ['Satin', 'Gloss'],
+  door: ['Satin', 'Gloss']
+};
+const EXTERIOR_DEFAULT_SHEEN = { body: 'Satin', trim: 'Gloss', door: 'Gloss' };
+const EXTERIOR_DEFAULT_TRIM = { name: 'Extra White', code: 'SW 7006', hex: '#EEEFEA' };
+// Extra gallons on porous substrates — priced labor already carries the
+// substrate multiplier; this one only affects the PAINT ORDER.
+const EXTERIOR_PAINT_FACTOR = { vinyl: 1.0, wood: 1.05, fiber_cement: 1.05, stucco: 1.3, brick: 1.35 };
+
+let __extSideSeq = 1;
+function exteriorData() {
+  const m = state.activeProject.measurements;
+  if (!Array.isArray(m.sides)) m.sides = [];
+  if (!m.ext) m.ext = { trimFascia: 0, soffit: 0, gutters: 0, windows: 0, shutters: 0,
+                        doors: 0, garage1: 0, garage2: 0, porchCeilingSqFt: 0,
+                        railingLnFt: 0, columns: 0, pre1978: false };
+  return m;
+}
+function exteriorSides() { return exteriorData().sides; }
+
+function makeExteriorSide(preset) {
+  const sides = exteriorSides();
+  const same = sides.filter(s => s.preset === preset).length;
+  const label = same > 0 ? `${preset} ${same + 1}` : preset;
+  return {
+    id: 'side-' + Date.now() + '-' + (__extSideSeq++),
+    preset, label,
+    len: 0, height: 10,
+    substrate: 'wood',
+    peel: 'none',
+    notes: '',
+    _open: true
+  };
+}
+
+function syncExteriorDerived() {
+  const m = exteriorData();
+  m.sqft = m.sides.reduce((s, sd) => s + Math.round((+sd.len || 0) * (+sd.height || 0)), 0);
+  m.sideCount = m.sides.length;
+}
+
+// Whole-project exterior price at a tier → { total, lines, sidingArea }.
+// Pass `mIn` for bundled/saved projects; defaults to the active one.
+function computeExteriorCost(tierId, mIn) {
+  const P = PRICING.exterior;
+  const t = tierId || state.activeProject.tier || 'performance';
+  const rate = P.tiers[t] || P.tiers.performance;
+  const mult = rate / P.tiers.performance;
+  const m = mIn ? { sides: mIn.sides || [], ext: mIn.ext || {} } : exteriorData();
+  const lines = [];
+  let total = 0;
+  let sidingArea = 0;
+
+  m.sides.forEach(sd => {
+    const area = Math.round((+sd.len || 0) * (+sd.height || 0));
+    if (!area) return;
+    sidingArea += area;
+    const sub = P.substrate[sd.substrate] != null ? P.substrate[sd.substrate] : 1;
+    const high = (+sd.height || 0) >= (P.highWorkAtFt || 14) ? (P.highWorkMult || 1.15) : 1;
+    let v = area * rate * sub * high;
+    const bits = [`${area} sq ft`, (EXTERIOR_SUBSTRATES[sd.substrate] || {}).label || sd.substrate];
+    if (high > 1) bits.push('high work');
+    lines.push({ label: `${sd.label} siding — ${bits.join(', ')}`, amount: v });
+    total += v;
+    if (sd.peel && sd.peel !== 'none') {
+      const pv = area * (P.peel[sd.peel] || 0);
+      lines.push({ label: `${sd.label} — ${(EXTERIOR_PEEL_META[sd.peel] || {}).label.toLowerCase()} prep`, amount: pv });
+      total += pv;
+    }
+  });
+
+  const e = m.ext;
+  const push = (cond, label, v) => { if (cond && v > 0) { lines.push({ label, amount: v }); total += v; } };
+  push(+e.trimFascia > 0, `Trim, casings & fascia — ${e.trimFascia} ln ft`, e.trimFascia * P.rates.trimFascia * mult);
+  push(+e.soffit > 0,     `Soffits & eaves — ${e.soffit} ln ft`,            e.soffit * P.rates.soffit * mult);
+  push(+e.gutters > 0,    `Gutters & downspouts — ${e.gutters} ln ft`,      e.gutters * P.rates.gutters * mult);
+  push(+e.windows > 0,    `Window trim — ${e.windows}`,                     e.windows * P.rates.windowTrim * mult);
+  push(+e.shutters > 0,   `Shutters — ${e.shutters}`,                       e.shutters * P.rates.shutter * mult);
+  push(+e.doors > 0,      `Entry doors — ${e.doors}`,                       e.doors * P.rates.door * mult);
+  push(+e.garage1 > 0,    `1-car garage doors — ${e.garage1}`,              e.garage1 * P.rates.garage1 * mult);
+  push(+e.garage2 > 0,    `2-car garage doors — ${e.garage2}`,              e.garage2 * P.rates.garage2 * mult);
+  push(+e.porchCeilingSqFt > 0, `Porch ceiling — ${e.porchCeilingSqFt} sq ft`, e.porchCeilingSqFt * P.rates.porchCeiling * mult);
+  push(+e.railingLnFt > 0, `Railings — ${e.railingLnFt} ln ft`,             e.railingLnFt * P.rates.railing * mult);
+  push(+e.columns > 0,    `Columns / posts — ${e.columns}`,                 e.columns * P.rates.column * mult);
+
+  return { total: Math.round(total), lines, sidingArea };
+}
+function computeExteriorBase(tierId) { return computeExteriorCost(tierId).total; }
+
+/* ---------------- CABINETS ---------------- */
+
+// `presets` = one-tap starting counts per area size (typical US
+// cabinet runs, cross-checked against the face-count seeds). The rep
+// taps the closest size, then nudges the counters to what's actually
+// on the wall — same pattern as the interior room quick-sizes.
+const CABINET_AREA_TYPES = {
+  kitchen:  { label: 'Kitchen',           icon: '🍳', presets: [
+    { label: 'Small',  hint: '~12 doors', doors: 12, drawers: 5,  endPanels: 1 },
+    { label: 'Medium', hint: '~18 doors', doors: 18, drawers: 7,  endPanels: 2 },
+    { label: 'Large',  hint: '~26 doors', doors: 26, drawers: 10, endPanels: 3 }
+  ]},
+  island:   { label: 'Island / peninsula', icon: '🏝️', presets: [
+    { label: 'Standard', hint: '3 doors',  doors: 3, drawers: 2, endPanels: 2 },
+    { label: 'Large',    hint: '4+ doors', doors: 4, drawers: 3, endPanels: 2 }
+  ]},
+  vanity:   { label: 'Bathroom vanity',   icon: '🛁', presets: [
+    { label: 'Single', hint: '24–36"', doors: 2, drawers: 1, endPanels: 0 },
+    { label: 'Double', hint: '60–72"', doors: 4, drawers: 4, endPanels: 0 }
+  ]},
+  laundry:  { label: 'Laundry / mudroom', icon: '🧺', presets: [
+    { label: 'Uppers only', hint: '', doors: 4, drawers: 0, endPanels: 0 },
+    { label: 'Full room',   hint: '', doors: 6, drawers: 2, endPanels: 1 }
+  ]},
+  butlers:  { label: "Butler's / bar",    icon: '🍸', presets: [
+    { label: 'Typical', hint: '', doors: 4, drawers: 2, endPanels: 1 }
+  ]},
+  builtin:  { label: 'Built-in / desk',   icon: '📚', presets: [
+    { label: 'Typical', hint: '', doors: 4, drawers: 2, endPanels: 1 }
+  ]},
+  other:    { label: 'Other / custom',    icon: '📐', presets: [] }
+};
+const CABINET_FINISH_META = {
+  painted:    { label: 'Painted before',      hint: 'Standard prep — degrease, scuff, prime.' },
+  stained:    { label: 'Stained / lacquered', hint: 'Site-finished stain — extra adhesion prime + heavier scuff.' },
+  factory:    { label: 'Factory finish',      hint: 'Slick catalyzed factory coating — heaviest scuff + bonding primer.' },
+  unfinished: { label: 'Unfinished / raw',    hint: 'Raw wood — no old finish to fight; prime + paint.' }
+};
+const CABINET_SHEENS = ['Satin', 'Semi-Gloss'];
+const CABINET_DEFAULT_SHEEN = 'Satin';
+
+let __cabAreaSeq = 1;
+function cabinetAreas() {
+  const m = state.activeProject.measurements;
+  if (!Array.isArray(m.areas)) m.areas = [];
+  return m.areas;
+}
+function makeCabinetArea(typeId) {
+  const T = CABINET_AREA_TYPES[typeId] || CABINET_AREA_TYPES.other;
+  const areas = cabinetAreas();
+  const same = areas.filter(a => a.type === typeId).length;
+  return {
+    id: 'cab-' + Date.now() + '-' + (__cabAreaSeq++),
+    type: typeId,
+    label: same > 0 ? `${T.label} ${same + 1}` : T.label,
+    doors: 0, drawers: 0, glassDoors: 0, endPanels: 0,
+    crownLnFt: 0, insideBoxes: 0,
+    finish: 'painted',       // painted | stained
+    oakGrain: false,         // open-grain oak → grain-fill for smooth finish
+    thermofoil: false,       // ⚠️ special case — flagged, not priced
+    notes: '',
+    _open: true
+  };
+}
+function cabinetPieceCount(a) {
+  return (+a.doors || 0) + (+a.drawers || 0) + (+a.glassDoors || 0) + (+a.endPanels || 0);
+}
+function syncCabinetDerived() {
+  const m = state.activeProject.measurements;
+  const areas = cabinetAreas();
+  m.areaCount = areas.length;
+  m.pieceCount = areas.reduce((s, a) => s + cabinetPieceCount(a), 0);
+  // m.sqft = enamel-coated face area, feeds DIY hour math.
+  m.sqft = areas.reduce((s, a) => s + Math.round(
+    (+a.doors || 0) * 7 + (+a.drawers || 0) * 1.5 + (+a.glassDoors || 0) * 3 +
+    (+a.endPanels || 0) * 10 + (+a.crownLnFt || 0) * 0.75 + (+a.insideBoxes || 0) * 12), 0);
+}
+
+function computeCabinetAreaCost(area, tierId) {
+  const P = PRICING.cabinet;
+  const t = tierId || state.activeProject.tier || 'performance';
+  const doorRate = P.tiers[t] || P.tiers.performance;
+  const mult = doorRate / P.tiers.performance;
+  const lines = [];
+  let pieces = 0;
+
+  const add = (count, rate, label) => {
+    if (!(+count > 0)) return;
+    const v = count * rate;
+    pieces += v;
+    lines.push({ label: `${label} — ${count}`, amount: v });
+  };
+  add(area.doors,      doorRate,                          'Doors');
+  add(area.drawers,    P.pieceRates.drawer   * mult,      'Drawer fronts');
+  add(area.glassDoors, P.pieceRates.glassDoor * mult,     'Glass-front doors (frames)');
+  add(area.endPanels,  P.pieceRates.endPanel * mult,      'End / island panels');
+
+  let flat = 0;
+  if (+area.crownLnFt > 0)   { const v = area.crownLnFt * P.crownPerLnFt; flat += v; lines.push({ label: `Cabinet crown / light rail — ${area.crownLnFt} ln ft`, amount: v }); }
+  if (+area.insideBoxes > 0) { const v = area.insideBoxes * P.insideBox;  flat += v; lines.push({ label: `Box interiors — ${area.insideBoxes}`, amount: v }); }
+  if (area.oakGrain) {
+    const grainPieces = (+area.doors || 0) + (+area.drawers || 0);
+    if (grainPieces > 0) { const v = grainPieces * P.oakGrainPerPiece; flat += v; lines.push({ label: `Oak grain-fill — ${grainPieces} pieces`, amount: v }); }
+  }
+  const fm = (P.finishMult && P.finishMult[area.finish] != null) ? P.finishMult[area.finish]
+           : (area.finish === 'stained' ? 1.15 : 1);
+  if (fm !== 1 && pieces > 0) {
+    const bump = pieces * (fm - 1);
+    const pct = Math.round((fm - 1) * 100);
+    lines.push({ label: `${(CABINET_FINISH_META[area.finish] || {}).label || area.finish} — ${fm > 1 ? 'extra prep +' + pct + '%' : 'lighter prep ' + pct + '%'}`, amount: bump });
+    pieces += bump;
+  }
+  return { total: Math.round(pieces + flat), lines };
+}
+function computeCabinetBase(tierId) {
+  return cabinetAreas().reduce((s, a) => s + computeCabinetAreaCost(a, tierId).total, 0);
+}
+
+/* ---------------- Measurement builders (Step 3) ---------------- */
+
+// Labeled number field — the shared input style for house details,
+// side dimensions, and cabinet extras. `sideId` scopes per-card fields.
+function extField(f, label, value, unit, sideId, step) {
+  return `<div class="ext-field">
+    <label>${label}</label>
+    <div class="ef-wrap">
+      <input type="number" inputmode="decimal" min="0" step="${step || 1}" value="${value || ''}" placeholder="0"
+        data-ext-field="${f}" ${sideId ? `data-side-id="${sideId}"` : ''}>
+      <span class="unit">${unit}</span>
+    </div>
+  </div>`;
+}
+
+// Per-side price — drives the $ figure on each side card's header.
+function exteriorSideCost(sd, tierId) {
+  const P = PRICING.exterior;
+  const t = tierId || state.activeProject.tier || 'performance';
+  const rate = P.tiers[t] || P.tiers.performance;
+  const area = Math.round((+sd.len || 0) * (+sd.height || 0));
+  if (!area) return 0;
+  const sub = P.substrate[sd.substrate] != null ? P.substrate[sd.substrate] : 1;
+  const high = (+sd.height || 0) >= (P.highWorkAtFt || 14) ? (P.highWorkMult || 1.15) : 1;
+  return Math.round(area * rate * sub * high + area * (P.peel[sd.peel] || 0));
+}
+
+function exteriorSideCardHtml(sd) {
+  const area = Math.round((+sd.len || 0) * (+sd.height || 0));
+  const cost = exteriorSideCost(sd, state.activeProject.tier);
+  const heightChips = EXTERIOR_HEIGHTS.map(h =>
+    `<button type="button" class="int-chip ${+sd.height === h.ft ? 'on' : ''}" data-ext-height="${h.ft}" data-side-id="${sd.id}">${h.label} · ${h.ft} ft</button>`).join('');
+  const subChips = Object.entries(EXTERIOR_SUBSTRATES).map(([k, v]) =>
+    `<button type="button" class="int-chip ${sd.substrate === k ? 'on' : ''}" data-ext-substrate="${k}" data-side-id="${sd.id}">${sd.substrate === k ? '✓ ' : ''}${v.label}</button>`).join('');
+  const peelSegs = Object.entries(EXTERIOR_PEEL_META).map(([k, v]) =>
+    `<button type="button" class="int-seg-btn ${sd.peel === k ? 'on' : ''}" data-ext-peel="${k}" data-side-id="${sd.id}">${v.label}</button>`).join('');
+  return `
+  <div class="int-room-card ${sd._open ? 'open' : ''}" data-side-card="${sd.id}">
+    <div class="int-room-head" data-ext-toggle="${sd.id}">
+      <span class="irh-ico">🧱</span>
+      <input class="irh-label" value="${escapeHtml(sd.label)}" data-ext-rename="${sd.id}" aria-label="Side name" onclick="event.stopPropagation()">
+      <span class="irh-meta">${sd.len || '?'} × ${sd.height || '?'} ft · ${area} sq ft</span>
+      <span class="irh-price">$${cost.toLocaleString()}</span>
+      <button type="button" class="irh-x" data-ext-remove="${sd.id}" title="Remove this side">×</button>
+      <span class="irh-chev">${sd._open ? '▾' : '▸'}</span>
+    </div>
+    <div class="int-room-body" style="display:${sd._open ? 'block' : 'none'}">
+      <div class="int-sec">
+        <div class="int-sec-title">📐 Wall size</div>
+        <div class="int-custom-size" style="margin-top:0;">
+          <div class="ics-field"><label>Length (ft)</label><input type="number" inputmode="decimal" min="0" step="1" value="${sd.len || ''}" data-ext-field="len" data-side-id="${sd.id}"></div>
+          <div class="ics-field"><label>Avg height (ft)</label><input type="number" inputmode="decimal" min="0" step="1" value="${sd.height || ''}" data-ext-field="height" data-side-id="${sd.id}"></div>
+        </div>
+        <div class="int-chip-row" style="margin-top:10px;">
+          <span class="int-inline-lbl">Quick height:</span>
+          ${heightChips}
+        </div>
+      </div>
+      <div class="int-sec">
+        <div class="int-sec-title">🧱 Siding type</div>
+        <div class="int-chip-row">${subChips}</div>
+      </div>
+      <div class="int-sec">
+        <div class="int-sec-title">🩹 Existing paint condition <small style="font-weight:500;color:var(--slate);">— wash always included</small></div>
+        <div class="int-seg" role="group">${peelSegs}</div>
+        <div class="int-seg-hint">${(EXTERIOR_PEEL_META[sd.peel] || {}).hint || ''}</div>
+      </div>
+      <div class="int-sec">
+        <div class="int-sec-title">📝 Side notes</div>
+        <textarea class="int-notes" placeholder="Landscaping access, window boxes, wasp nests…" data-ext-notes="${sd.id}">${escapeHtml(sd.notes || '')}</textarea>
+      </div>
+    </div>
+  </div>`;
+}
+
+// Quick-build scratch state — how the rep DESCRIBES the house before
+// the sides get generated. Transient by design (not saved with the
+// quote; the generated sides are the real data).
+let __extQB = { ft: 10, substrate: 'wood', len: '', wid: '' };
+
+function renderExteriorMeasurements() {
+  const container = __doc.getElementById('measureContainer');
+  if (!container) return;
+  const m = exteriorData();
+  syncExteriorDerived();
+  const est = computeExteriorCost(state.activeProject.tier);
+  const e = m.ext;
+
+  const storySegs = EXTERIOR_HEIGHTS.map(h =>
+    `<button type="button" class="int-seg-btn ${__extQB.ft === h.ft ? 'on' : ''}" data-qb-story="${h.ft}">${h.label}</button>`).join('');
+  const qbSubChips = Object.entries(EXTERIOR_SUBSTRATES).map(([k, v]) =>
+    `<button type="button" class="int-chip small ${__extQB.substrate === k ? 'on' : ''}" data-qb-substrate="${k}">${__extQB.substrate === k ? '✓ ' : ''}${v.label}</button>`).join('');
+  const singleChips = EXTERIOR_SIDE_PRESETS.map(p =>
+    `<button type="button" class="int-chip small" data-add-side="${p}">＋ ${p}</button>`).join('');
+
+  const counter = (field, label) => `
+    <div class="int-counter">
+      <span class="lbl">${label}</span>
+      <button type="button" class="ic-btn" data-ext-count="${field}" data-ext-delta="-1">−</button>
+      <input class="ic-input" type="number" inputmode="numeric" min="0" value="${+e[field] || 0}" data-ext-set="${field}">
+      <button type="button" class="ic-btn" data-ext-count="${field}" data-ext-delta="1">＋</button>
+    </div>`;
+
+  container.innerHTML = `
+    <div class="int-builder">
+      <div class="int-add-section" style="margin-top:0;">
+        <div class="int-add-title">🏠 Describe the house <small style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--slate);">— we'll build all four sides in one tap</small></div>
+        <div class="int-chip-row" style="margin-bottom:10px;">
+          <span class="int-inline-lbl">Stories:</span>
+          <span class="int-seg" role="group">${storySegs}</span>
+        </div>
+        <div class="int-chip-row" style="margin-bottom:12px;">
+          <span class="int-inline-lbl">Siding:</span>
+          ${qbSubChips}
+        </div>
+        <div style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+          <div class="ics-field"><label>House length (ft)</label><input type="number" inputmode="decimal" min="0" step="1" value="${__extQB.len}" placeholder="e.g. 40" data-qb-len></div>
+          <div class="ics-field"><label>House width (ft)</label><input type="number" inputmode="decimal" min="0" step="1" value="${__extQB.wid}" placeholder="e.g. 30" data-qb-wid></div>
+          <button type="button" class="btn btn-primary" data-qb-build style="padding:11px 20px; font-size:14px;">🔨 Build the 4 sides</button>
+        </div>
+        <div class="int-seg-hint" style="margin-top:8px;">Front &amp; back use the length, the two ends use the width — pace it off (1 stride ≈ 2.5 ft). Tap any side after to tweak height, siding, or peeling.</div>
+        <div class="int-chip-row" style="margin-top:12px;">
+          <span class="int-inline-lbl">Or one at a time:</span>
+          ${singleChips}
+        </div>
+      </div>
+
+      ${m.sides.length
+        ? `<div style="margin-top:14px;">${m.sides.map(exteriorSideCardHtml).join('')}</div>`
+        : `<div class="int-empty" style="margin-top:14px;"><strong>No sides yet</strong><span>Enter the footprint above and tap <b>Build the 4 sides</b> — or add a single side for partial jobs (front-only refresh, one gable, etc.).</span></div>`}
+
+      <div class="int-add-section" style="margin-top:16px;">
+        <div class="int-add-title">🔢 Openings &amp; extras <small style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--slate);">— tap to count as you walk</small></div>
+        <div class="int-counter-row" style="margin-top:0;">
+          ${counter('windows', '🪟 Windows')}
+          ${counter('shutters', '🪟 Shutters')}
+          ${counter('doors', '🚪 Entry doors')}
+          ${counter('garage1', '🚗 1-car garage')}
+          ${counter('garage2', '🚗 2-car garage')}
+          ${counter('columns', '🏛️ Columns / posts')}
+        </div>
+      </div>
+
+      <div class="int-add-section" style="margin-top:12px;">
+        <div class="int-add-title" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">📏 Measured runs
+          <button type="button" class="int-chip small" data-ext-estimate title="Fills trim, soffits, and gutters from the side lengths — adjust after.">✨ Estimate from sides</button>
+        </div>
+        <div class="ext-fields">
+          ${extField('trimFascia', 'Trim & fascia', e.trimFascia, 'ln ft')}
+          ${extField('soffit', 'Soffits / eaves', e.soffit, 'ln ft')}
+          ${extField('gutters', 'Gutters + spouts', e.gutters, 'ln ft')}
+          ${extField('railingLnFt', 'Porch railings', e.railingLnFt, 'ln ft')}
+          ${extField('porchCeilingSqFt', 'Porch ceiling', e.porchCeilingSqFt, 'sq ft')}
+        </div>
+        <div class="int-chip-row" style="margin-top:12px;">
+          <button type="button" class="int-chip small ${e.pre1978 ? 'on' : ''}" data-ext-pre1978>${e.pre1978 ? '✓ ' : ''}⚠️ Built before 1978 — lead-safe practices (noted on quote)</button>
+        </div>
+      </div>
+
+      <div class="int-summary-bar" id="extSummaryBar">
+        <strong>${m.sqft.toLocaleString()} sq ft of siding</strong> across ${m.sides.length} side${m.sides.length === 1 ? '' : 's'}
+        ${est.total ? ` · running estimate <strong>$${est.total.toLocaleString()}</strong> <small>at ${state.activeProject.tier || 'performance'} — final level picked on Step 6</small>` : ''}
+      </div>
+    </div>`;
+
+  const rerender = () => { syncExteriorDerived(); renderExteriorMeasurements(); updateRunningTotal(); };
+  const refreshBar = () => {
+    syncExteriorDerived();
+    updateRunningTotal();
+    const bar = container.querySelector('#extSummaryBar');
+    if (!bar) return;
+    const est2 = computeExteriorCost(state.activeProject.tier);
+    bar.innerHTML = `<strong>${m.sqft.toLocaleString()} sq ft of siding</strong> across ${m.sides.length} side${m.sides.length === 1 ? '' : 's'}` +
+      (est2.total ? ` · running estimate <strong>$${est2.total.toLocaleString()}</strong> <small>at ${state.activeProject.tier || 'performance'} — final level picked on Step 6</small>` : '');
+  };
+
+  // --- Quick build ------------------------------------------------
+  container.querySelectorAll('[data-qb-story]').forEach(b => b.addEventListener('click', () => {
+    __extQB.ft = +b.getAttribute('data-qb-story');
+    rerender();
+  }));
+  container.querySelectorAll('[data-qb-substrate]').forEach(b => b.addEventListener('click', () => {
+    __extQB.substrate = b.getAttribute('data-qb-substrate');
+    rerender();
+  }));
+  const qbLen = container.querySelector('[data-qb-len]');
+  const qbWid = container.querySelector('[data-qb-wid]');
+  if (qbLen) qbLen.addEventListener('change', () => { __extQB.len = qbLen.value; });
+  if (qbWid) qbWid.addEventListener('change', () => { __extQB.wid = qbWid.value; });
+  const qbBuild = container.querySelector('[data-qb-build]');
+  if (qbBuild) qbBuild.addEventListener('click', () => {
+    const L = +(qbLen && qbLen.value) || 0;
+    const W = +(qbWid && qbWid.value) || 0;
+    if (!L || !W) { sssToast('Enter the house length and width first'); return; }
+    __extQB.len = String(L); __extQB.wid = String(W);
+    const stash = m.sides.slice();
+    m.sides.length = 0;
+    [['Front', L], ['Back', L], ['Left side', W], ['Right side', W]].forEach(([label, len]) => {
+      const sd = makeExteriorSide(label);
+      sd.len = len;
+      sd.height = __extQB.ft;
+      sd.substrate = __extQB.substrate;
+      sd._open = false;
+      m.sides.push(sd);
+    });
+    rerender();
+    sssToast(stash.length ? 'Rebuilt all 4 sides from the footprint' : '🔨 Built 4 sides — tap any side to tweak it',
+      stash.length ? 'Undo' : null,
+      stash.length ? () => { m.sides.length = 0; stash.forEach(s => m.sides.push(s)); rerender(); } : null,
+      null, 6000);
+  });
+
+  // --- Single-side add + card wiring ------------------------------
+  container.querySelectorAll('[data-add-side]').forEach(b => b.addEventListener('click', () => {
+    m.sides.push(makeExteriorSide(b.getAttribute('data-add-side')));
+    rerender();
+  }));
+  container.querySelectorAll('[data-ext-toggle]').forEach(h => h.addEventListener('click', ev => {
+    if (ev.target.closest('[data-ext-remove]') || ev.target.closest('.irh-label')) return;
+    const sd = m.sides.find(x => x.id === h.getAttribute('data-ext-toggle'));
+    if (sd) { sd._open = !sd._open; renderExteriorMeasurements(); }
+  }));
+  container.querySelectorAll('[data-ext-rename]').forEach(inp => inp.addEventListener('change', () => {
+    const sd = m.sides.find(x => x.id === inp.getAttribute('data-ext-rename'));
+    if (sd && inp.value.trim()) sd.label = inp.value.trim();
+  }));
+  container.querySelectorAll('[data-ext-remove]').forEach(b => b.addEventListener('click', () => {
+    const id = b.getAttribute('data-ext-remove');
+    const idx = m.sides.findIndex(x => x.id === id);
+    if (idx === -1) return;
+    const removed = m.sides.splice(idx, 1)[0];
+    rerender();
+    sssToast(`Removed ${removed.label}`, 'Undo', () => { m.sides.splice(Math.min(idx, m.sides.length), 0, removed); rerender(); }, null, 6000);
+  }));
+  container.querySelectorAll('[data-ext-height]').forEach(b => b.addEventListener('click', () => {
+    const sd = m.sides.find(x => x.id === b.getAttribute('data-side-id'));
+    if (sd) { sd.height = +b.getAttribute('data-ext-height'); rerender(); }
+  }));
+  container.querySelectorAll('[data-ext-substrate]').forEach(b => b.addEventListener('click', () => {
+    const sd = m.sides.find(x => x.id === b.getAttribute('data-side-id'));
+    if (sd) { sd.substrate = b.getAttribute('data-ext-substrate'); rerender(); }
+  }));
+  container.querySelectorAll('[data-ext-peel]').forEach(b => b.addEventListener('click', () => {
+    const sd = m.sides.find(x => x.id === b.getAttribute('data-side-id'));
+    if (sd) { sd.peel = b.getAttribute('data-ext-peel'); rerender(); }
+  }));
+  container.querySelectorAll('[data-ext-notes]').forEach(inp => inp.addEventListener('change', () => {
+    const sd = m.sides.find(x => x.id === inp.getAttribute('data-ext-notes'));
+    if (sd) sd.notes = inp.value;
+  }));
+
+  // --- Counters, runs, helpers ------------------------------------
+  container.querySelectorAll('[data-ext-count]').forEach(b => b.addEventListener('click', () => {
+    const f = b.getAttribute('data-ext-count');
+    e[f] = Math.max(0, (+e[f] || 0) + (+b.getAttribute('data-ext-delta')));
+    rerender();
+  }));
+  container.querySelectorAll('input[data-ext-set]').forEach(inp => inp.addEventListener('change', () => {
+    e[inp.getAttribute('data-ext-set')] = Math.max(0, Math.round(+inp.value) || 0);
+    rerender();
+  }));
+  const estBtn = container.querySelector('[data-ext-estimate]');
+  if (estBtn) estBtn.addEventListener('click', () => {
+    const P = m.sides.reduce((s, sd) => s + (+sd.len || 0), 0);
+    if (!P) { sssToast('Add or build the sides first — the estimate works off their lengths'); return; }
+    e.trimFascia = Math.round(P * 1.5);
+    e.soffit = Math.round(P);
+    e.gutters = Math.round(P);
+    rerender();
+    sssToast('✨ Trim, soffits & gutters estimated from the side lengths — adjust to what you see');
+  });
+  const pre = container.querySelector('[data-ext-pre1978]');
+  if (pre) pre.addEventListener('click', () => { e.pre1978 = !e.pre1978; rerender(); });
+  container.querySelectorAll('input[data-ext-field]').forEach(inp => {
+    const f = inp.getAttribute('data-ext-field');
+    const sideId = inp.getAttribute('data-side-id');
+    inp.addEventListener('change', () => {
+      if (sideId) {
+        const sd = m.sides.find(x => x.id === sideId);
+        if (sd) { sd[f] = +inp.value || 0; rerender(); }
+      } else {
+        e[f] = +inp.value || 0;
+        refreshBar();
+      }
+    });
+  });
+}
+
+function cabinetAreaCardHtml(a) {
+  const T = CABINET_AREA_TYPES[a.type] || CABINET_AREA_TYPES.other;
+  const cost = computeCabinetAreaCost(a, state.activeProject.tier);
+  const pieces = cabinetPieceCount(a);
+  // Typeable counter: type the number straight in, or nudge with −/＋.
+  const counter = (field, label) => `
+    <div class="int-counter">
+      <span class="lbl">${label}</span>
+      <button type="button" class="ic-btn" data-cab-count="${field}" data-cab-delta="-1" data-area-id="${a.id}">−</button>
+      <input class="ic-input" type="number" inputmode="numeric" min="0" value="${+a[field] || 0}" data-cab-set="${field}" data-area-id="${a.id}" onclick="event.stopPropagation()">
+      <button type="button" class="ic-btn" data-cab-count="${field}" data-cab-delta="1" data-area-id="${a.id}">＋</button>
+    </div>`;
+  const presetChips = (T.presets || []).map(p =>
+    `<button type="button" class="int-chip ${a.sizePreset === p.label ? 'on' : ''}" data-cab-preset="${p.label}" data-area-id="${a.id}">${a.sizePreset === p.label ? '✓ ' : ''}${p.label}${p.hint ? ` · ${p.hint}` : ''}</button>`).join('');
+  const finishSegs = Object.entries(CABINET_FINISH_META).map(([k, v]) =>
+    `<button type="button" class="int-seg-btn ${a.finish === k ? 'on' : ''}" data-cab-finish="${k}" data-area-id="${a.id}">${v.label}</button>`).join('');
+  return `
+  <div class="int-room-card ${a._open ? 'open' : ''}" data-area-card="${a.id}">
+    <div class="int-room-head" data-cab-toggle="${a.id}">
+      <span class="irh-ico">${T.icon}</span>
+      <input class="irh-label" value="${escapeHtml(a.label)}" data-cab-rename="${a.id}" aria-label="Area name" onclick="event.stopPropagation()">
+      <span class="irh-meta">${pieces} piece${pieces === 1 ? '' : 's'}</span>
+      <span class="irh-price">$${cost.total.toLocaleString()}</span>
+      <button type="button" class="irh-dup" data-cab-dup="${a.id}" title="Duplicate this area">⧉</button>
+      <button type="button" class="irh-x" data-cab-remove="${a.id}" title="Remove this area">×</button>
+      <span class="irh-chev">${a._open ? '▾' : '▸'}</span>
+    </div>
+    <div class="int-room-body" style="display:${a._open ? 'block' : 'none'}">
+      ${presetChips ? `
+      <div class="int-sec">
+        <div class="int-sec-title">📏 Quick size <small style="font-weight:500;color:var(--slate);">— tap the closest, then fine-tune the counts</small></div>
+        <div class="int-chip-row">${presetChips}</div>
+      </div>` : ''}
+      <div class="int-sec">
+        <div class="int-sec-title">🔢 Count every paintable face <small style="font-weight:500;color:var(--slate);">— type it or tap −/＋</small></div>
+        <div class="int-counter-row" style="margin-top:0;">
+          ${counter('doors', '🚪 Doors')}
+          ${counter('drawers', '🗄️ Drawer fronts')}
+          ${counter('glassDoors', '🪟 Glass doors')}
+          ${counter('endPanels', '🧱 End panels')}
+          ${counter('insideBoxes', '📦 Box interiors')}
+        </div>
+        <div class="ext-fields" style="grid-template-columns:minmax(168px, 220px); margin-top:12px;">
+          ${extField('crownLnFt', 'Cabinet crown / light rail', a.crownLnFt, 'ln ft', a.id).replace('data-ext-field', 'data-cab-field')}
+        </div>
+      </div>
+      <div class="int-sec">
+        <div class="int-sec-title">🎨 Existing finish</div>
+        <div class="int-seg" role="group">${finishSegs}</div>
+        <div class="int-seg-hint">${(CABINET_FINISH_META[a.finish] || {}).hint || ''}</div>
+        <div class="int-chip-row" style="margin-top:10px;">
+          <button type="button" class="int-chip small ${a.oakGrain ? 'on' : ''}" data-cab-flag="oakGrain" data-area-id="${a.id}" title="Open-grain oak telegraphs through paint — grain-fill gives a smooth finish.">${a.oakGrain ? '✓ ' : ''}Oak — grain-fill for smooth finish</button>
+          <button type="button" class="int-chip small ${a.thermofoil ? 'on' : ''}" data-cab-flag="thermofoil" data-area-id="${a.id}" title="Thermofoil often can't be painted reliably — flagged for an on-site call.">${a.thermofoil ? '✓ ' : ''}⚠️ Thermofoil doors</button>
+        </div>
+        ${a.thermofoil ? `<div class="int-accent-color" style="margin-top:10px;display:flex;"><span style="font-size:12.5px;color:#8a6a1f;">⚠️ Thermofoil wrap often can't be painted reliably — we'll confirm on-site whether these doors strip, swap, or get declined. Flagged on the quote, not priced.</span></div>` : ''}
+      </div>
+      <div class="int-sec">
+        <div class="int-sec-title">📝 Area notes</div>
+        <textarea class="int-notes" placeholder="Damage, water swelling under sink, color ideas…" data-cab-notes="${a.id}">${escapeHtml(a.notes || '')}</textarea>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderCabinetMeasurements() {
+  const container = __doc.getElementById('measureContainer');
+  if (!container) return;
+  const areas = cabinetAreas();
+  syncCabinetDerived();
+  const m = state.activeProject.measurements;
+  const est = computeCabinetBase(state.activeProject.tier);
+
+  const addChips = Object.entries(CABINET_AREA_TYPES).map(([k, v]) =>
+    `<button type="button" class="int-add-chip" data-add-area="${k}"><span class="ico">${v.icon}</span>${v.label}</button>`).join('');
+
+  container.innerHTML = `
+    <div class="int-builder">
+      <div class="int-add-section" style="margin-top:0;">
+        <div class="int-add-title">＋ Add a cabinet area <small style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--slate);">— every door, drawer, and panel gets counted</small></div>
+        <div class="int-add-grid">${addChips}</div>
+      </div>
+
+      ${areas.length
+        ? `<div style="margin-top:14px;">${areas.map(cabinetAreaCardHtml).join('')}</div>`
+        : `<div class="int-empty" style="margin-top:14px;"><strong>No areas yet</strong><span>Tap Kitchen (or any area) above, hit the closest Quick size, then fine-tune the counts to what's on the wall.</span></div>`}
+
+      <div class="int-summary-bar" id="cabSummaryBar">
+        <strong>${m.pieceCount || 0} piece${(m.pieceCount || 0) === 1 ? '' : 's'}</strong> across ${areas.length} area${areas.length === 1 ? '' : 's'}
+        ${est ? ` · running estimate <strong>$${est.toLocaleString()}</strong> <small>at ${state.activeProject.tier || 'performance'} — final level picked on Step 6</small>` : ''}
+      </div>
+    </div>`;
+
+  const rerender = () => { syncCabinetDerived(); renderCabinetMeasurements(); updateRunningTotal(); };
+
+  container.querySelectorAll('[data-add-area]').forEach(b => b.addEventListener('click', () => {
+    cabinetAreas().push(makeCabinetArea(b.getAttribute('data-add-area')));
+    rerender();
+  }));
+  container.querySelectorAll('[data-cab-preset]').forEach(b => b.addEventListener('click', () => {
+    const a = areas.find(x => x.id === b.getAttribute('data-area-id'));
+    if (!a) return;
+    const T = CABINET_AREA_TYPES[a.type] || {};
+    const p = (T.presets || []).find(x => x.label === b.getAttribute('data-cab-preset'));
+    if (!p) return;
+    a.doors = p.doors; a.drawers = p.drawers; a.endPanels = p.endPanels;
+    a.sizePreset = p.label;
+    rerender();
+  }));
+  container.querySelectorAll('[data-cab-toggle]').forEach(h => h.addEventListener('click', ev => {
+    if (ev.target.closest('[data-cab-remove]') || ev.target.closest('[data-cab-dup]') || ev.target.closest('.irh-label')) return;
+    const a = areas.find(x => x.id === h.getAttribute('data-cab-toggle'));
+    if (a) { a._open = !a._open; renderCabinetMeasurements(); }
+  }));
+  container.querySelectorAll('[data-cab-dup]').forEach(b => b.addEventListener('click', () => {
+    const idx = areas.findIndex(x => x.id === b.getAttribute('data-cab-dup'));
+    if (idx === -1) return;
+    const src = areas[idx];
+    const copy = { ...src, id: 'cab-' + Date.now() + '-' + (__cabAreaSeq++), notes: src.notes, _open: false };
+    // Auto-number the copy: "Bathroom vanity" → "Bathroom vanity 2".
+    const base = src.label.replace(/ \d+$/, '');
+    const same = areas.filter(x => x.label.replace(/ \d+$/, '') === base).length;
+    copy.label = `${base} ${same + 1}`;
+    areas.splice(idx + 1, 0, copy);
+    syncCabinetDerived();
+    renderCabinetMeasurements();
+    updateRunningTotal();
+    sssToast(`⧉ Duplicated as ${copy.label}`);
+  }));
+  container.querySelectorAll('[data-cab-rename]').forEach(inp => inp.addEventListener('change', () => {
+    const a = areas.find(x => x.id === inp.getAttribute('data-cab-rename'));
+    if (a && inp.value.trim()) a.label = inp.value.trim();
+  }));
+  container.querySelectorAll('[data-cab-remove]').forEach(b => b.addEventListener('click', () => {
+    const id = b.getAttribute('data-cab-remove');
+    const idx = areas.findIndex(x => x.id === id);
+    if (idx === -1) return;
+    const removed = areas.splice(idx, 1)[0];
+    rerender();
+    sssToast(`Removed ${removed.label}`, 'Undo', () => { areas.splice(Math.min(idx, areas.length), 0, removed); rerender(); }, null, 6000);
+  }));
+  container.querySelectorAll('[data-cab-count]').forEach(b => b.addEventListener('click', () => {
+    const a = areas.find(x => x.id === b.getAttribute('data-area-id'));
+    if (!a) return;
+    const f = b.getAttribute('data-cab-count');
+    a[f] = Math.max(0, (+a[f] || 0) + (+b.getAttribute('data-cab-delta')));
+    a.sizePreset = '';
+    rerender();
+  }));
+  container.querySelectorAll('input[data-cab-set]').forEach(inp => inp.addEventListener('change', () => {
+    const a = areas.find(x => x.id === inp.getAttribute('data-area-id'));
+    if (!a) return;
+    a[inp.getAttribute('data-cab-set')] = Math.max(0, Math.round(+inp.value) || 0);
+    a.sizePreset = '';
+    rerender();
+  }));
+  container.querySelectorAll('[data-cab-finish]').forEach(b => b.addEventListener('click', () => {
+    const a = areas.find(x => x.id === b.getAttribute('data-area-id'));
+    if (a) { a.finish = b.getAttribute('data-cab-finish'); rerender(); }
+  }));
+  container.querySelectorAll('[data-cab-flag]').forEach(b => b.addEventListener('click', () => {
+    const a = areas.find(x => x.id === b.getAttribute('data-area-id'));
+    if (a) { const f = b.getAttribute('data-cab-flag'); a[f] = !a[f]; rerender(); }
+  }));
+  container.querySelectorAll('[data-cab-notes]').forEach(inp => inp.addEventListener('change', () => {
+    const a = areas.find(x => x.id === inp.getAttribute('data-cab-notes'));
+    if (a) a.notes = inp.value;
+  }));
+  container.querySelectorAll('input[data-cab-field]').forEach(inp => inp.addEventListener('change', () => {
+    const a = areas.find(x => x.id === inp.getAttribute('data-side-id'));
+    if (a) { a[inp.getAttribute('data-cab-field')] = +inp.value || 0; rerender(); }
+  }));
+}
+
+/* ---------------- Color stages (Step 7) ---------------- */
+
+function extColorPlan() {
+  const m = state.activeProject.measurements;
+  if (!m.colorPlan || !m.colorPlan._ext) {
+    m.colorPlan = {
+      _ext: true,
+      body: null,
+      trim: { ...EXTERIOR_DEFAULT_TRIM },
+      door: null,       // null = "match trim"
+      shutters: null,   // null = "match door/trim accent"
+      bodySheen: EXTERIOR_DEFAULT_SHEEN.body,
+      trimSheen: EXTERIOR_DEFAULT_SHEEN.trim,
+      doorSheen: EXTERIOR_DEFAULT_SHEEN.door
+    };
+  }
+  return m.colorPlan;
+}
+function cabColorPlan() {
+  const m = state.activeProject.measurements;
+  if (!m.colorPlan || !m.colorPlan._cab) {
+    m.colorPlan = { _cab: true, mode: 'single', main: null, island: null, sheen: CABINET_DEFAULT_SHEEN };
+  }
+  return m.colorPlan;
+}
+
+// Compact family accordion picker shared by exterior + cabinet.
+// Native <details> keeps it dependency-free; swatch styling rides the
+// existing .int-swatch class.
+function xPickerHtml(target, title, current, allowClear) {
+  const fams = INTERIOR_PAINT_COLORS;
+  const famBlocks = fams.map(f => {
+    const tiny = f.colors.slice(0, 8).map(c =>
+      `<span style="display:inline-block;width:13px;height:13px;border-radius:3px;border:1px solid rgba(0,0,0,0.12);background:${c.hex};"></span>`).join('');
+    const swatches = f.colors.map(c => `
+      <button type="button" class="int-swatch ${current && current.code === c.code && current.name === c.name ? 'on' : ''}"
+        data-x-target="${target}" data-name="${escapeHtml(c.name)}" data-code="${escapeHtml(c.code)}" data-hex="${c.hex}"
+        style="background:${c.hex};" title="${escapeHtml(c.name)} (${escapeHtml(c.code)})">
+        <span class="int-swatch-name">${escapeHtml(c.name)}</span>
+      </button>`).join('');
+    return `<details style="border:1px solid var(--line);border-radius:10px;margin-bottom:6px;background:var(--paper);">
+      <summary style="display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy);list-style:none;">
+        ${f.label} <span style="display:inline-flex;gap:2px;">${tiny}</span>
+      </summary>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px;">${swatches}</div>
+    </details>`;
+  }).join('');
+  const cur = current
+    ? `<span style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--navy);">
+        <span style="width:18px;height:18px;border-radius:5px;border:1px solid rgba(0,0,0,0.15);background:${current.hex || '#eee'};"></span>
+        ${escapeHtml(current.name)}${current.code ? ` <small style="color:var(--slate);font-weight:600;">${escapeHtml(current.code)}</small>` : ''}
+       </span>${allowClear ? ` <button type="button" class="pipe-btn ghost mini" data-x-clear="${target}">✕</button>` : ''}`
+    : `<span style="font-size:12.5px;color:var(--slate);">Not picked yet</span>`;
+  return `
+    <div class="int-sec" style="margin-top:14px;" data-x-picker="${target}">
+      <div class="int-sec-title">${title}</div>
+      <div style="margin:4px 0 8px;">${cur}</div>
+      ${famBlocks}
+      <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap;">
+        <input type="text" placeholder="Any SW color — name or code" data-x-custom="${target}"
+          style="flex:1;min-width:180px;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-size:13.5px;">
+        <button type="button" class="pipe-btn" data-x-custom-set="${target}">Set</button>
+      </div>
+    </div>`;
+}
+
+function xSheenRow(target, opts, current) {
+  return `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 0 2px;">
+    <small style="font-size:11px;font-weight:800;color:var(--slate);text-transform:uppercase;">Sheen</small>
+    ${opts.map(o => `<button type="button" class="pa-group-btn ${current === o ? 'active' : ''}" data-x-sheen="${target}" data-sheen="${o}" style="padding:5px 12px;font-size:12px;">${o}</button>`).join('')}
+  </div>`;
+}
+
+function syncExteriorSelectedColor() {
+  const cp = extColorPlan();
+  if (!cp.body) { state.activeProject.selectedColor = null; return; }
+  const trimName = (cp.trim && cp.trim.name) || 'Extra White';
+  state.activeProject.selectedColor = {
+    name: `${cp.body.name} body / ${trimName} trim`,
+    code: cp.body.code || '', brand: 'Sherwin-Williams'
+  };
+}
+function syncCabinetSelectedColor() {
+  const cp = cabColorPlan();
+  if (!cp.main) { state.activeProject.selectedColor = null; return; }
+  if (cp.mode === 'twoTone' && !cp.island) { state.activeProject.selectedColor = null; return; }
+  state.activeProject.selectedColor = {
+    name: cp.mode === 'twoTone' ? `${cp.main.name} perimeter / ${cp.island.name} island` : cp.main.name,
+    code: cp.main.code || '', brand: 'Sherwin-Williams'
+  };
+}
+
+function wireXPickers(rerender, cp, sheenMap) {
+  const grid = __doc.getElementById('colorGrid');
+  grid.querySelectorAll('[data-x-target]').forEach(sw => sw.addEventListener('click', () => {
+    cp[sw.getAttribute('data-x-target')] = {
+      name: sw.getAttribute('data-name'), code: sw.getAttribute('data-code'), hex: sw.getAttribute('data-hex')
+    };
+    rerender();
+  }));
+  grid.querySelectorAll('[data-x-clear]').forEach(b => b.addEventListener('click', () => {
+    cp[b.getAttribute('data-x-clear')] = null;
+    rerender();
+  }));
+  grid.querySelectorAll('[data-x-custom-set]').forEach(b => b.addEventListener('click', () => {
+    const t = b.getAttribute('data-x-custom-set');
+    const inp = grid.querySelector(`[data-x-custom="${t}"]`);
+    const v = inp && inp.value.trim();
+    if (!v) return;
+    const codeMatch = v.match(/SW\s?\d{4}/i);
+    cp[t] = { name: v.replace(/SW\s?\d{4}/i, '').trim() || v, code: codeMatch ? codeMatch[0].toUpperCase().replace(/SW\s?/, 'SW ') : '', hex: '#d8d4cc' };
+    rerender();
+  }));
+  grid.querySelectorAll('[data-x-sheen]').forEach(b => b.addEventListener('click', () => {
+    const key = sheenMap[b.getAttribute('data-x-sheen')];
+    if (key) { cp[key] = b.getAttribute('data-sheen'); rerender(); }
+  }));
+}
+
+function renderExteriorColorStage() {
+  const cp = extColorPlan();
+  __doc.getElementById('colorTitle').textContent = '🏡 Pick the exterior scheme.';
+  __doc.getElementById('colorLead').textContent =
+    'Body, trim, and front-door colors from popular Sherwin-Williams exteriors — or type any SW color. Final approval happens against physical chips in daylight.';
+  const tipBody = __doc.querySelector('#stage-7 .tip-box .tip-body');
+  if (tipBody) {
+    if (!tipBody.dataset.stainHtml) tipBody.dataset.stainHtml = tipBody.innerHTML;
+    tipBody.innerHTML = `<strong>Exterior color notes</strong>
+      Dark bodies read 2–3 shades darker in full sun and fade faster on south faces. Vinyl siding needs VinylSafe-approved colors (we check before ordering). HOA palettes get verified before the first gallon is tinted.`;
+  }
+  const e = exteriorData().ext;
+  __doc.getElementById('colorGrid').innerHTML = `
+    <div class="int-color-planner">
+      ${xPickerHtml('body', '🧱 Body color', cp.body, false)}
+      ${xSheenRow('body', EXTERIOR_SHEENS.body, cp.bodySheen)}
+      ${xPickerHtml('trim', '🪟 Trim & fascia color', cp.trim, false)}
+      ${xSheenRow('trim', EXTERIOR_SHEENS.trim, cp.trimSheen)}
+      <details class="int-more" id="extAccentMore" ${(cp._accentsOpen || cp.door || cp.shutters) ? 'open' : ''} style="margin-top:16px;">
+        <summary>🚪 Accent colors — front door${(+e.shutters > 0) ? ' &amp; shutters' : ''} (optional)${cp.door ? '<span class="int-more-count">door ✓</span>' : ''}${cp.shutters ? '<span class="int-more-count">shutters ✓</span>' : ''}</summary>
+        ${xPickerHtml('door', '🚪 Front door accent', cp.door, true)}
+        ${xSheenRow('door', EXTERIOR_SHEENS.door, cp.doorSheen)}
+        ${(+e.shutters > 0) ? xPickerHtml('shutters', '🪟 Shutter color (matches the door accent if unset)', cp.shutters, true) : ''}
+      </details>
+    </div>`;
+  const rerender = () => { syncExteriorSelectedColor(); renderExteriorColorStage(); updateRunningTotal(); };
+  const accMore = __doc.getElementById('extAccentMore');
+  if (accMore) accMore.addEventListener('toggle', () => { cp._accentsOpen = accMore.open; });
+  wireXPickers(rerender, cp, { body: 'bodySheen', trim: 'trimSheen', door: 'doorSheen' });
+  syncExteriorSelectedColor();
+  const next = __doc.getElementById('stage7Next');
+  if (next) next.disabled = !cp.body;
+}
+
+function renderCabinetColorStage() {
+  const cp = cabColorPlan();
+  __doc.getElementById('colorTitle').textContent = '🚪 Pick the cabinet color.';
+  __doc.getElementById('colorLead').textContent =
+    'One color for everything, or a two-tone with the island its own color. Satin is today\'s standard cabinet sheen; semi-gloss cleans hardest.';
+  const tipBody = __doc.querySelector('#stage-7 .tip-box .tip-body');
+  if (tipBody) {
+    if (!tipBody.dataset.stainHtml) tipBody.dataset.stainHtml = tipBody.innerHTML;
+    tipBody.innerHTML = `<strong>Cabinet color notes</strong>
+      Whites and creams show the least wear; dark islands hide scuffs but show dust. Sample doors get sprayed for approval before the full run — color and sheen sign-off happens on YOUR doors, not a paper chip.`;
+  }
+  const hasIsland = cabinetAreas().some(a => a.type === 'island');
+  const modeBtn = (mode, ico, title, sub) => `
+    <button type="button" class="int-mode-card ${cp.mode === mode ? 'on' : ''}" data-cabc-mode="${mode}">
+      <span class="imc-ico">${ico}</span><span class="imc-title">${title}</span><span class="imc-sub">${sub}</span>
+    </button>`;
+  __doc.getElementById('colorGrid').innerHTML = `
+    <div class="int-color-planner">
+      <div class="int-mode-grid">
+        ${modeBtn('single', '🎯', 'One color everywhere', 'Perimeter, island, everything — one seamless color.')}
+        ${modeBtn('twoTone', '🏝️', 'Two-tone', hasIsland ? 'Island (or lowers) in its own accent color.' : 'Island/accent color — add an Island area on Step 3 to itemize it.')}
+      </div>
+      ${xPickerHtml('main', cp.mode === 'twoTone' ? '🚪 Main cabinet color (perimeter)' : '🚪 Cabinet color', cp.main, false)}
+      ${cp.mode === 'twoTone' ? xPickerHtml('island', '🏝️ Island / accent color', cp.island, false) : ''}
+      ${xSheenRow('main', CABINET_SHEENS, cp.sheen)}
+    </div>`;
+  const rerender = () => { syncCabinetSelectedColor(); renderCabinetColorStage(); updateRunningTotal(); };
+  __doc.querySelectorAll('#colorGrid [data-cabc-mode]').forEach(b => b.addEventListener('click', () => {
+    cp.mode = b.getAttribute('data-cabc-mode');
+    rerender();
+  }));
+  wireXPickers(rerender, cp, { main: 'sheen' });
+  syncCabinetSelectedColor();
+  const next = __doc.getElementById('stage7Next');
+  if (next) next.disabled = !cp.main || (cp.mode === 'twoTone' && !cp.island);
+}
+
+/* ---------------- Tier cards (Step 6) ---------------- */
+
+function renderPaintTierCardsFor(kind) {
+  const CFG = {
+    exterior: {
+      metaKey: 'exterior_paint', lockText: `<strong>🏡 Exterior Painting</strong> — all three levels are premium <strong>Sherwin-Williams exterior paints</strong>, priced from the sides + details on Step 3.`,
+      emptyTitle: '🧱 Add at least one side before paint prices can be calculated',
+      emptyBody: 'Paint level prices are calculated from the siding sides and house details on the measurements step.',
+      backLabel: '← Go back to Step 3: Sides',
+      countLine: () => { const m = exteriorData(); return `${(m.sqft || 0).toLocaleString()} sq ft siding`; },
+      included: [
+        '✓ Full pressure wash of every painted surface',
+        '✓ Scrape, sand, spot-prime + full caulk pass',
+        '✓ Plants, walkways, fixtures &amp; AC units protected',
+        '✓ Two coats, sprayed &amp; back-rolled where it counts',
+        '✓ Free 30-day touch-up visit',
+        '✓ Fully insured &amp; licensed in South Carolina'
+      ]
+    },
+    cabinet: {
+      metaKey: 'cabinet_paint', lockText: `<strong>🚪 Cabinet Painting</strong> — every level includes full degrease, scuff-sand, and adhesion primer; the levels change the <strong>enamel and how much gets sprayed</strong>.`,
+      emptyTitle: '🚪 Count at least one area before prices can be calculated',
+      emptyBody: 'Cabinet prices are calculated from the doors, drawers, and panels you count on the measurements step.',
+      backLabel: '← Go back to Step 3: Areas',
+      countLine: () => { const m = state.activeProject.measurements; return `${m.pieceCount || 0} pieces`; },
+      included: [
+        '✓ Doors &amp; drawers labeled, removed, finished flat',
+        '✓ Full degrease, scuff-sand &amp; adhesion primer',
+        '✓ Counters, floors &amp; appliances masked with dust control',
+        '✓ Two enamel coats + hinge re-hang &amp; adjust',
+        '✓ Free 30-day touch-up visit',
+        '✓ Fully insured &amp; licensed in South Carolina'
+      ]
+    }
+  }[kind];
+
+  __doc.getElementById('productLockText').innerHTML = CFG.lockText;
+  const previouslyCompleted = state.maxStageReached >= 10 && state.activeProject.tierConfirmed;
+  if (!validateMeasurements() && !previouslyCompleted) {
+    __doc.getElementById('tierCards').innerHTML = `
+      <div style="grid-column: 1 / -1; padding: 32px 28px; background: var(--gold-pale); border: 2px dashed var(--gold); border-radius: var(--radius-lg); text-align: center;">
+        <h3 style="color: var(--navy); margin-bottom: 8px;">${CFG.emptyTitle}</h3>
+        <p style="color: #5a4a1f; font-size: 14px; margin-bottom: 16px;">${CFG.emptyBody}</p>
+        <button class="btn btn-primary" onclick="showStage(3)" style="padding: 12px 24px;">${CFG.backLabel}</button>
+      </div>`;
+    __doc.getElementById('stage6Next').disabled = true;
+    return;
+  }
+
+  const meta = TIER_META[CFG.metaKey];
+  const sample = computeSampleTierPrices(CFG.metaKey);
+  __doc.getElementById('tierCards').innerHTML = ['essential', 'performance', 'showcase'].map(t => {
+    const tm = meta[t];
+    const isSelected = state.activeProject.tierConfirmed && state.activeProject.tier === t;
+    const prosHtml = tm.pros.map((p, i) => `<li${i === 0 ? ' class="standout"' : ''}>${p}</li>`).join('');
+    return `
+      <button class="tier-card ${isSelected ? 'selected' : ''}" data-tier="${t}">
+        ${tm.badge ? `<div class="reco-flag ${tm.badgeClass}">${tm.badge}</div>` : ''}
+        <div class="tier-name">${t}</div>
+        <div class="tier-product">${tm.product}</div>
+        <div class="tier-tagline">${tm.tagline}</div>
+        <div class="tier-price">$${Math.round(sample[t]).toLocaleString()}<span style="font-size:14px;color:var(--slate);font-weight:600;"> total</span></div>
+        <div class="tier-cost-per-year">${CFG.countLine()}</div>
+        <div class="tier-life">🛡️ ${tm.life}${tm.details ? `<div class="tier-life-tooltip">${tm.details}</div>` : ''}</div>
+        <ul class="tier-pros">${prosHtml}</ul>
+        ${tm.cons.length ? `<ul class="tier-cons">${tm.cons.map(c => `<li>${c}</li>`).join('')}</ul>` : ''}
+        <div class="whats-included">
+          <div class="whats-included-label">What's included</div>
+          <ul>${CFG.included.map(i => `<li>${i}</li>`).join('')}</ul>
+        </div>
+        <div class="best-for"><strong>Best for</strong>${tm.bestFor}</div>
+      </button>`;
+  }).join('');
+
+  __doc.querySelectorAll('#tierCards .tier-card').forEach(card => {
+    card.addEventListener('click', () => {
+      state.activeProject.tier = card.dataset.tier;
+      state.activeProject.tierConfirmed = true;
+      __doc.querySelectorAll('#tierCards .tier-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      __doc.getElementById('stage6Next').disabled = false;
+      updateRunningTotal();
+    });
+  });
+  __doc.getElementById('stage6Next').disabled = !state.activeProject.tierConfirmed;
+  __doc.getElementById('stage6Next').innerHTML = 'Next: Colors <span class="arr-r">→</span>';
+}
+function renderExteriorTierCards() { renderPaintTierCardsFor('exterior'); }
+function renderCabinetTierCards()  { renderPaintTierCardsFor('cabinet'); }
+
+/* ---------------- Paint plans (DIY + Jobber order) ---------------- */
+
+function exteriorColorPlanSummary(m) {
+  const cp = (m && m.colorPlan) || {};
+  if (!cp.body) return '';
+  const c = (col) => col ? `${col.name}${col.code ? ` (${col.code})` : ''}` : '—';
+  const parts = [`Body ${c(cp.body)} (${cp.bodySheen || 'Satin'})`, `trim ${c(cp.trim)} (${cp.trimSheen || 'Gloss'})`];
+  if (cp.door) parts.push(`door ${c(cp.door)} (${cp.doorSheen || 'Gloss'})`);
+  if (cp.shutters) parts.push(`shutters ${c(cp.shutters)}`);
+  return parts.join(' · ');
+}
+function cabinetColorPlanSummary(m) {
+  const cp = (m && m.colorPlan) || {};
+  if (!cp.main) return '';
+  const c = (col) => col ? `${col.name}${col.code ? ` (${col.code})` : ''}` : '—';
+  return cp.mode === 'twoTone' && cp.island
+    ? `Perimeter ${c(cp.main)} · island ${c(cp.island)} · ${cp.sheen || 'Satin'}`
+    : `${c(cp.main)} · ${cp.sheen || 'Satin'}`;
+}
+
+function computeExteriorPaintPlan(p) {
+  const m = p.measurements || {};
+  const cp = m.colorPlan || {};
+  const cfg = (PRICING.diy && PRICING.diy.exteriorPaint) || {};
+  const coats = cfg.coats || 2;
+  const coverage = cfg.coverageSqFtPerGal || 300;
+  const t = p.tier || 'performance';
+  const NAMES = { essential: 'SW SuperPaint Exterior', performance: 'SW Duration Exterior', showcase: 'SW Emerald Exterior' };
+  const URLS = {
+    essential: 'https://www.sherwin-williams.com/homeowners/products/superpaint-exterior-acrylic-latex',
+    performance: 'https://www.sherwin-williams.com/homeowners/products/duration-exterior-acrylic-latex',
+    showcase: 'https://www.sherwin-williams.com/homeowners/products/emerald-exterior-acrylic-latex-paint'
+  };
+  const perGal = (cfg.perGal && cfg.perGal[t]) || 111.49;
+  const product = NAMES[t] || 'SW exterior paint';
+  const url = URLS[t] || '';
+
+  const buckets = {};
+  let scopeArea = 0;
+  const add = (role, color, sheen, coatArea) => {
+    if (coatArea <= 0) return;
+    const cName = (color && color.name) || 'color TBD';
+    const key = `${role}|${cName}|${(color && color.code) || ''}`;
+    if (!buckets[key]) buckets[key] = { role, product, perGal, url, roleLabel: role, sheen: (sheen || 'satin').toLowerCase(), colorName: cName, colorCode: (color && color.code) || '', coatArea: 0, rooms: [] };
+    buckets[key].coatArea += coatArea;
+  };
+
+  const sides = m.sides || [];
+  sides.forEach(sd => {
+    const area = Math.round((+sd.len || 0) * (+sd.height || 0));
+    if (!area) return;
+    const factor = EXTERIOR_PAINT_FACTOR[sd.substrate] || 1;
+    add('body', cp.body, cp.bodySheen, area * factor * coats);
+    scopeArea += area;
+  });
+  const e = m.ext || {};
+  let trimArea = (+e.trimFascia || 0) * 0.75 + (+e.soffit || 0) * 1.5 + (+e.gutters || 0) * 0.5
+               + (+e.windows || 0) * 15 + (+e.railingLnFt || 0) * 1.2 + (+e.columns || 0) * 20
+               + (+e.porchCeilingSqFt || 0);
+  if (trimArea > 0) { add('trim', cp.trim, cp.trimSheen, trimArea * coats); scopeArea += trimArea; }
+  const doorColor = cp.door || cp.trim;
+  const doorArea = (+e.doors || 0) * 45 + (+e.garage1 || 0) * 80 + (+e.garage2 || 0) * 140;
+  if (doorArea > 0) { add('doors', doorColor, cp.doorSheen, doorArea * coats); scopeArea += doorArea; }
+  const shutterColor = cp.shutters || cp.door || cp.trim;
+  const shutterArea = (+e.shutters || 0) * 12;
+  if (shutterArea > 0) { add('shutters', shutterColor, cp.doorSheen, shutterArea * coats); scopeArea += shutterArea; }
+
+  const list = Object.values(buckets).map(b => ({ ...b, gallons: Math.max(1, Math.ceil(b.coatArea / coverage)) }));
+  const ORDER = { body: 0, trim: 1, doors: 2, shutters: 3 };
+  list.sort((x, y) => (ORDER[x.role] - ORDER[y.role]));
+  list.forEach(b => { b.cost = b.gallons * b.perGal; });
+  return { buckets: list, totalGallons: list.reduce((s, b) => s + b.gallons, 0),
+           totalCost: list.reduce((s, b) => s + b.cost, 0), scopeArea: Math.round(scopeArea) };
+}
+
+function computeCabinetPaintPlan(p) {
+  const m = p.measurements || {};
+  const cp = m.colorPlan || {};
+  const cfg = (PRICING.diy && PRICING.diy.cabinetPaint) || {};
+  const coats = cfg.coats || 2;
+  const coverage = cfg.coverageSqFtPerGal || 350;
+  const t = p.tier || 'performance';
+  const NAMES = { essential: 'SW ProClassic Waterborne Enamel', performance: 'SW Emerald Urethane Trim Enamel', showcase: 'SW Emerald Urethane Trim Enamel' };
+  const URLS = {
+    essential: 'https://www.sherwin-williams.com/homeowners/products/proclassic-waterborne-interior-acrylic-enamel',
+    performance: 'https://www.sherwin-williams.com/homeowners/products/emerald-urethane-trim-enamel',
+    showcase: 'https://www.sherwin-williams.com/homeowners/products/emerald-urethane-trim-enamel'
+  };
+  const perGal = (cfg.perGal && cfg.perGal[t]) || 130.49;
+  const product = NAMES[t];
+  const url = URLS[t];
+  const sheen = (cp.sheen || 'Satin').toLowerCase();
+
+  const areaOf = (a) => Math.round(
+    (+a.doors || 0) * 7 + (+a.drawers || 0) * 1.5 + (+a.glassDoors || 0) * 3 +
+    (+a.endPanels || 0) * 10 + (+a.crownLnFt || 0) * 0.75 + (+a.insideBoxes || 0) * 12);
+
+  const areas = m.areas || [];
+  let mainArea = 0, islandArea = 0;
+  areas.forEach(a => {
+    if (cp.mode === 'twoTone' && a.type === 'island') islandArea += areaOf(a);
+    else mainArea += areaOf(a);
+  });
+
+  const buckets = [];
+  if (mainArea > 0 && cp.main) buckets.push({ role: 'enamel', product, perGal, url, roleLabel: 'cabinets', sheen, colorName: cp.main.name, colorCode: cp.main.code || '', coatArea: mainArea * coats });
+  else if (mainArea > 0) buckets.push({ role: 'enamel', product, perGal, url, roleLabel: 'cabinets', sheen, colorName: 'color TBD', colorCode: '', coatArea: mainArea * coats });
+  if (islandArea > 0) buckets.push({ role: 'enamel', product, perGal, url, roleLabel: 'island', sheen, colorName: (cp.island && cp.island.name) || 'color TBD', colorCode: (cp.island && cp.island.code) || '', coatArea: islandArea * coats });
+  const totalFaceArea = mainArea + islandArea;
+  if (totalFaceArea > 0) {
+    buckets.push({ role: 'primer', product: 'SW bonding/adhesion primer', perGal: cfg.primerPerGal || 69.99,
+      url: '', roleLabel: 'primer', sheen: 'primer', colorName: 'White (tint to topcoat)', colorCode: '',
+      coatArea: totalFaceArea * (cfg.primerCoats || 1) });
+  }
+  const list = buckets.map(b => ({ ...b, gallons: Math.max(1, Math.ceil(b.coatArea / coverage)) }));
+  list.forEach(b => { b.cost = b.gallons * b.perGal; });
+  return { buckets: list, totalGallons: list.reduce((s, b) => s + b.gallons, 0),
+           totalCost: list.reduce((s, b) => s + b.cost, 0), scopeArea: totalFaceArea };
+}
+
+/* ---------------- Jobber line items ---------------- */
+
+function buildExteriorJobberLineItem(p, idx, total) {
+  const m = p.measurements || {};
+  const tierMeta = TIER_META.exterior_paint[p.tier] || {};
+  const cost = computeExteriorCost(p.tier, m);
+  const name = `Exterior Painting — ${(m.sqft || 0).toLocaleString()} sq ft siding${total > 1 ? ` (#${idx + 1})` : ''}`;
+  const lines = [];
+  const pushSection = (h) => { lines.push(''); lines.push(h); };
+  lines.push(`Paint: ${tierMeta.product || 'SW exterior'} — 2 coats, wash + prep included`);
+  const colorSummary = exteriorColorPlanSummary(m);
+  if (colorSummary) lines.push(`Colors: ${colorSummary}`);
+  if (m.ext && m.ext.pre1978) lines.push('⚠️ Pre-1978 home — lead-safe (RRP) work practices apply');
+  try {
+    const plan = computeExteriorPaintPlan(p);
+    if (plan.buckets.length) {
+      pushSection('PAINT (ESTIMATED ORDER)');
+      plan.buckets.forEach(b => lines.push(`  - ${b.product}, ${b.sheen} — ${b.colorName}${b.colorCode ? ` (${b.colorCode})` : ''}: ~${b.gallons} gal ${b.roleLabel}`));
+      lines.push(`  Total: ~${plan.totalGallons} gal`);
+    }
+  } catch (e) {}
+  pushSection('EXTERIOR SCOPE');
+  cost.lines.forEach(cl => lines.push(`  - ${cl.label}`));
+  (m.sides || []).forEach(sd => { if (sd.notes && sd.notes.trim()) lines.push(`  - ${sd.label} note: ${sd.notes.trim()}`); });
+  const addonIds = Object.keys(p.addons || {});
+  if (addonIds.length) {
+    pushSection('ADD-ONS');
+    addonIds.forEach(id => {
+      const def = (PRICING.projectAddons.exterior || []).find(a => a.id === id) || PRICING.serviceAddons.find(a => a.id === id);
+      if (!def) return;
+      const stored = p.addons[id];
+      const qty = (typeof stored === 'object' && stored.qty) ? stored.qty : 1;
+      lines.push(`  - ${def.name}${def.priceType === 'each' && qty > 1 ? ` × ${qty}` : ''}`);
+    });
+  }
+  if (p.customAddons && p.customAddons.length) {
+    pushSection('CUSTOM ITEMS');
+    p.customAddons.forEach(ca => lines.push(`  - ${ca.name || 'Custom item'}${ca.rate ? ` ($${Math.round(ca.rate).toLocaleString()})` : ''}`));
+  }
+  lines.push('');
+  lines.push('Warranty: Sherwin-Williams manufacturer warranty + our free 30-day touch-up visit');
+  const photos = (p.referencePhotos || []).filter(ph => ph && ph.url);
+  return { name, description: lines.join('\n'), referencePhotoUrls: photos.map(ph => ph.url) };
+}
+
+function buildCabinetJobberLineItem(p, idx, total) {
+  const m = p.measurements || {};
+  const areas = m.areas || [];
+  const tierMeta = TIER_META.cabinet_paint[p.tier] || {};
+  const pieces = m.pieceCount || areas.reduce((s, a) => s + cabinetPieceCount(a), 0);
+  const name = `Cabinet Painting — ${pieces} piece${pieces === 1 ? '' : 's'}${total > 1 ? ` (#${idx + 1})` : ''}`;
+  const lines = [];
+  const pushSection = (h) => { lines.push(''); lines.push(h); };
+  lines.push(`Finish: ${tierMeta.product || 'SW cabinet enamel'} — degrease, scuff-sand, adhesion prime + 2 enamel coats`);
+  const colorSummary = cabinetColorPlanSummary(m);
+  if (colorSummary) lines.push(`Colors: ${colorSummary}`);
+  try {
+    const plan = computeCabinetPaintPlan(p);
+    if (plan.buckets.length) {
+      pushSection('PAINT (ESTIMATED ORDER)');
+      plan.buckets.forEach(b => lines.push(`  - ${b.product}${b.sheen !== 'primer' ? `, ${b.sheen}` : ''} — ${b.colorName}${b.colorCode ? ` (${b.colorCode})` : ''}: ~${b.gallons} gal ${b.roleLabel}`));
+      lines.push(`  Total: ~${plan.totalGallons} gal incl. primer`);
+    }
+  } catch (e) {}
+  pushSection('AREA-BY-AREA SCOPE');
+  areas.forEach((a, i) => {
+    const cost = computeCabinetAreaCost(a, p.tier);
+    lines.push(`  ${i + 1}. ${a.label} — ${cabinetPieceCount(a)} pieces ($${cost.total.toLocaleString()})`);
+    cost.lines.forEach(cl => lines.push(`     - ${cl.label}`));
+    lines.push(`     - Existing finish: ${(CABINET_FINISH_META[a.finish] || {}).label || a.finish}`);
+    if (a.thermofoil) lines.push('     - ⚠️ THERMOFOIL doors flagged — confirm strip/swap/decline on-site (not priced)');
+    if (a.notes && a.notes.trim()) lines.push(`     - Note: ${a.notes.trim()}`);
+  });
+  const addonIds = Object.keys(p.addons || {});
+  if (addonIds.length) {
+    pushSection('ADD-ONS');
+    addonIds.forEach(id => {
+      const def = (PRICING.projectAddons.cabinet || []).find(a => a.id === id) || PRICING.serviceAddons.find(a => a.id === id);
+      if (!def) return;
+      const stored = p.addons[id];
+      const qty = (typeof stored === 'object' && stored.qty) ? stored.qty : 1;
+      lines.push(`  - ${def.name}${def.priceType === 'each' && qty > 1 ? ` × ${qty}` : ''}`);
+    });
+  }
+  if (p.customAddons && p.customAddons.length) {
+    pushSection('CUSTOM ITEMS');
+    p.customAddons.forEach(ca => lines.push(`  - ${ca.name || 'Custom item'}${ca.rate ? ` ($${Math.round(ca.rate).toLocaleString()})` : ''}`));
+  }
+  lines.push('');
+  lines.push('Warranty: manufacturer warranty on the enamel + our free 30-day touch-up visit');
+  const photos = (p.referencePhotos || []).filter(ph => ph && ph.url);
+  return { name, description: lines.join('\n'), referencePhotoUrls: photos.map(ph => ph.url) };
+}
+
+/* ---------------- Validation ---------------- */
+
+function validateExteriorMeasurements() {
+  const m = exteriorData();
+  const anyDetail = Object.entries(m.ext).some(([k, v]) => k !== 'pre1978' && +v > 0);
+  if (!m.sides.length && !anyDetail) {
+    sssAlert('Add a side first', 'Tap a side under "＋ Add a side" (or fill in House details) — every exterior quote starts with measurements.');
+    return false;
+  }
+  const bad = m.sides.find(sd => !(+sd.len > 0) || !(+sd.height > 0));
+  if (bad) {
+    sssAlert('Side needs dimensions', `"${bad.label}" needs a length and height — enter the wall length and tap a story height.`);
+    return false;
+  }
+  if (computeExteriorCost(state.activeProject.tier).total <= 0) {
+    sssAlert('Nothing measured yet', 'Add siding dimensions or house details so there\'s something to price.');
+    return false;
+  }
+  return true;
+}
+
+function validateCabinetMeasurements() {
+  const areas = cabinetAreas();
+  if (!areas.length) {
+    sssAlert('Add an area first', 'Tap Kitchen (or any area) under "＋ Add a cabinet area" — cabinet quotes are built from piece counts.');
+    return false;
+  }
+  const empty = areas.find(a => computeCabinetAreaCost(a, state.activeProject.tier).total <= 0);
+  if (empty) {
+    sssAlert('Nothing counted in this area', `"${empty.label}" has no pieces counted yet — count the doors and drawers, or remove it with the × button.`);
+    return false;
+  }
+  return true;
+}
+
+// Per-room Jobber line items — one priced line per room, plus a
+// project add-ons line that absorbs the remainder so the lines always
+// sum exactly to the project's pre-discount subtotal. The backend
+// (jobber.jsw) fans these out when present; older backends ignore the
+// field and fall back to the single aggregate line above.
+function buildInteriorRoomLineItems(p, preDiscountSubtotal) {
+  const m = p.measurements || {};
+  const rooms = m.rooms || [];
+  const cp = m.colorPlan || {};
+  if (!rooms.length) return [];
+  const items = rooms.map(r => {
+    const cost = computeInteriorRoomCost(r, p.tier);
+    const descLines = [`${r.len} × ${r.wid} ft, ${r.height} ft ceilings`];
+    cost.lines.forEach(cl => descLines.push(`- ${cl.label}`));
+    const roomColor = (cp.mode === 'perRoom' && cp.perRoom) ? cp.perRoom[r.id] : null;
+    if (roomColor) descLines.push(`- Wall color: ${roomColor.name}${roomColor.code ? ` (${roomColor.code})` : ''}`);
+    if (r.notes && r.notes.trim()) descLines.push(`- Note: ${r.notes.trim()}`);
+    return {
+      name: `Interior Painting — ${r.label}`,
+      description: descLines.join('\n'),
+      totalPrice: cost.total,
+      referencePhotoUrls: (p.referencePhotos || []).filter(ph => ph && ph.roomId === r.id && ph.url).map(ph => ph.url)
+    };
+  });
+  const roomsSum = items.reduce((s, it) => s + it.totalPrice, 0);
+  const remainder = Math.round(((Number(preDiscountSubtotal) || 0) - roomsSum) * 100) / 100;
+  if (remainder >= 0.01) {
+    items.push({
+      name: 'Interior Painting — project add-ons',
+      description: 'Add-ons and adjustments from the quote (railing/banister, extra doors, custom items, minimums).',
+      totalPrice: remainder,
+      referencePhotoUrls: []
+    });
+  }
+  return items;
+}
+
+// Per-side Jobber line items for exterior — one priced line per side,
+// a "Trim, doors & details" line for everything else on the house,
+// and a remainder line so the set always sums to the pre-discount
+// subtotal. Same fan-out contract as the interior rooms.
+function buildExteriorSideLineItems(p, preDiscountSubtotal) {
+  const m = p.measurements || {};
+  const sides = m.sides || [];
+  if (!sides.length) return [];
+  const items = sides.map(sd => {
+    const area = Math.round((+sd.len || 0) * (+sd.height || 0));
+    const descLines = [`${sd.len} × ${sd.height} ft · ${area} sq ft of ${(EXTERIOR_SUBSTRATES[sd.substrate] || {}).label || sd.substrate} siding`];
+    if (sd.peel && sd.peel !== 'none') descLines.push(`- ${(EXTERIOR_PEEL_META[sd.peel] || {}).label} — scrape, sand, spot-prime included`);
+    descLines.push('- Full pressure wash + 2 coats');
+    if (sd.notes && sd.notes.trim()) descLines.push(`- Note: ${sd.notes.trim()}`);
+    return {
+      name: `Exterior Painting — ${sd.label}`,
+      description: descLines.join('\n'),
+      totalPrice: exteriorSideCost(sd, p.tier),
+      referencePhotoUrls: []
+    };
+  });
+  // Everything that isn't siding rides one details line, itemized.
+  const full = computeExteriorCost(p.tier, m);
+  const sidesSum = items.reduce((s, it) => s + it.totalPrice, 0);
+  const detailsAmt = Math.round((full.total - sidesSum) * 100) / 100;
+  if (detailsAmt >= 0.01) {
+    const sideLabels = new Set(sides.map(sd => sd.label));
+    const detailLines = full.lines
+      .filter(l => ![...sideLabels].some(lbl => l.label.startsWith(lbl)))
+      .map(l => `- ${l.label}`);
+    items.push({
+      name: 'Exterior Painting — trim, doors & details',
+      description: detailLines.join('\n') || 'Trim, gutters, windows, doors, shutters, and other house details.',
+      totalPrice: detailsAmt,
+      referencePhotoUrls: []
+    });
+  }
+  const remainder = Math.round(((Number(preDiscountSubtotal) || 0) - items.reduce((s, it) => s + it.totalPrice, 0)) * 100) / 100;
+  if (remainder >= 0.01) {
+    items.push({
+      name: 'Exterior Painting — project add-ons',
+      description: 'Add-ons and adjustments from the quote (rot repair, extra washing, custom items, minimums).',
+      totalPrice: remainder,
+      referencePhotoUrls: []
+    });
+  }
+  // Project photos aren't side-tagged — land them all on the first line
+  // so they still reach the Jobber quote.
+  if (items.length) items[0].referencePhotoUrls = (p.referencePhotos || []).filter(ph => ph && ph.url).map(ph => ph.url);
+  return items;
+}
+
+// Per-area Jobber line items for cabinets — Kitchen, Island, Vanity
+// each price as their own line with the piece breakdown in the
+// description. Same reconcile contract as the other two.
+function buildCabinetAreaLineItems(p, preDiscountSubtotal) {
+  const m = p.measurements || {};
+  const areas = m.areas || [];
+  if (!areas.length) return [];
+  const items = areas.map(a => {
+    const cost = computeCabinetAreaCost(a, p.tier);
+    const descLines = [];
+    cost.lines.forEach(cl => descLines.push(`- ${cl.label}`));
+    descLines.push(`- Existing finish: ${(CABINET_FINISH_META[a.finish] || {}).label || a.finish}`);
+    if (a.thermofoil) descLines.push('- ⚠️ THERMOFOIL doors flagged — confirm strip/swap/decline on-site (not priced)');
+    if (a.notes && a.notes.trim()) descLines.push(`- Note: ${a.notes.trim()}`);
+    return {
+      name: `Cabinet Painting — ${a.label}`,
+      description: descLines.join('\n'),
+      totalPrice: cost.total,
+      referencePhotoUrls: []
+    };
+  });
+  const remainder = Math.round(((Number(preDiscountSubtotal) || 0) - items.reduce((s, it) => s + it.totalPrice, 0)) * 100) / 100;
+  if (remainder >= 0.01) {
+    items.push({
+      name: 'Cabinet Painting — project add-ons',
+      description: 'Add-ons and adjustments from the quote (hardware install, hinge upgrades, custom items, minimums).',
+      totalPrice: remainder,
+      referencePhotoUrls: []
+    });
+  }
+  if (items.length) items[0].referencePhotoUrls = (p.referencePhotos || []).filter(ph => ph && ph.url).map(ph => ph.url);
+  return items;
+}
 
 /* ============================================================
    STATE
@@ -1747,6 +5138,10 @@ function recommendedProduct() {
 }
 
 function showStage(n) {
+  // Interior projects never visit Condition (4) or Product (5) — any
+  // direct jump (progress bar, resumed draft, legacy code path) gets
+  // routed to the nearest real step instead.
+  if (isPaintProject() && (n === 4 || n === 5)) n = (state.currentStage >= 6 ? 3 : 6);
   if (n === 7 && shouldSkipColorStage()) state.activeProject.selectedColor = null;
 
   __doc.querySelectorAll('.stage').forEach(s => s.classList.remove('visible'));
@@ -1845,9 +5240,19 @@ function refreshProgressBar() {
     const stage = parseInt(el.dataset.stage);
     el.classList.remove('active', 'done', 'skipped', 'reachable');
     if (stage === n) el.classList.add('active', 'reachable');
+    else if (isPaintProject() && (stage === 4 || stage === 5)) el.classList.add('skipped');
     else if (stage === 7 && shouldSkipColorStage() && stage < state.maxStageReached) el.classList.add('skipped');
     else if (stage <= state.maxStageReached) el.classList.add('done', 'reachable');
   });
+  // Compact phone pill mirrors the active step.
+  const pillStep = __doc.getElementById('progressPillStep');
+  const pillName = __doc.getElementById('progressPillName');
+  if (pillStep) pillStep.textContent = `Step ${n} of 10`;
+  if (pillName) {
+    const activeEl = __doc.querySelector(`.progress-step[data-stage="${n}"]`);
+    const label = activeEl ? activeEl.textContent.replace(/Step\s*\d+/i, '').trim() : '';
+    pillName.textContent = label || '';
+  }
   if (n !== _lastAutoScrolledStage) {
     _lastAutoScrolledStage = n;
     scrollProgressToActive();
@@ -1907,6 +5312,10 @@ function nextStage() {
   console.log('[SSS Stage] validateStage(' + state.currentStage + ') =', valid);
   if (!valid) return;
   let target = state.currentStage + 1;
+  // Interior painting: prep lives inside the room walk-through and the
+  // product is always SW interior paint, so Condition (4) and Product
+  // (5) are skipped — measurements go straight to the paint level.
+  if (isPaintProject() && (target === 4 || target === 5)) target = 6;
   if (target === 7 && shouldSkipColorStage()) target = 8;
   if (target > 10) target = 10;
   console.log('[SSS Stage] transitioning to', target);
@@ -1916,6 +5325,7 @@ function nextStage() {
 function prevStage() {
   let target = state.currentStage - 1;
   if (target === 7 && shouldSkipColorStage()) target = 6;
+  if (isPaintProject() && (target === 5 || target === 4)) target = 3;
   if (target < 1) target = 1;
   showStage(target);
 }
@@ -1965,7 +5375,7 @@ function validateStage(n) {
     if (!state.activeProject.productType) return false;
     if (isHoa()) {
       if (!state.activeProject.hoa.brand || !state.activeProject.hoa.color) {
-        alert('HOA-Required Product needs at least a brand and a color/code. Fill those in or pick a different product family.');
+        sssAlert('HOA product details needed', 'HOA-Required Product needs at least a brand and a color/code. Fill those in or pick a different product family.');
         return false;
       }
     }
@@ -2001,9 +5411,27 @@ __doc.querySelectorAll('.progress-step').forEach(el => {
       // Validate current stage before jumping forward
       if (stage > state.currentStage && !validateStage(state.currentStage)) return;
       showStage(stage);
+      // Phone: picking a step collapses the expanded list back to the pill.
+      const bar = __doc.getElementById('progress');
+      if (bar) bar.classList.remove('expanded');
+      const chev = __doc.getElementById('progressPillChev');
+      if (chev) chev.textContent = '▾';
     }
   });
 });
+
+// Compact phone pill — tap to expand/collapse the full step list.
+(function wireProgressPill() {
+  const pill = __doc.getElementById('progressPill');
+  if (!pill) return;
+  pill.addEventListener('click', () => {
+    const bar = __doc.getElementById('progress');
+    if (!bar) return;
+    const expanded = bar.classList.toggle('expanded');
+    const chev = __doc.getElementById('progressPillChev');
+    if (chev) chev.textContent = expanded ? '▴' : '▾';
+  });
+})();
 
 /* ============================================================
    STAGE 2: PROJECT TYPE — IMAGE CARDS
@@ -2071,6 +5499,25 @@ function renderProjectTypeCards() {
 // both confirmation paths (Switch & discard, Add another).
 function applyProjectTypeChoice(newType) {
   state.activeProject.type = newType;
+  // Interior painting has no product-family step (it's all SW interior
+  // paint) and no wood-condition step — stamp the pseudo product type
+  // and confirm both so the recommendation/snap logic on Steps 4–5
+  // never fires. Switching back to a stain project restores the
+  // standard defaults.
+  const PAINT_PRODUCT_TYPES = { interior: 'interior_paint', exterior: 'exterior_paint', cabinet: 'cabinet_paint' };
+  if (PAINT_PRODUCT_TYPES[newType]) {
+    state.activeProject.productType = PAINT_PRODUCT_TYPES[newType];
+    state.activeProject.productConfirmed = true;
+    state.activeProject.condition = null;
+    state.activeProject.conditionConfirmed = true;
+  } else if (state.activeProject.productType === 'interior_paint' ||
+             state.activeProject.productType === 'exterior_paint' ||
+             state.activeProject.productType === 'cabinet_paint') {
+    state.activeProject.productType = 'oil';
+    state.activeProject.productConfirmed = false;
+    state.activeProject.condition = null;
+    state.activeProject.conditionConfirmed = false;
+  }
   if (state.activeProject._lastSeqType && state.activeProject._lastSeqType !== newType) {
     delete state.activeProject._seq;
   }
@@ -2347,7 +5794,10 @@ const MEASURE_TIPS = {
   deck:    { ico: '📏', title: 'What we count on a deck', body: 'Flat surface (sq ft) covers the top boards only. Railings are itemized in linear feet — a 40-ft perimeter railing counts as 40 ln ft regardless of how many rails it has. Stairs are counted individually by tread (not risers).' },
   pergola: { ico: '📏', title: 'Why pergola surface area is bigger than it looks', body: 'Total surface includes the top and bottom of every beam, all four sides of the posts, plus rafters and any decorative elements — not just the footprint. A 12×12 pergola is usually 180–220 sq ft of actual stainable surface, not 144.' },
   barn:    { ico: '📏', title: 'How we measure barn siding', body: 'Siding sq ft is calculated wall by wall (length × height for each wall). We don\'t subtract for normal-sized windows and doors. For walls above 12 ft, a height premium applies and a lift rental may be needed — typically quoted together.' },
-  ceiling: { ico: '📏', title: 'What\'s included in a ceiling job', body: 'Beyond the sq ft of the ceiling itself, interior jobs include moving furniture, masking floors and walls, and covering/masking light fixtures and ceiling fans (we don\'t remove them — we cover them to protect from overspray). Tongue-and-groove and beam two-toning add complexity but a richer final look.' }
+  ceiling: { ico: '📏', title: 'What\'s included in a ceiling job', body: 'Beyond the sq ft of the ceiling itself, interior jobs include moving furniture, masking floors and walls, and covering/masking light fixtures and ceiling fans (we don\'t remove them — we cover them to protect from overspray). Tongue-and-groove and beam two-toning add complexity but a richer final look.' },
+  interior: { ico: '🚶', title: 'Walk the house room by room', body: 'Add each room as you walk it with the homeowner. Tap a standard size (or enter exact dimensions), toggle what we\'re painting, set the drywall repair level, and jot room notes — each room becomes its own detail block on the Jobber quote. Prep is captured here per room, so there\'s no separate prep step for interior painting.' },
+  exterior: { ico: '🏠', title: 'Describe it, then count as you walk', body: 'Enter the footprint + stories + siding and tap "Build the 4 sides" — then walk the house tapping counters for windows, doors, and shutters. "Estimate from sides" fills the trim/soffit/gutter runs for you. Open any side to tweak its height, siding, or peeling paint (which adds scrape-and-prime prep). The wash is always included; there\'s no separate prep step.' },
+  cabinet: { ico: '🚪', title: 'Count every paintable face', body: 'A "30-door kitchen" is really 45+ pieces. Add each cabinet area and count doors, drawer fronts, glass doors, and exposed end panels — plus crown and box interiors if wanted. Stained/lacquered finishes get extra adhesion prep automatically. No separate prep step.' }
 };
 
 function renderMeasurements() {
@@ -2356,6 +5806,46 @@ function renderMeasurements() {
   __doc.getElementById('measureTitle').textContent = `${meta.icon} ${meta.name} Measurements`;
   const tip = MEASURE_TIPS[proj];
   __doc.getElementById('measureTip').innerHTML = `<div class="tip-box"><span class="tip-ico">${tip.ico}</span><div class="tip-body"><strong>${tip.title}</strong>${tip.body}</div></div>`;
+
+  // Wood age / previously-stained only make sense for stain projects.
+  // Interior painting handles prep per room, so those sections hide
+  // and the Next button routes straight to the paint level step.
+  const woodAgeSec = __doc.querySelector('.wood-age-section');
+  const prevStainSec = __doc.querySelector('.prev-stain-section');
+  const stage3Next = __doc.getElementById('stage3Next');
+  if (isInterior()) {
+    if (woodAgeSec) woodAgeSec.style.display = 'none';
+    if (prevStainSec) prevStainSec.style.display = 'none';
+    if (stage3Next) stage3Next.innerHTML = 'Next: Paint Level <span class="arr-r">→</span>';
+    __doc.getElementById('measureTitle').textContent = `🎨 Room-by-Room Walk-Through`;
+    renderInteriorMeasurements();
+    renderReferencePhotos();
+    attachPhotoListeners();
+    return;
+  }
+  if (isExterior()) {
+    if (woodAgeSec) woodAgeSec.style.display = 'none';
+    if (prevStainSec) prevStainSec.style.display = 'none';
+    if (stage3Next) stage3Next.innerHTML = 'Next: Paint Level <span class="arr-r">→</span>';
+    __doc.getElementById('measureTitle').textContent = `🏡 Side-by-Side Walk-Around`;
+    renderExteriorMeasurements();
+    renderReferencePhotos();
+    attachPhotoListeners();
+    return;
+  }
+  if (isCabinet()) {
+    if (woodAgeSec) woodAgeSec.style.display = 'none';
+    if (prevStainSec) prevStainSec.style.display = 'none';
+    if (stage3Next) stage3Next.innerHTML = 'Next: Paint Level <span class="arr-r">→</span>';
+    __doc.getElementById('measureTitle').textContent = `🚪 Piece-by-Piece Count`;
+    renderCabinetMeasurements();
+    renderReferencePhotos();
+    attachPhotoListeners();
+    return;
+  }
+  if (woodAgeSec) woodAgeSec.style.display = '';
+  if (prevStainSec) prevStainSec.style.display = '';
+  if (stage3Next) stage3Next.innerHTML = 'Next: Condition <span class="arr-r">→</span>';
 
   const container = __doc.getElementById('measureContainer');
 
@@ -2455,6 +5945,7 @@ function renderMeasurements() {
       </div>`;
   }
   container.innerHTML = html;
+  applyNumericInputMode(container);
   restoreMeasurementValues();
   attachMeasureListeners();
   if (proj === 'fence') setupFenceHeight();
@@ -2597,6 +6088,58 @@ function closeMeasureTutorial() {
 }
 
 const MEASURE_TUTORIAL = {
+  exterior: {
+    title: 'How to size up an exterior fast',
+    body: `
+      <p style="margin-bottom:14px;"><strong>Siding sides:</strong></p>
+      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
+        <li>Walk each side: pace the length (~2.5 ft per stride) and tap a story height — 1-story ≈ 10 ft average, 2-story ≈ 19 ft including gables.</li>
+        <li>Don't subtract windows and doors from siding — the cut-in labor around them cancels the area out.</li>
+        <li>Peeling paint: "light" = scattered spots you can count, "heavy" = you'd describe whole sections as failing.</li>
+      </ul>
+      <p style="margin-bottom:14px;"><strong>House details:</strong></p>
+      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
+        <li><strong>Trim & fascia</strong> ln ft ≈ house perimeter + window/door perimeters — or estimate 1.5× the total siding lengths.</li>
+        <li>Count shutters individually (a window pair = 2).</li>
+        <li>Pre-1978 home? Flip the lead-safe flag — it goes on the quote.</li>
+      </ul>
+      <p style="color:var(--slate);font-size:13px;">Estimates verify on-site before work starts — small size misses won't sink the quote.</p>`
+  },
+  cabinet: {
+    title: 'How to count cabinets right',
+    body: `
+      <p style="margin-bottom:14px;"><strong>Count every paintable FACE:</strong></p>
+      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
+        <li>Doors (uppers + lowers + false fronts), drawer fronts, glass-door frames, and exposed end panels each get counted separately.</li>
+        <li>A typical "30-door kitchen" is really 45+ pieces once drawers and panels are in.</li>
+        <li>Islands: add an Island area so two-tone colors price cleanly.</li>
+      </ul>
+      <p style="margin-bottom:14px;"><strong>Finish checks:</strong></p>
+      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
+        <li>Stained/lacquered cabinets need extra adhesion prep — tap that chip and it prices automatically.</li>
+        <li>Open-grain oak telegraphs through paint — the grain-fill option gets a glass-smooth result.</li>
+        <li>Thermofoil (vinyl-wrapped) doors often can't be painted — flag them and we confirm on-site.</li>
+      </ul>
+      <p style="color:var(--slate);font-size:13px;">Sample door gets sprayed for approval before the full run.</p>`
+  },
+  interior: {
+    title: 'How to size up rooms fast',
+    body: `
+      <p style="margin-bottom:14px;"><strong>Room dimensions:</strong></p>
+      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
+        <li>The quick-select buttons cover the most common sizes for each room type — tap one and adjust only if the room is clearly bigger or smaller.</li>
+        <li>Pacing works: an average stride is ~2.5 ft, so a 5-step wall ≈ 12 ft.</li>
+        <li>Ceiling height: 8 ft is standard, 9 ft common in newer mains/masters, 10 ft+ in living areas. Two-story foyers/stairwells: toggle "Vaulted / 2-story" instead of guessing exact height.</li>
+      </ul>
+      <p style="margin-bottom:14px;"><strong>What counts as what:</strong></p>
+      <ul style="margin-bottom:18px;padding-left:20px;line-height:1.7;">
+        <li><strong>Trim & baseboards</strong> covers baseboard runs plus door/window casings in one pass.</li>
+        <li><strong>Doors</strong> = door slab both sides + jamb. Count closet doors here too if we're painting them.</li>
+        <li><strong>Drywall repairs:</strong> Minor = nail holes & dings · Moderate = a few real patches · Major = big holes or water damage.</li>
+        <li>Anything odd — wainscoting, chair rail, specialty finishes — goes in the room notes and prices as a custom item.</li>
+      </ul>
+      <p style="color:var(--slate);font-size:13px;">Estimates verify on-site before work starts — small size misses won't sink the quote.</p>`
+  },
   fence: {
     title: 'How to estimate fence measurements',
     body: `
@@ -2733,6 +6276,9 @@ function attachPhotoListeners() {
 }
 
 function renderReferencePhotos() {
+  // Room photo strips share the same referencePhotos array — keep the
+  // interior builder in sync whenever an upload settles.
+  try { refreshInteriorPhotoStrips(); } catch (e) {}
   const grid    = __doc.getElementById('photoUploadGrid');
   const addBtn  = __doc.getElementById('photoAddBtn');
   if (!grid) return;
@@ -2772,7 +6318,7 @@ async function onPhotosPicked(e) {
     if (!state.activeProject.referencePhotos) state.activeProject.referencePhotos = [];
     if (state.activeProject.referencePhotos.length >= PHOTO_MAX_COUNT) break;
     if (f.size > PHOTO_MAX_BYTES) {
-      alert(`"${f.name}" is too large (${Math.round(f.size/1024/1024)} MB). Limit is ${PHOTO_MAX_BYTES/1024/1024} MB per photo.`);
+      sssToast(`"${f.name}" is too large (${Math.round(f.size/1024/1024)} MB) — limit is ${PHOTO_MAX_BYTES/1024/1024} MB per photo`);
       continue;
     }
     const photo = {
@@ -2935,6 +6481,9 @@ function triggerAutoSave() {
 function saveMeasurements() {
   const m = state.activeProject.measurements;
   const proj = state.activeProject.type;
+  // Interior: the room builder writes to state directly on every
+  // interaction — nothing to harvest from static inputs here.
+  if (proj === 'interior') { syncInteriorDerived(); updateRunningTotal(); return; }
   const get = (id) => +__doc.getElementById(id)?.value || 0;
   const getStr = (id) => __doc.getElementById(id)?.value || '';
   const isOn = (key) => __doc.querySelector(`[data-toggle="${key}"]`)?.classList.contains('checked') || false;
@@ -2971,6 +6520,26 @@ function saveMeasurements() {
 function validateMeasurements() {
   const m = state.activeProject.measurements;
   const proj = state.activeProject.type;
+  if (proj === 'interior') {
+    const rooms = m.rooms || [];
+    if (!rooms.length) { sssAlert('Add a room first', 'Tap a room type under "＋ Add a room" — every interior quote is built from at least one room.'); return false; }
+    const bad = rooms.find(r => !(+r.len > 0) || !(+r.wid > 0) || !(+r.height > 0));
+    if (bad) { sssAlert('Room needs dimensions', `"${bad.label}" needs a size — tap a standard size button or enter length × width.`); return false; }
+    // Rooms start blank by design — catch any room the rep forgot to
+    // fill in (no surfaces, no repairs, no extras = contributes $0).
+    const empty = rooms.find(r => computeInteriorRoomCost(r, state.activeProject.tier).total <= 0);
+    if (empty) {
+      const card = __doc.querySelector(`[data-room-id="${empty.id}"]`);
+      if (card && !empty._open) { empty._open = true; renderInteriorMeasurements(); }
+      sssAlert('Nothing selected in this room', `"${empty.label}" has nothing selected yet — tap what we're painting (or repairs) in that room, or remove it with the × button.`);
+      const el = __doc.querySelector(`[data-room-id="${empty.id}"]`);
+      if (el) try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
+      return false;
+    }
+    return true;
+  }
+  if (proj === 'exterior') return validateExteriorMeasurements();
+  if (proj === 'cabinet')  return validateCabinetMeasurements();
   if (proj === 'fence') return m.linearft > 0 && m.height > 0;
   if (proj === 'deck') return m.flat > 0 || m.rail > 0 || m.stairs > 0;
   if (proj === 'pergola') return (m.length > 0 && m.width > 0) || m.sqft > 0;
@@ -3319,6 +6888,9 @@ function updateStage5NextButton() {
    STAGE 6: TIER — enhanced comparison
    ============================================================ */
 function renderTierCards() {
+  if (isInterior()) { renderInteriorTierCards(); return; }
+  if (isExterior()) { renderExteriorTierCards(); return; }
+  if (isCabinet())  { renderCabinetTierCards(); return; }
   const product = state.activeProject.productType;
   const locked = product === 'water' ? '💧 Water-Based' : (product === 'oil' ? '🛢️ Oil-Based' : '🏘️ HOA-Required');
   __doc.getElementById('productLockText').innerHTML = `<strong>${locked}</strong> selected — change on <a href="javascript:void(0)" onclick="showStage(5)" style="color:var(--green);font-weight:700;text-decoration:underline;">Step 5</a>.`;
@@ -3612,6 +7184,12 @@ function fenceTierRate(tier, productType) {
 
 function tierUnitPrice(proj, tier) {
   // Returns the headline per-unit rate for a tier (most representative number)
+  if (proj === 'interior') {
+    const rooms = (state.activeProject.measurements.rooms || []).length || 1;
+    return { rate: computeInteriorBase(tier) / rooms, unit: 'room avg' };
+  }
+  if (proj === 'exterior') return { rate: PRICING.exterior.tiers[tier], unit: 'siding sq ft' };
+  if (proj === 'cabinet')  return { rate: PRICING.cabinet.tiers[tier], unit: 'door' };
   if (proj === 'fence')   return { rate: fenceTierRate(tier, state.activeProject.productType) * fenceHeightMultiplier(state.activeProject.measurements && state.activeProject.measurements.height), unit: 'ln ft' };
   if (proj === 'deck')    return { rate: PRICING.deck.tiers[tier], unit: 'sq ft' };
   if (proj === 'pergola') return { rate: PRICING.pergola.tiers[tier], unit: 'sq ft' };
@@ -3638,7 +7216,13 @@ function computeSampleTierPrices(product) {
    STAGE 7: COLOR — IMAGE SWATCHES (EXPERT real images)
    ============================================================ */
 function renderColorStage() {
+  if (isInterior()) { renderInteriorColorStage(); return; }
+  if (isExterior()) { renderExteriorColorStage(); return; }
+  if (isCabinet())  { renderCabinetColorStage(); return; }
   if (shouldSkipColorStage()) { showStage(8); return; }
+  // Restore the stain tip-box copy if an interior project replaced it.
+  const tipBodyStain = __doc.querySelector('#stage-7 .tip-box .tip-body');
+  if (tipBodyStain && tipBodyStain.dataset.stainHtml) tipBodyStain.innerHTML = tipBodyStain.dataset.stainHtml;
   const libKey = getColorLibrary(state.activeProject.productType, state.activeProject.tier);
   const lib = COLORS[libKey];
   __doc.getElementById('colorTitle').textContent = `Pick a color — ${lib.line}`;
@@ -3735,11 +7319,15 @@ function renderAddons() {
   // Only show stain upgrades compatible with the selected product (HOA hides
   // stain upgrades). SW-referred mode hides the EXPERT citronella additive on
   // every oil tier — the whole lineup is SuperDeck there.
-  const stainUpgrades = isHoa() ? [] : PRICING.stainUpgrades.filter(a =>
+  // Interior painting: stain product upgrades don't apply — the paint
+  // line was picked on the tier step and per-room extras live on Step 3.
+  const stainUpgrades = (isHoa() || isPaintProject()) ? [] : PRICING.stainUpgrades.filter(a =>
     (!a.product || a.product === product) &&
     !(a.id === 'citronella' && (state.activeProject.tier === 'essential' || isSwMode())));
   const projAddons = PRICING.projectAddons[proj] || [];
-  const serviceAddons = PRICING.serviceAddons;
+  // Complimentary services — rows tagged with `projects` only show for
+  // those project types (e.g. SW color consult is interior-only).
+  const serviceAddons = PRICING.serviceAddons.filter(a => !a.projects || a.projects.includes(proj));
   const customAddons = state.activeProject.customAddons || [];
 
   const stainSection = stainUpgrades.length ? `
@@ -3932,19 +7520,28 @@ function renderDiscounts() {
   const sels = state.activeProject.selectedDiscounts || [];
   const sum = totalDiscountRate();
   const bundleAuto = state.bundledProjects.length >= 1 && !!state.activeProject.type;
+  const whDef = DISCOUNTS.find(d => d.id === 'whole_house');
+  const whRooms = isInterior() ? (state.activeProject.measurements.rooms || []).length : 0;
+  const whActive = whDef && whRooms >= 4;
   const html = `
     <div class="alert info" style="margin-bottom:20px;">
       <span class="ico">✨</span>
       <div><strong>Discounts stack — up to ${(DISCOUNT_STACK_CAP*100).toFixed(0)}% total.</strong>${bundleAuto ? ' Your bundle discount (10%) is auto-applied on top. ' : ' '}Pick any that apply. Some discounts are mutually exclusive — picking one in a group auto-clears the other (you can\'t double up on service-appreciation or loyalty).</div>
     </div>
+    ${whActive ? `
+    <div class="alert success" style="margin-bottom:20px;">
+      <span class="ico">🏠</span>
+      <div><strong>${whDef.label} auto-applied: −${(whDef.rate*100).toFixed(0)}%.</strong> This interior project has ${whRooms} rooms, so the ${(whDef.rate*100).toFixed(0)}% is already in the total below — nothing to select. It counts inside the ${(DISCOUNT_STACK_CAP*100).toFixed(0)}% cap, so the stack can never exceed ${(DISCOUNT_STACK_CAP*100).toFixed(0)}%.</div>
+    </div>` : ''}
     <div id="discountList">
-      ${DISCOUNTS.filter(d => !d.locked && (!d.swOnly || state.swReferral)).map(d => {
-        const isChecked = sels.includes(d.id) || (d.swOnly && state.swReferral);
+      ${DISCOUNTS.filter(d => !d.locked && (!d.swOnly || state.swReferral) && (d.id !== 'whole_house' || isInterior())).map(d => {
+        const isWhAuto = d.id === 'whole_house' && whActive;
+        const isChecked = sels.includes(d.id) || (d.swOnly && state.swReferral) || isWhAuto;
         const ratePct = (d.rate * 100);
         const rateLabel = (Math.round(ratePct) === ratePct) ? `${ratePct.toFixed(0)}%` : `${ratePct.toFixed(1)}%`;
         // Informational items (e.g. cash/check payment) don't apply a discount —
         // they describe transparent pricing instead. Show a neutral label.
-        const valueDisplay = d.informational ? 'No processing fee' : (d.swOnly ? `−${rateLabel} · auto` : `−${rateLabel}`);
+        const valueDisplay = d.informational ? 'No processing fee' : ((d.swOnly || isWhAuto) ? `−${rateLabel} · auto` : `−${rateLabel}`);
         return `
           <div class="radio-row ${isChecked ? 'checked' : ''} ${d.informational ? 'informational' : ''}" data-discount="${d.id}" ${d.group ? `data-discount-group="${d.group}"` : ''}>
             <div class="disc-img" style="background-image:url('${d.img}')"></div>
@@ -3975,6 +7572,14 @@ function renderDiscounts() {
       // Step 1 "SW-referred customer" switch.
       const defClicked = DISCOUNTS.find(d => d.id === id);
       if (defClicked && defClicked.swOnly) return;
+      // 4+ Room Discount is auto-applied at 4+ rooms — clicking it
+      // there is a no-op (unchecking would just re-auto-apply anyway).
+      // Below 4 rooms it toggles like any other card.
+      if (id === 'whole_house' && isInterior() &&
+          (state.activeProject.measurements.rooms || []).length >= 4) {
+        sssToast('Auto-applied — this interior project has 4+ rooms');
+        return;
+      }
       const group = row.dataset.discountGroup;
       const sels = state.activeProject.selectedDiscounts = state.activeProject.selectedDiscounts || [];
       const idx = sels.indexOf(id);
@@ -4021,7 +7626,7 @@ function renderDiscounts() {
 // effective rate baked into the quote total, no matter which product family
 // (water / oil / HOA) is selected. Keep all multipliers at 1.0 so switching
 // product type never changes the price for the same tier + footage.
-const PRODUCT_PRICE_MULT = { water: 1.0, hoa: 1.0, oil: 1.0 };
+const PRODUCT_PRICE_MULT = { water: 1.0, hoa: 1.0, oil: 1.0, interior_paint: 1.0, exterior_paint: 1.0, cabinet_paint: 1.0 };
 
 function computeTierBase() {
   const raw = computeTierBaseRaw();
@@ -4033,6 +7638,9 @@ function computeTierBaseRaw() {
   const proj = state.activeProject.type;
   const tier = state.activeProject.tier;
   const m = state.activeProject.measurements;
+  if (proj === 'interior') return computeInteriorBase(tier);
+  if (proj === 'exterior') return computeExteriorBase(tier);
+  if (proj === 'cabinet')  return computeCabinetBase(tier);
   if (proj === 'fence') {
     const totalLnFt = m.linearft || 0;
     const perFootRate = fenceTierRate(tier, state.activeProject.productType) * PRICING.fence.styleMultipliers[m.style || 'privacy'] * fenceHeightMultiplier(m.height);
@@ -4112,12 +7720,23 @@ function computePrepCost() {
   // Prep minimums — small jobs still incur fixed costs (chemistry,
   // truck time, setup) that don't scale linearly with footage. The
   // floor protects us from quoting $80 for a 40-lnft fence wash when
-  // the chemistry alone costs more than that.
-  const PREP_MIN = (cond === 'soft_wash')  ? 250
-                 : (cond === 'strip_sand') ? 400
-                 : 0;
+  // the chemistry alone costs more than that. Floors live in
+  // PRICING.prepMinimums (Settings → Prep): `default` by condition,
+  // per-project overrides win (deck restoration floors at $300).
+  const PM = PRICING.prepMinimums || {};
+  const projMin = (PM[proj] && PM[proj][cond] != null) ? PM[proj][cond] : null;
+  const PREP_MIN = (projMin != null) ? projMin : ((PM.default && PM.default[cond]) || 0);
   if (raw > 0 && PREP_MIN > 0 && raw < PREP_MIN) return PREP_MIN;
   return raw;
+}
+// True when the active project's prep charge is sitting on its floor
+// (used to tag the review line so the rep can explain the number).
+function prepMinApplied() {
+  const proj = state.activeProject.type;
+  if (!proj || !PRICING[proj] || !PRICING[proj].prep) return false;
+  const cond = state.activeProject.condition;
+  const raw = prepUnitRate(proj, cond) * computePrepBase();
+  return raw > 0 && computePrepCost() > raw;
 }
 
 function computeAddonsTotal() {
@@ -4163,6 +7782,16 @@ function totalDiscountRate() {
     const def = DISCOUNTS.find(d => d.id === id && !d.locked);
     if (def) { sum += def.rate; labels.push(def.label); }
   });
+  // 4+ Room interior volume break — auto-applied at 4+ rooms with no
+  // selection needed (skipped if the rep already checked it manually,
+  // so it never double-counts). Counts inside the same 10% cap — it
+  // can never stack the total past the cap.
+  const wh = DISCOUNTS.find(d => d.id === 'whole_house');
+  if (wh && !sels.includes('whole_house') && isInterior() &&
+      (state.activeProject.measurements.rooms || []).length >= 4) {
+    sum += wh.rate;
+    labels.push(wh.label);
+  }
   const capped = Math.min(sum, DISCOUNT_STACK_CAP);
   return { rate: capped, uncappedRate: sum, label: labels.join(' + ') || '', count: sels.length, cap: DISCOUNT_STACK_CAP };
 }
@@ -4186,7 +7815,13 @@ function computeProjectTotal() {
   subtotal -= discountAmount;
 
   let minimumApplied = false;
-  if (subtotal < PRICING.minimumJob && tierBase > 0) { subtotal = PRICING.minimumJob; minimumApplied = true; }
+  // Project-type minimum wins over the global floor when defined —
+  // interior painting carries an $800 minimum (setup, masking, and
+  // cleanup don't shrink with the room count); stain projects keep
+  // the global $500.
+  const projType = state.activeProject.type;
+  const minJob = (projType && PRICING[projType] && PRICING[projType].minimumJob) || PRICING.minimumJob;
+  if (subtotal < minJob && tierBase > 0) { subtotal = minJob; minimumApplied = true; }
   return { tierBase, prep, addonsFlat: addons.flat, percentMod, percentRate: addons.percentRate, discountRate: disc.rate, discountAmount, discountLabel: disc.label, subtotal, minimumApplied };
 }
 
@@ -4445,7 +8080,25 @@ function renderFinalBreakdown() {
   });
 
   let colorPillHtml = '';
-  if (isHoa()) {
+  if (isInterior()) {
+    const planText = interiorColorPlanSummary(state.activeProject.measurements);
+    const wall = (state.activeProject.measurements.colorPlan || {}).wall;
+    colorPillHtml = planText
+      ? `<div class="color-pill"><span class="dot" style="background:${(wall && wall.hex) || '#e8e3da'}"></span>${escapeHtml(planText)}</div>`
+      : '';
+  } else if (isExterior()) {
+    const planText = exteriorColorPlanSummary(state.activeProject.measurements);
+    const body = (state.activeProject.measurements.colorPlan || {}).body;
+    colorPillHtml = planText
+      ? `<div class="color-pill"><span class="dot" style="background:${(body && body.hex) || '#e8e3da'}"></span>${escapeHtml(planText)}</div>`
+      : '';
+  } else if (isCabinet()) {
+    const planText = cabinetColorPlanSummary(state.activeProject.measurements);
+    const main = (state.activeProject.measurements.colorPlan || {}).main;
+    colorPillHtml = planText
+      ? `<div class="color-pill"><span class="dot" style="background:${(main && main.hex) || '#e8e3da'}"></span>${escapeHtml(planText)}</div>`
+      : '';
+  } else if (isHoa()) {
     colorPillHtml = `<div class="color-pill hoa"><span class="dot"></span>HOA: ${hoa.brand} · ${hoa.color}${hoa.productName ? ` (${hoa.productName})` : ''}</div>`;
   } else if (color) {
     const dotStyle = color.img ? `background-image:url('${color.img}')` : `background:${color.hex}`;
@@ -4466,7 +8119,9 @@ function renderFinalBreakdown() {
       </div>`;
   }
 
-  const productLabel = isHoa() ? 'HOA-Specified' : `${tierName.charAt(0).toUpperCase() + tierName.slice(1)} (${state.activeProject.productType})`;
+  const productLabel = isHoa() ? 'HOA-Specified'
+    : isPaintProject() ? `${tierName.charAt(0).toUpperCase() + tierName.slice(1)} — ${tierMeta.product}`
+    : `${tierName.charAt(0).toUpperCase() + tierName.slice(1)} (${state.activeProject.productType})`;
   __doc.getElementById('breakdownMain').innerHTML = `
     <div class="breakdown-header-row">
       <h3 style="margin:0;">${meta.icon} ${meta.name} — ${productLabel}</h3>
@@ -4483,10 +8138,17 @@ function renderFinalBreakdown() {
       <div class="breakdown-line"><span class="desc">${tierMeta.product}<small>Expected life: ${tierMeta.life}</small></span><span class="val">$${a.tierBase.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
     </div>
 
+    ${isPaintProject() ? `
     <div class="breakdown-section">
       <h4>Prep Work</h4>
-      <div class="breakdown-line"><span class="desc">${prepLabel(state.activeProject.condition)}</span><span class="val">${a.prep > 0 ? '$' + a.prep.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2}) : 'Included'}</span></div>
-    </div>
+      <div class="breakdown-line"><span class="desc">${isInterior() ? 'Per-room prep from the walk-through<small>Drywall repairs, popcorn/wallpaper removal, masking — itemized in each room above</small>'
+        : isExterior() ? 'Wash + prep from the walk-around<small>Full pressure wash included; scrape/sand/prime itemized per side above</small>'
+        : 'Full cabinet prep<small>Degrease, scuff-sand, adhesion primer — included in every piece price</small>'}</span><span class="val">Included above</span></div>
+    </div>` : `
+    <div class="breakdown-section">
+      <h4>Prep Work</h4>
+      <div class="breakdown-line"><span class="desc">${prepLabel(state.activeProject.condition)}${prepMinApplied() ? ' <small style="color:var(--slate);">(service minimum)</small>' : ''}</span><span class="val">${a.prep > 0 ? '$' + a.prep.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2}) : 'Included'}</span></div>
+    </div>`}
 
     ${prevStainHtml}
 
@@ -4507,7 +8169,7 @@ function renderFinalBreakdown() {
       <div class="breakdown-line discount"><span class="desc">Multi-project bundle<small>10% off — stacks on top of any per-project discounts</small></span><span class="val">−$${totals.bundleDiscount.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
     </div>` : ''}
 
-    ${a.minimumApplied ? `<div class="breakdown-line minimum"><span class="desc">⚠️ Job minimum applied<small>Calculated project total was below our $${PRICING.minimumJob} job minimum — bumped up to the floor</small></span><span class="val">$${PRICING.minimumJob}</span></div>` : ''}
+    ${a.minimumApplied ? (() => { const mj = (PRICING[proj] && PRICING[proj].minimumJob) || PRICING.minimumJob; return `<div class="breakdown-line minimum"><span class="desc">⚠️ Job minimum applied<small>Calculated project total was below our $${mj} ${isInterior() ? 'interior painting' : isExterior() ? 'exterior painting' : isCabinet() ? 'cabinet painting' : 'job'} minimum — bumped up to the floor</small></span><span class="val">$${mj}</span></div>`; })() : ''}
 
     <!-- Project Total — just this active project's price -->
     <div class="project-total"><span class="label">${state.bundledProjects.length > 0 ? 'This Project Subtotal' : 'Project Total'}</span><span class="amount">$${Math.round(a.subtotal).toLocaleString()}</span></div>
@@ -4663,6 +8325,22 @@ window.collapseActiveProject = function() {
   scrollAppToTop();
 };
 
+// Itemized interior DIY supplies, scaled per room. Returns the rows
+// shown in the comparison plus their total (which replaces the flat
+// projectTools.interior number for interior projects).
+function interiorDiySupplyLines(nRooms) {
+  const cfg = (PRICING.diy && PRICING.diy.interiorSupplies) || {};
+  const v = (k, fb) => (typeof cfg[k] === 'number' ? cfg[k] : fb);
+  const n = Math.max(1, nRooms || 1);
+  const rows = [
+    { label: `Brushes, rollers, trays & applicator pads — sized for ${n} room${n === 1 ? '' : 's'}`, amount: v('kitBase', 65) + v('kitPerRoom', 10) * n },
+    { label: "Painter's tape & masking paper", amount: v('tapePerRoom', 9) * n },
+    { label: 'Drop cloths & plastic sheeting', amount: v('dropsBase', 30) + v('dropsPerRoom', 6) * n },
+    { label: 'Repair compound, sanding sponges & caulk', amount: v('repairKit', 35) }
+  ].map(r => ({ label: r.label, amount: Math.round(r.amount) }));
+  return { rows, total: rows.reduce((s, r) => s + r.amount, 0) };
+}
+
 function computeDIYComparison(proTotal) {
   if (!proTotal || proTotal < 500) return '';
 
@@ -4710,6 +8388,45 @@ function computeDIYComparison(proTotal) {
     'oil-showcase':      { name: 'EXPERT Log & Timber Oil',         perGal: 119.99, tag: 'EXPERT List Price', url: 'https://stainandsealsupply.com/products/semi-transparent-expert-log-timber-oil' }
   };
   function stainListFor(p) {
+    if (p.type === 'exterior' || p.productType === 'exterior_paint') {
+      const names = { essential: 'SW SuperPaint Exterior', performance: 'SW Duration Exterior', showcase: 'SW Emerald Exterior' };
+      const urls = {
+        essential:   'https://www.sherwin-williams.com/homeowners/products/superpaint-exterior-acrylic-latex',
+        performance: 'https://www.sherwin-williams.com/homeowners/products/duration-exterior-acrylic-latex',
+        showcase:    'https://www.sherwin-williams.com/homeowners/products/emerald-exterior-acrylic-latex-paint'
+      };
+      const gal = (D.exteriorPaint && D.exteriorPaint.perGal) || {};
+      const fallbackGal = { essential: 86.99, performance: 111.49, showcase: 117.99 };
+      const tierKey = p.tier || 'performance';
+      const perGal = (typeof gal[tierKey] === 'number') ? gal[tierKey] : fallbackGal[tierKey];
+      return { name: names[tierKey] || 'SW Exterior Paint', perGal, tag: 'SW list price', url: urls[tierKey] || '' };
+    }
+    if (p.type === 'cabinet' || p.productType === 'cabinet_paint') {
+      const names = { essential: 'SW ProClassic Waterborne Enamel', performance: 'SW Emerald Urethane Trim Enamel', showcase: 'SW Emerald Urethane Trim Enamel' };
+      const urls = {
+        essential:   'https://www.sherwin-williams.com/homeowners/products/proclassic-waterborne-interior-acrylic-enamel',
+        performance: 'https://www.sherwin-williams.com/homeowners/products/emerald-urethane-trim-enamel',
+        showcase:    'https://www.sherwin-williams.com/homeowners/products/emerald-urethane-trim-enamel'
+      };
+      const gal = (D.cabinetPaint && D.cabinetPaint.perGal) || {};
+      const fallbackGal = { essential: 106.99, performance: 130.49, showcase: 130.49 };
+      const tierKey = p.tier || 'performance';
+      const perGal = (typeof gal[tierKey] === 'number') ? gal[tierKey] : fallbackGal[tierKey];
+      return { name: names[tierKey] || 'SW Cabinet Enamel', perGal, tag: 'SW list price', url: urls[tierKey] || '' };
+    }
+    if (p.type === 'interior' || p.productType === 'interior_paint') {
+      const names = { essential: 'SW SuperPaint Interior', performance: 'SW Duration Home', showcase: 'SW Emerald Interior' };
+      const urls = {
+        essential:   'https://www.sherwin-williams.com/homeowners/products/superpaint-interior-acrylic-latex',
+        performance: 'https://www.sherwin-williams.com/homeowners/products/duration-home-interior-acrylic-latex',
+        showcase:    'https://www.sherwin-williams.com/homeowners/products/emerald-interior-acrylic-latex-paint'
+      };
+      const gal = (D.interiorPaint && D.interiorPaint.perGal) || {};
+      const fallbackGal = { essential: 83.49, performance: 95.99, showcase: 101.49 };
+      const tierKey = p.tier || 'performance';
+      const perGal = (typeof gal[tierKey] === 'number') ? gal[tierKey] : fallbackGal[tierKey];
+      return { name: names[tierKey] || 'SW Interior Paint', perGal, tag: 'SW list price', url: urls[tierKey] || '' };
+    }
     const key = `${p.productType}-${p.tier}`;
     // SW-referred quotes: oil tiers are the SuperDeck lineup at SW list prices.
     if (typeof isSwMode === 'function' && isSwMode() && SW_OIL_STAIN_LIST[key]) return SW_OIL_STAIN_LIST[key];
@@ -4722,6 +8439,8 @@ function computeDIYComparison(proTotal) {
   let totalPails = 0;
   let totalHours = 0;
   let totalToolsCost = 0;
+  let nonInteriorToolsCost = 0;          // generic tools row (stain/exterior/cabinet projects)
+  const interiorSupplyRows = {};         // itemized interior supply lines, merged across projects
   let totalStainCost = 0;
   let totalCitronellaCost = 0;
   let needsSprayer = false;
@@ -4769,6 +8488,8 @@ function computeDIYComparison(proTotal) {
     let pails = 0;
     let scope = 0;
     let fenceGallons = null;
+    let interiorGallons = null;
+    let interiorPlan = null;
     if (p.type === 'fence') {
       const linearft = m.linearft || 0;
       // Per-style gallon usage for fences — applies to EVERY stain on a
@@ -4784,6 +8505,28 @@ function computeDIYComparison(proTotal) {
       const flatSq = (m.flat || 0) * (m.underneath ? 2 : 1) + (m.lattice || 0);
       pails = isOneCoat ? Math.ceil(flatSq / 750) : Math.ceil(flatSq / 375);
       scope = flatSq;
+    } else if (p.type === 'interior') {
+      // Paint plan does the real math: per-color buckets (walls by
+      // color, ceiling paint, trim enamel), whole-gallon rounding per
+      // bucket, 2 coats at effective coverage. Homeowners buy interior
+      // paint by the gallon — no 5-gal pail rounding.
+      interiorPlan = computeInteriorPaintPlan(p);
+      interiorGallons = interiorPlan.totalGallons;
+      pails = Math.ceil(interiorGallons / 5);
+      scope = interiorPlan.scopeArea;
+    } else if (p.type === 'exterior') {
+      // Same per-color bucket treatment: body / trim / doors / shutters
+      // buckets at verified SW exterior list prices.
+      interiorPlan = computeExteriorPaintPlan(p);
+      interiorGallons = interiorPlan.totalGallons;
+      pails = Math.ceil(interiorGallons / 5);
+      scope = interiorPlan.scopeArea;
+    } else if (p.type === 'cabinet') {
+      // Enamel + primer buckets from the piece counts.
+      interiorPlan = computeCabinetPaintPlan(p);
+      interiorGallons = interiorPlan.totalGallons;
+      pails = Math.ceil(interiorGallons / 5);
+      scope = interiorPlan.scopeArea;
     } else {
       const sq = m.sqft || 0;
       pails = isOneCoat ? Math.ceil(sq / 750) : Math.ceil(sq / 375);
@@ -4791,18 +8534,48 @@ function computeDIYComparison(proTotal) {
     }
     pails = Math.max(pails, 1);
     const baseHours = Math.max(4, Math.ceil(scope / (PROJECT_TIME_DIVISOR[p.type] || 30)));
-    const toolsCost = PROJECT_TOOLS[p.type] || 150;
+    // Interior projects itemize their supplies per room instead of the
+    // flat per-project tooling number — tape, drops, and roller covers
+    // scale with how many rooms the homeowner would actually mask.
+    let toolsCost;
+    if (p.type === 'interior') {
+      const sup = interiorDiySupplyLines(((p.measurements || {}).rooms || []).length);
+      toolsCost = sup.total;
+      sup.rows.forEach(r => { interiorSupplyRows[r.label] = (interiorSupplyRows[r.label] || 0) + r.amount; });
+    } else {
+      toolsCost = PROJECT_TOOLS[p.type] || 150;
+      nonInteriorToolsCost += toolsCost;
+    }
     const pailCost = pailCostFor(p);
     // Stain priced per GALLON at its manufacturer list price. Fences use
     // the per-style gallon estimate above; other projects use the pail
     // estimate × 5 (each pail = 5 gal).
     const sl = stainListFor(p);
-    const gallonsForProj = (fenceGallons != null) ? fenceGallons : pails * 5;
-    const stainCostForProj = gallonsForProj * sl.perGal;
-    const slKey = `${sl.name}|${sl.perGal}|${sl.tag}|${sl.url}`;
-    stainBreakdown[slKey] = stainBreakdown[slKey] || { name: sl.name, gallons: 0, perGal: sl.perGal, tag: sl.tag, url: sl.url, cost: 0 };
-    stainBreakdown[slKey].gallons += gallonsForProj;
-    stainBreakdown[slKey].cost    += stainCostForProj;
+    const gallonsForProj = (fenceGallons != null) ? fenceGallons
+                         : (interiorGallons != null) ? interiorGallons
+                         : pails * 5;
+    let stainCostForProj;
+    if (interiorPlan) {
+      // Interior: one breakdown row per paint+color bucket. Separate
+      // colors can't share a can, so each bucket carries its own
+      // whole-gallon rounding — that's the honest multi-color cost.
+      stainCostForProj = interiorPlan.totalCost;
+      interiorPlan.buckets.forEach(b => {
+        // Role is in the key so walls and trim stay separate lines even
+        // when they share the tiered product, price, and color.
+        const key = `${b.product}|${b.sheen}|${b.roleLabel}|${b.colorName}|${b.colorCode}|${b.perGal}`;
+        const rowName = `${b.product} (${b.sheen}) — ${b.colorName}${b.colorCode && b.colorCode !== 'no tint' ? ` (${b.colorCode})` : ''}, ${b.roleLabel}`;
+        stainBreakdown[key] = stainBreakdown[key] || { name: rowName, gallons: 0, perGal: b.perGal, tag: b.url ? 'SW list price' : '', url: b.url, cost: 0 };
+        stainBreakdown[key].gallons += b.gallons;
+        stainBreakdown[key].cost    += b.cost;
+      });
+    } else {
+      stainCostForProj = gallonsForProj * sl.perGal;
+      const slKey = `${sl.name}|${sl.perGal}|${sl.tag}|${sl.url}`;
+      stainBreakdown[slKey] = stainBreakdown[slKey] || { name: sl.name, gallons: 0, perGal: sl.perGal, tag: sl.tag, url: sl.url, cost: 0 };
+      stainBreakdown[slKey].gallons += gallonsForProj;
+      stainBreakdown[slKey].cost    += stainCostForProj;
+    }
     // Citronella adds cost only when the customer would actually buy the
     // additive — i.e., the citronella addon is checked on an oil project.
     const citronellaCostForProj = (p.productType === 'oil' && p.addons && p.addons.citronella)
@@ -4882,7 +8655,9 @@ function computeDIYComparison(proTotal) {
 
     const coatNote = isOneCoat ? '1 coat' : (p.productType === 'oil' ? 'oil-based' : '2 coats');
     const pailsLabel = pails === 1 ? '1 pail' : `${pails} pails`;
-    const stainDesc = `${gallonsForProj} gal × $${sl.perGal} stain${sl.tag ? ` (${sl.tag})` : ''}`;
+    const stainDesc = interiorPlan
+      ? `${gallonsForProj} gal across ${interiorPlan.buckets.length} paint${interiorPlan.buckets.length === 1 ? '' : 's'}/colors`
+      : `${gallonsForProj} gal × $${sl.perGal} stain${sl.tag ? ` (${sl.tag})` : ''}`;
     // Per-project total = stain + tools + time (staining + prep) +
     // citronella + addon impact. (sprayer + pressure washer are
     // amortized across all projects so they aren't included here.)
@@ -4944,12 +8719,14 @@ function computeDIYComparison(proTotal) {
       ${washChemCost > 0 ? `<div class="diy-row"><span>EXPERT Clean &amp; Bright system — sodium metasilicate cleaner + oxalic acid brightener (${washChemPails} × 5 gal each)${washChemNote}</span><span>$${washChemCost.toLocaleString()}</span></div>` : ''}
       ${pressureWasherCost > 0 ? `<div class="diy-row"><span>Pressure washer — homeowner-grade 2500 PSI electric (one-time purchase, used for prep wash)</span><span>$${pressureWasherCost}</span></div>` : ''}
       ${sprayerCost > 0 ? `<div class="diy-row"><span>Graco Project Plus airless sprayer${sprayerNote}</span><span>$${sprayerCost}</span></div>` : ''}
-      <div class="diy-row"><span>Brushes, rollers, applicator pads, drop cloths, sheeting${projects.length>1 ? ' (all projects)' : ''}</span><span>$${totalToolsCost.toLocaleString()}</span></div>
+      ${Object.keys(interiorSupplyRows).map(k =>
+        `<div class="diy-row"><span>${k}</span><span>$${interiorSupplyRows[k].toLocaleString()}</span></div>`).join('')}
+      ${nonInteriorToolsCost > 0 ? `<div class="diy-row"><span>Brushes, rollers, applicator pads, drop cloths, sheeting${projects.length>1 ? ' (outdoor projects)' : ''}</span><span>$${nonInteriorToolsCost.toLocaleString()}</span></div>` : ''}
       <div class="diy-row"><span>Your time (~${totalHours} hrs × $${HOURLY_RATE}/hr)</span><span>$${timeCost.toLocaleString()}</span></div>
       <div class="diy-row diy-total"><span>Estimated DIY cost</span><span>$${diyTotal.toLocaleString()}</span></div>
       ${savings > 0
-        ? `<p class="diy-conclusion">Hiring us costs <strong>$${Math.round(proTotal).toLocaleString()}</strong> — about <strong>$${savings.toLocaleString()} less</strong> than DIY when you factor in your time. Plus you get our warranty, professional-grade prep, and your weekend back to actually enjoy the yard.</p>`
-        : `<p class="diy-conclusion" style="background:var(--green-pale);color:#1f4d36;">For projects this size, the DIY math is close. The difference becomes our warranty, professional-grade prep, the fact that we're fully licensed and insured (no liability falling on you), and your weekend free to actually enjoy the yard instead of working on it.</p>`}
+        ? `<p class="diy-conclusion">Hiring us costs <strong>$${Math.round(proTotal).toLocaleString()}</strong> — about <strong>$${savings.toLocaleString()} less</strong> than DIY when you factor in your time. Plus you get our warranty, professional-grade prep, and your weekend back${projects.every(p => p.type !== 'interior' && p.type !== 'cabinet') ? ' to actually enjoy the yard' : ''}.</p>`
+        : `<p class="diy-conclusion" style="background:var(--green-pale);color:#1f4d36;">For projects this size, the DIY math is close. The difference becomes our warranty, professional-grade prep, the fact that we're fully licensed and insured (no liability falling on you), and your weekend free${projects.every(p => p.type !== 'interior' && p.type !== 'cabinet') ? ' to actually enjoy the yard instead of working on it' : ''}.</p>`}
     </div>`;
 }
 
@@ -5060,6 +8837,17 @@ function renderBundleOnlyBreakdown(totals) {
 function describeMeasurementLines() {
   const proj = state.activeProject.type;
   const m = state.activeProject.measurements;
+  if (proj === 'interior') return describeInteriorMeasurementLines(state.activeProject);
+  if (proj === 'exterior') {
+    const cost = computeExteriorCost(state.activeProject.tier, m);
+    return cost.lines.map(l => ({ label: l.label, value: `$${Math.round(l.amount).toLocaleString()}` }));
+  }
+  if (proj === 'cabinet') {
+    return (m.areas || []).map(a => ({
+      label: `${a.label} — ${cabinetPieceCount(a)} pieces`,
+      value: `$${computeCabinetAreaCost(a, state.activeProject.tier).total.toLocaleString()}`
+    }));
+  }
   if (proj === 'fence') {
     const total = m.linearft || 0;
     const partial = +m.oneSidedLnFt || 0;
@@ -5105,6 +8893,12 @@ function describeMeasurementLines() {
 
 function describeBundledRow(p) {
   const m = p.measurements;
+  if (p.type === 'interior') {
+    const rooms = (m.rooms || []);
+    const wallSqFt = rooms.reduce((s, r) => s + interiorRoomAreas(r).paintedWall, 0);
+    const paint = (TIER_META.interior_paint[p.tier] || {}).product || 'SW interior paint';
+    return `${rooms.length} room${rooms.length === 1 ? '' : 's'} · ${wallSqFt.toLocaleString()} wall sq ft · ${paint}`;
+  }
   if (p.type === 'fence') {
     const total = m.linearft || 0;
     const partial = +m.oneSidedLnFt || 0;
@@ -5161,7 +8955,9 @@ function renderEditPanel() {
           </div>`;
       }).join('');
 
-  const stainUpgrades = PRICING.stainUpgrades.filter(a =>
+  // Interior painting isn't a stain product — no water/oil family and
+  // no stain upgrades. Everything else keeps the stain lineup.
+  const stainUpgrades = isPaintProject() ? [] : PRICING.stainUpgrades.filter(a =>
     (!a.product || a.product === product) &&
     !(a.id === 'citronella' && state.activeProject.tier === 'essential'));
   const projAddons = PRICING.projectAddons[proj] || [];
@@ -5181,7 +8977,19 @@ function renderEditPanel() {
   };
 
   let colorSection = '';
-  if (isHoa()) {
+  if (isPaintProject()) {
+    const planText = isInterior() ? interiorColorPlanSummary(state.activeProject.measurements)
+                   : isExterior() ? exteriorColorPlanSummary(state.activeProject.measurements)
+                   : cabinetColorPlanSummary(state.activeProject.measurements);
+    const editLabel = isInterior() ? 'Edit rooms →' : isExterior() ? 'Edit sides →' : 'Edit areas →';
+    colorSection = `
+      <div class="side-section">
+        <h4>Color plan</h4>
+        ${planText ? `<div style="font-size:12px;line-height:1.5;color:var(--navy);">${escapeHtml(planText)}</div>` : '<p style="font-size:12px;color:var(--coral);">No colors picked yet</p>'}
+        <button onclick="showStage(7)" style="margin-top:8px;background:var(--line-soft);padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;width:100%;">Change colors →</button>
+        <button onclick="showStage(3)" style="margin-top:6px;background:var(--line-soft);padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;width:100%;">${editLabel}</button>
+      </div>`;
+  } else if (isHoa()) {
     colorSection = `<div class="side-section"><h4>HOA Color</h4><div class="color-pill hoa"><span class="dot"></span>${state.activeProject.hoa.brand}<br>${state.activeProject.hoa.color}</div><button onclick="showStage(5)" style="margin-top:8px;background:var(--line-soft);padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;width:100%;">Edit HOA info →</button></div>`;
   } else if (!isClearSealer()) {
     const c = state.activeProject.selectedColor;
@@ -5222,16 +9030,17 @@ function renderEditPanel() {
       <span class="edit-panel-arrow" aria-hidden="true">▾</span>
     </button>
     <div class="edit-panel-body">
+      ${isPaintProject() ? '' : `
       <div class="side-section">
         <h4>Product</h4>
         <div style="display:flex;gap:6px;">
           <button style="flex:1;padding:8px;border-radius:8px;background:${product === 'water' ? 'var(--navy)' : 'var(--line-soft)'};color:${product === 'water' ? 'white' : 'var(--navy)'};font-weight:600;font-size:13px;" onclick="setProduct('water')">💧 Water</button>
           <button style="flex:1;padding:8px;border-radius:8px;background:${product === 'oil' ? 'var(--navy)' : 'var(--line-soft)'};color:${product === 'oil' ? 'white' : 'var(--navy)'};font-weight:600;font-size:13px;" onclick="setProduct('oil')">🛢️ Oil</button>
         </div>
-      </div>
-      <div class="side-section"><h4>Tier</h4>${tiersHtml}</div>
+      </div>`}
+      <div class="side-section"><h4>${isPaintProject() ? 'Paint Level' : 'Tier'}</h4>${tiersHtml}</div>
       ${colorSection}
-      <div class="side-section"><h4>Stain Upgrades</h4>${stainUpgrades.map(a => renderMini(a, 'stain')).join('')}</div>
+      ${stainUpgrades.length ? `<div class="side-section"><h4>Stain Upgrades</h4>${stainUpgrades.map(a => renderMini(a, 'stain')).join('')}</div>` : ''}
       <div class="side-section"><h4>${PROJECT_META[proj].name} Add-ons</h4>${projAddons.map(a => renderMini(a, 'project')).join('')}</div>
       ${discountSection}
     </div>`;
@@ -5401,7 +9210,7 @@ function generatePDF() {
   doc.setFontSize(18); doc.setFont('helvetica', 'bold');
   doc.text('Superior Stain Solutions', M, 38);
   doc.setFontSize(10); doc.setFont('helvetica', 'normal');
-  doc.text('Professional fence, deck & exterior wood staining', M, 56);
+  doc.text('Professional staining and painting services', M, 56);
   doc.setFontSize(9);
   doc.text(`Quote ${state.quoteId}`, W - M - 100, 38);
   doc.text(new Date().toLocaleDateString(), W - M - 100, 56);
@@ -5426,7 +9235,11 @@ function generatePDF() {
     const tier = getTierMeta(p.productType, p.tier);
     doc.setTextColor(26, 37, 64);
     doc.setFontSize(12); doc.setFont('helvetica', 'bold');
-    doc.text(`${meta.name} — ${p.tier.charAt(0).toUpperCase() + p.tier.slice(1)} (${p.productType})`, M, y);
+    // Paint projects: the raw productType is an internal key
+    // (interior_paint etc.) — never customer copy. The product name
+    // prints on the next line either way.
+    const isPaintPdf = ['interior_paint', 'exterior_paint', 'cabinet_paint'].includes(p.productType);
+    doc.text(`${meta.name} — ${p.tier.charAt(0).toUpperCase() + p.tier.slice(1)}${isPaintPdf ? '' : ` (${p.productType})`}`, M, y);
     doc.text('$' + Math.round(p._cached.subtotal).toLocaleString(), W - M, y, { align: 'right' });
     y += 14;
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
@@ -5638,6 +9451,9 @@ async function pushFinishedQuoteToJobber(rowId, force, sendMethod) {
     });
     const data = await r.json();
     state._lastJobberPush = data;
+    // Keep the pipeline board honest the moment a push lands — the
+    // matching card jumps to Quoted with the fresh quote number.
+    if (data && data.ok) pipelineNotifyQuotePushed(state.jobberRequestId, data);
     if (!box) return;
     if (data && data.ok) {
       const numberLine = data.jobberQuoteNumber
@@ -6308,6 +10124,9 @@ let __cloudSavePending  = false;
 // Lives here in the frontend because all the human-readable labels
 // (PRICING.projectAddons, PROJECT_META, etc.) are calc-side.
 function buildJobberLineItem(p, idx, total) {
+  if (p.type === 'interior') return buildInteriorJobberLineItem(p, idx, total);
+  if (p.type === 'exterior') return buildExteriorJobberLineItem(p, idx, total);
+  if (p.type === 'cabinet')  return buildCabinetJobberLineItem(p, idx, total);
   const PROJ = PROJECT_META[p.type] || {};
   const TIER_LABELS = { essential: 'Essential', performance: 'Performance', showcase: 'Showcase' };
   const PROD_LABELS = { water: 'Water-based stain', oil: 'Oil-based stain', hoa: 'HOA-specified product' };
@@ -6716,7 +10535,19 @@ function buildCloudPayload() {
         preDiscountSubtotal: preDiscountSubtotal,
         _jobberName: jobberLine.name,
         _jobberDescription: jobberLine.description,
-        _jobberReferencePhotoUrls: jobberLine.referencePhotoUrls || []
+        _jobberReferencePhotoUrls: jobberLine.referencePhotoUrls || [],
+        // Paint projects: per-room / per-side / per-area line items.
+        // The updated jobber.jsw fans these out into one Jobber line
+        // each; the deployed backend ignores the field until it's
+        // re-pasted, falling back to the single aggregate line above.
+        _jobberRoomLineItems: (() => {
+          try {
+            if (p.type === 'interior') return buildInteriorRoomLineItems(p, preDiscountSubtotal);
+            if (p.type === 'exterior') return buildExteriorSideLineItems(p, preDiscountSubtotal);
+            if (p.type === 'cabinet')  return buildCabinetAreaLineItems(p, preDiscountSubtotal);
+          } catch (e) {}
+          return [];
+        })()
       };
     }),
     totals: {
@@ -7076,8 +10907,8 @@ function skelHtml(rows, tall) {
 
 function switchDashTab(name) {
   __dashTab = name;
-  const panes = { quotes: 'dashTabQuotes', leads: 'dashTabLeads', analytics: 'dashTabAnalytics' };
-  const btns  = { quotes: 'dashTabBtnQuotes', leads: 'dashTabBtnLeads', analytics: 'dashTabBtnAnalytics' };
+  const panes = { quotes: 'dashTabQuotes', leads: 'dashTabLeads', pipeline: 'dashTabPipeline', analytics: 'dashTabAnalytics' };
+  const btns  = { quotes: 'dashTabBtnQuotes', leads: 'dashTabBtnLeads', pipeline: 'dashTabBtnPipeline', analytics: 'dashTabBtnAnalytics' };
   Object.keys(panes).forEach(k => {
     const pane = __doc.getElementById(panes[k]);
     const btn  = __doc.getElementById(btns[k]);
@@ -7085,7 +10916,7 @@ function switchDashTab(name) {
     if (btn)  btn.classList.toggle('active', k === name);
   });
   // Keep the mobile bottom nav in sync with the top tabs.
-  const dbn = { quotes: 'dbnQuotes', leads: 'dbnLeads', analytics: 'dbnAnalytics' };
+  const dbn = { quotes: 'dbnQuotes', leads: 'dbnLeads', pipeline: 'dbnPipeline', analytics: 'dbnAnalytics' };
   Object.keys(dbn).forEach(k => {
     const b = __doc.getElementById(dbn[k]);
     if (b) b.classList.toggle('active', k === name);
@@ -7100,6 +10931,7 @@ function switchDashTab(name) {
     updateLeadsTabCount();
   }
   if (name === 'analytics' && !__dashAnalyticsLoaded) loadDashAnalytics();
+  if (name === 'pipeline') openPipelineTab();
 }
 
 // Badge on the Customer Leads tab = submissions + needs-review + abandoned.
@@ -7139,7 +10971,7 @@ function renderDashAnalytics(stats) {
   if (!body) return;
   const t = stats.totals || {};
   const m = stats.money || {};
-  const PROJECT_LABELS = { fence: 'Fence', deck: 'Deck', pergola: 'Pergola', barn: 'Barn', ceiling: 'Ceiling' };
+  const PROJECT_LABELS = { fence: 'Fence', deck: 'Deck', pergola: 'Pergola', barn: 'Barn', ceiling: 'Ceiling', interior: 'Interior Painting', exterior: 'Exterior Painting', cabinet: 'Cabinet Painting' };
   const fmtMoneyShort = (n) => '$' + Math.round(Number(n) || 0).toLocaleString();
 
   // --- KPI cards ---
@@ -7410,7 +11242,7 @@ function wireLeadSwipe(body) {
 // Shared card builder so the Submissions + Drafts folders look identical
 // row-by-row. The only diff is which array of items they iterate.
 function buildCustSubsCardHtml(it) {
-  const PROJECT_LABELS = { fence: 'Fence', deck: 'Deck', pergola: 'Pergola', barn: 'Barn', ceiling: 'Ceiling' };
+  const PROJECT_LABELS = { fence: 'Fence', deck: 'Deck', pergola: 'Pergola', barn: 'Barn', ceiling: 'Ceiling', interior: 'Interior Painting', exterior: 'Exterior Painting', cabinet: 'Cabinet Painting' };
   const c = it.customer || {};
   const ago = it.createdAt ? timeSince(new Date(it.createdAt)) : '';
   const projTypes = (it.projects || []).map(p => PROJECT_LABELS[p && p.type] || (p && p.type)).filter(Boolean);
@@ -7536,7 +11368,7 @@ function estimateDraftRange(projects) {
 // `_jobberDescription` (assembled at submit time by buildJobberLineItem).
 // For older rows that predate that cache we recompute on the fly.
 function buildSubmissionDetailsHtml(it) {
-  const PROJECT_LABELS = { fence: 'Fence', deck: 'Deck', pergola: 'Pergola', barn: 'Barn', ceiling: 'Ceiling' };
+  const PROJECT_LABELS = { fence: 'Fence', deck: 'Deck', pergola: 'Pergola', barn: 'Barn', ceiling: 'Ceiling', interior: 'Interior Painting', exterior: 'Exterior Painting', cabinet: 'Cabinet Painting' };
   const c = it.customer || {};
   const projects = Array.isArray(it.projects) ? it.projects : [];
   const ago = it.createdAt ? timeSince(new Date(it.createdAt)) : '';
@@ -7853,7 +11685,7 @@ function renderCustomerAbandonedDrafts() {
     body.innerHTML = `<div class="folder-empty">No abandoned drafts match "${escapeHtml(q)}".</div>`;
     return;
   }
-  const PROJECT_LABELS = { fence: 'Fence', deck: 'Deck', pergola: 'Pergola', barn: 'Barn', ceiling: 'Ceiling' };
+  const PROJECT_LABELS = { fence: 'Fence', deck: 'Deck', pergola: 'Pergola', barn: 'Barn', ceiling: 'Ceiling', interior: 'Interior Painting', exterior: 'Exterior Painting', cabinet: 'Cabinet Painting' };
   body.innerHTML = `
     <div class="folder-empty" style="text-align:left; padding:6px 8px 10px; color:#8a6515; font-style:italic; font-size:12px;">
       These customers started the online estimate but didn't finish. Reach out via their contact info — they're warm leads with stated intent.
@@ -7969,7 +11801,7 @@ function renderCustCalcAnalytics(stats) {
   if (!body) return;
   const t = stats.totals || {};
   const m = stats.money  || {};
-  const PROJECT_LABELS = { fence: 'Fence', deck: 'Deck', pergola: 'Pergola', barn: 'Barn', ceiling: 'Ceiling' };
+  const PROJECT_LABELS = { fence: 'Fence', deck: 'Deck', pergola: 'Pergola', barn: 'Barn', ceiling: 'Ceiling', interior: 'Interior Painting', exterior: 'Exterior Painting', cabinet: 'Cabinet Painting' };
 
   if ((t.allTime || 0) === 0) {
     body.innerHTML = '<div class="cust-analytics-empty">No customer submissions yet in the last 90 days.</div>';
@@ -8053,7 +11885,15 @@ function convertJobberRequestToQuote(idx) {
   if (!req) return;
   const customerLabel = req.customerName || 'this request';
   if (!confirm(`Start a new quote from ${customerLabel}'s Jobber request? The customer details will be pre-filled.`)) return;
+  startQuoteFromJobberRequest(req);
+}
 
+// Start a prefilled quote from any request-shaped object. Shared by
+// the Recent-Jobber-requests panel above and the Pipeline tab —
+// pipeline cards synthesize this shape from their stored contact +
+// Jobber ids (with a single-string `address` fallback for manual
+// leads that never had structured street/city fields).
+function startQuoteFromJobberRequest(req) {
   // Reset state to a fresh quote — same as startNewQuote, but then
   // immediately stamp the request's customer data.
   const employee = state.customer.employee || '';
@@ -8091,7 +11931,8 @@ function convertJobberRequestToQuote(idx) {
   state.customer.postalCode   = req.postalCode   || '';
   state.customer.address      = [
     req.street1, req.city, [req.province, req.postalCode].filter(Boolean).join(' ')
-  ].filter(Boolean).join(', ');
+  ].filter(Boolean).join(', ') || (req.address || '');
+  if (!state.customer.street1 && !req.city && req.address) state.customer.street1 = req.address;
   state.customer.jobberClientId   = req.clientId   || '';
   state.customer.jobberPropertyId = req.propertyId || '';
 
@@ -8110,6 +11951,999 @@ function convertJobberRequestToQuote(idx) {
   showStage(2);
   updateRunningTotal();
 }
+
+/* ============================================================
+   PIPELINE TAB
+   ------------------------------------------------------------
+   Kanban of every open lead → quote → job, fed by a Jobber
+   snapshot (requests + quotes + jobs) reconciled CLIENT-side
+   into PipelineCards. Replaces Jobber's $49/mo Pipeline add-on.
+
+   What the Jobber API lets us DO from here (all proven paths):
+   start a prefilled calculator quote (quoteCreate w/ requestId),
+   create a client+request from a manual lead, push a card note
+   onto the request, deep-link into Jobber. What it can NOT do:
+   send the customer emails/texts — that stays in Jobber, so the
+   pipeline's job is knowing WHO needs WHAT next, not messaging.
+   ============================================================ */
+
+const PIPE_STAGES = [
+  { id: 'new',       label: 'New Lead',  icon: '🆕' },
+  // id stays 'contacted' so saved cards + the legacy-stage fold keep
+  // working — only the display label/meaning changed (2026-07-18).
+  { id: 'contacted', label: 'Estimate Scheduled', icon: '📅' },
+  { id: 'quoted',    label: 'Quoted',    icon: '📄' },
+  { id: 'followup',  label: 'Follow-Up', icon: '⏰' },
+  { id: 'won',       label: 'Won',       icon: '🏆' },
+  { id: 'lost',      label: 'Lost',      icon: '🚫' }
+];
+const PIPE_STAGE_RANK = {};
+PIPE_STAGES.forEach((s, i) => { PIPE_STAGE_RANK[s.id] = i; });
+const PIPE_LOST_REASONS = ['Price', 'Timing', 'Went with competitor', 'No response', 'Out of area', 'Other'];
+const PIPE_QSTATUS = { draft: 'Draft', awaiting_response: 'Awaiting response', approved: 'Approved',
+                       converted: 'Converted', changes_requested: 'Changes requested', archived: 'Archived' };
+const PIPE_JSTATUS = { upcoming: 'Scheduled', unscheduled: 'Unscheduled', today: 'Today',
+                       in_progress: 'In progress', active: 'Active', late: 'Running late',
+                       on_hold: 'On hold', requires_invoicing: 'Needs invoicing',
+                       action_required: 'Action required', completed: 'Complete', archived: 'Archived' };
+
+let __pipe = { cards: [], connected: null, snapErrors: [], loading: false,
+               lastSync: 0, showArchived: false, openCardId: null, sampleData: false,
+               filter: '' };
+let __pipeLoadedOnce = false;
+let __pipeFilterTimer = null;
+let __pipeDupOk = false;
+
+function pipeCall(method, args) {
+  if (typeof __sssBridge === 'undefined' || !__sssBridge.call) {
+    return Promise.resolve({ ok: false, error: 'no_bridge' });
+  }
+  return __sssBridge.call(method, args || {});
+}
+function pipeFind(key) {
+  return (__pipe.cards || []).find(c => c && (c.key === key || c._id === key)) || null;
+}
+function pipeMoney(n) { return '$' + Math.round(Number(n) || 0).toLocaleString(); }
+function pipeDaysAgo(iso) {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (isNaN(t)) return null;
+  return (Date.now() - t) / 86400000;
+}
+// Calendar-day distance from today to a YYYY-MM-DD string.
+// Positive = future, 0 = today, negative = days overdue.
+function pipeDateDiff(dateStr) {
+  if (!dateStr) return null;
+  const parts = String(dateStr).split('-').map(Number);
+  if (parts.length < 3 || parts.some(isNaN)) return null;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const d = new Date(parts[0], parts[1] - 1, parts[2]);
+  return Math.round((d - today) / 86400000);
+}
+function pipeRel(iso) {
+  const d = pipeDaysAgo(iso);
+  if (d === null) return '';
+  if (d < 0.05) return 'just now';
+  if (d < 1) return (Math.floor(d * 24) || 1) + 'h ago';
+  if (d < 7) return Math.floor(d) + 'd ago';
+  try { return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
+  catch (e) { return ''; }
+}
+function pipeFuLabel(v) {
+  const diff = pipeDateDiff(v);
+  if (diff === 0) return 'today';
+  if (diff === 1) return 'tomorrow';
+  try { return new Date(v + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
+  catch (e) { return v; }
+}
+function pipeQStatusLabel(s) { return PIPE_QSTATUS[String(s || '').toLowerCase()] || (s || ''); }
+function pipeJStatusLabel(s) { return PIPE_JSTATUS[String(s || '').toLowerCase()] || (s || ''); }
+function pipeRepName() {
+  return (typeof __currentRep !== 'undefined' && __currentRep && (__currentRep.displayName || __currentRep.initials)) || 'Rep';
+}
+function pipeTodayStr(offsetDays) {
+  const d = new Date();
+  if (offsetDays) d.setDate(d.getDate() + offsetDays);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+// Moving forward into Quoted (or beyond): if an appointment date was
+// on the card and has already passed, that was the in-person visit —
+// it becomes the assessment record and the follow-up slot frees up
+// for its snooze duty. No appointment ever set = no guess (phone
+// quotes exist); the rep can fill Assessed-on by hand.
+function pipeStampVisit(card, newStage) {
+  if (PIPE_STAGE_RANK[newStage] >= PIPE_STAGE_RANK.quoted &&
+      PIPE_STAGE_RANK[card.stage] < PIPE_STAGE_RANK.quoted &&
+      !card.visitAt && card.followUpAt) {
+    const diff = pipeDateDiff(card.followUpAt);
+    if (diff !== null && diff <= 0) {
+      card.visitAt = String(card.followUpAt).slice(0, 10);
+      card.followUpAt = '';
+    }
+  }
+}
+function pipeSetFilter(v) {
+  __pipe.filter = String(v || '').trim().toLowerCase();
+  clearTimeout(__pipeFilterTimer);
+  __pipeFilterTimer = setTimeout(renderPipeline, 140);
+}
+function pipeMatchesFilter(card) {
+  const f = __pipe.filter;
+  if (!f) return true;
+  const hay = [card.name, card.title, card.address, card.phone, card.email, card.source]
+    .filter(Boolean).join(' ').toLowerCase();
+  return hay.indexOf(f) !== -1;
+}
+
+/* ---- The insight engine: what should we do next with this card? ----
+   Returns { text, urgency } — urgency 0 = fine, 1 = worth a nudge
+   (gold), 2 = needs action now (coral). First matching rule wins. */
+function pipelineNextAction(card) {
+  const s = card.snap || {};
+  const qs = String(s.quoteStatus || '').toLowerCase();
+  const stageDays = pipeDaysAgo(card.stageChangedAt || card.createdAt);
+  const fuDiff = card.followUpAt ? pipeDateDiff(card.followUpAt) : null;
+
+  if (card.stage === 'lost') {
+    return { text: card.lostReason ? 'Lost — ' + card.lostReason : 'Lost', urgency: 0 };
+  }
+  if (card.stage === 'won') {
+    const js = String(s.jobStatus || '').toLowerCase();
+    if (!s.jobNumber) return { text: 'Won — schedule the job in Jobber', urgency: 2 };
+    if (js === 'requires_invoicing') return { text: 'Job done — send the invoice in Jobber', urgency: 2 };
+    if (js === 'completed' || js === 'archived') return { text: 'Job complete 🎉', urgency: 0 };
+    if (js === 'in_progress' || js === 'active' || js === 'today' || js === 'late') {
+      return { text: 'Job in progress', urgency: 0 };
+    }
+    return { text: 'Job #' + s.jobNumber + ' on the books', urgency: 0 };
+  }
+  if (qs === 'changes_requested') return { text: 'Customer asked for changes — revise the quote', urgency: 2 };
+  if (qs === 'draft') return { text: 'Quote is still a Draft — review & send it in Jobber', urgency: 2 };
+  if (qs === 'archived') return { text: 'Quote archived in Jobber — mark Lost?', urgency: 1 };
+
+  // Follow-up date doubles as the appointment date AND as a snooze: a
+  // future date parks the card (urgency 0) until it hits. On an
+  // Estimate Scheduled card it IS the estimate appointment, so the
+  // wording leans that way.
+  if (fuDiff !== null) {
+    if (fuDiff < 0) {
+      return card.stage === 'contacted'
+        ? { text: 'Estimate was ' + pipeFuLabel(card.followUpAt) + '? Build the quote', urgency: 2 }
+        : { text: 'Follow-up overdue by ' + (-fuDiff) + 'd — reach out', urgency: 2 };
+    }
+    if (fuDiff === 0) {
+      return card.stage === 'contacted'
+        ? { text: 'Estimate appointment today', urgency: 1 }
+        : { text: 'Follow-up due today', urgency: 2 };
+    }
+    return { text: 'Scheduled for ' + pipeFuLabel(card.followUpAt), urgency: 0 };
+  }
+
+  if (card.stage === 'quoted' || card.stage === 'followup') {
+    const qd = pipeDaysAgo(s.quoteCreatedAt);
+    if (qd !== null) {
+      if (qd >= 7) return { text: 'Quote out ' + Math.floor(qd) + 'd with no answer — call them', urgency: 2 };
+      if (qd >= 3) return { text: 'Quote out ' + Math.floor(qd) + 'd — follow up', urgency: 1 };
+      return { text: 'Quote sent ' + pipeRel(s.quoteCreatedAt), urgency: 0 };
+    }
+    return card.stage === 'followup'
+      ? { text: 'Check back in', urgency: (stageDays !== null && stageDays >= 3) ? 2 : 1 }
+      : { text: 'Build and send the quote', urgency: 1 };
+  }
+  if (card.stage === 'new') {
+    if (stageDays !== null && stageDays >= 2) return { text: 'Going cold — reach out (waiting ' + Math.floor(stageDays) + 'd)', urgency: 2 };
+    if (stageDays !== null && stageDays >= 1) return { text: 'Reach out — came in ' + pipeRel(card.createdAt), urgency: 1 };
+    return { text: 'New — make first contact', urgency: 1 };
+  }
+  if (card.stage === 'contacted') {
+    // In this stage with NO date on the card = the estimate is
+    // supposedly booked but nobody wrote down when.
+    if (stageDays !== null && stageDays >= 4) return { text: 'No estimate date on the card — set it below', urgency: 2 };
+    return { text: 'Set the estimate date below', urgency: 1 };
+  }
+  return { text: '', urgency: 0 };
+}
+
+/* ---- Reconcile: Jobber snapshot → cards --------------------------
+   Pure function, shared by prod + local mock (only the data differs).
+   Rules: rep moves always win over auto-advance EXCEPT Won (an
+   approved quote or a job is ground truth). Returns the mutated
+   cards array + the subset that changed and needs saving. */
+function pipelineReconcile(cards, snap) {
+  const changed = new Set();
+  const nowIso = new Date().toISOString();
+  const byKey = new Map(), byReq = new Map(), byQuote = new Map(), byClient = new Map();
+  const indexCard = (c) => {
+    if (c.key) byKey.set(c.key, c);
+    if (c.jobberRequestId) byReq.set(c.jobberRequestId, c);
+    if (c.jobberQuoteId) byQuote.set(c.jobberQuoteId, c);
+    if (c.jobberClientId) {
+      if (!byClient.has(c.jobberClientId)) byClient.set(c.jobberClientId, []);
+      if (byClient.get(c.jobberClientId).indexOf(c) === -1) byClient.get(c.jobberClientId).push(c);
+    }
+  };
+  cards.forEach(indexCard);
+  const touch = (c) => changed.add(c);
+  // Stage-list migration: cards saved under a stage that no longer
+  // exists (e.g. the retired Walk-Through column) fold into Contacted
+  // instead of vanishing off the board.
+  cards.forEach(c => {
+    if (!(c.stage in PIPE_STAGE_RANK)) { c.stage = 'contacted'; touch(c); }
+  });
+  const setStage = (c, stage) => {
+    if (c.stage === stage) return;
+    pipeStampVisit(c, stage);
+    c.stage = stage; c.stageSetBy = 'auto'; c.stageChangedAt = nowIso;
+    if (stage === 'won' && !c.wonAt) c.wonAt = nowIso;
+    touch(c);
+  };
+  const setSnap = (c, patch) => {
+    c.snap = c.snap || {};
+    Object.keys(patch).forEach(k => {
+      if (patch[k] !== undefined && c.snap[k] !== patch[k]) { c.snap[k] = patch[k]; touch(c); }
+    });
+  };
+  const CONTACT_FIELDS = ['name', 'firstName', 'lastName', 'companyName', 'email', 'phone', 'address', 'title', 'source'];
+
+  // 1) Requests → cards (the funnel entrance)
+  (snap.requests || []).forEach(r => {
+    const status = String(r.requestStatus || '').toLowerCase();
+    let card = byReq.get(r.id) || byKey.get('req:' + r.id);
+    if (!card) {
+      if (status === 'archived') return; // stale request that never carded — leave it buried
+      // stageChangedAt seeds from the REQUEST's arrival, not from when
+      // we first carded it — the customer has been waiting since then,
+      // and the going-cold clock should say so.
+      card = { key: 'req:' + r.id, stage: 'new', stageSetBy: 'auto',
+               stageChangedAt: r.createdAt || nowIso,
+               createdAt: r.createdAt || nowIso, notes: [], archived: false, manual: false, snap: {} };
+      cards.push(card); touch(card);
+    }
+    if (card.jobberRequestId !== r.id) { card.jobberRequestId = r.id; touch(card); }
+    if (r.clientId && card.jobberClientId !== r.clientId) { card.jobberClientId = r.clientId; touch(card); }
+    if (r.propertyId && card.jobberPropertyId !== r.propertyId) { card.jobberPropertyId = r.propertyId; touch(card); }
+    // Jobber is source of truth for contact info — but never blank a
+    // field we have with an empty one from Jobber.
+    CONTACT_FIELDS.forEach(f => {
+      const v = r[f] || '';
+      if (v && card[f] !== v) { card[f] = v; touch(card); }
+    });
+    setSnap(card, { requestStatus: r.requestStatus || '', requestCreatedAt: r.createdAt || '',
+                    requestWebUri: r.jobberWebUri || '' });
+    // Jobber's scheduled on-site assessment → the card's "Assessed on"
+    // date (only fills the blank — a rep-entered date is never
+    // overwritten).
+    if (r.assessmentAt && !card.visitAt) {
+      card.visitAt = String(r.assessmentAt).slice(0, 10);
+      touch(card);
+    }
+    indexCard(card);
+  });
+
+  // 2) Quotes → cards (match by request link → quote id → sole client card)
+  (snap.quotes || []).forEach(q => {
+    const qs = String(q.quoteStatus || '').toLowerCase();
+    let card = (q.requestId && (byReq.get(q.requestId) || byKey.get('req:' + q.requestId)))
+            || byQuote.get(q.id) || byKey.get('quote:' + q.id) || null;
+    if (!card && q.clientId) {
+      const cands = (byClient.get(q.clientId) || []).filter(c => !c.jobberQuoteId || c.jobberQuoteId === q.id);
+      if (cands.length === 1) card = cands[0];
+    }
+    if (!card) {
+      if (qs === 'archived') return;
+      card = { key: 'quote:' + q.id, stage: 'quoted', stageSetBy: 'auto',
+               stageChangedAt: q.createdAt || nowIso,
+               createdAt: q.createdAt || nowIso, notes: [], archived: false, manual: false, snap: {} };
+      CONTACT_FIELDS.forEach(f => { if (q[f]) card[f] = q[f]; });
+      cards.push(card); touch(card);
+    }
+    const firstLink = card.jobberQuoteId !== q.id;
+    if (firstLink) { card.jobberQuoteId = q.id; touch(card); }
+    if (q.clientId && !card.jobberClientId) { card.jobberClientId = q.clientId; touch(card); }
+    setSnap(card, { quoteNumber: q.quoteNumber || '', quoteStatus: q.quoteStatus || '',
+                    quoteTotal: (typeof q.total === 'number') ? q.total : (card.snap && card.snap.quoteTotal),
+                    quoteCreatedAt: q.createdAt || '', quoteWebUri: q.jobberWebUri || '' });
+    if (qs === 'approved' || qs === 'converted') {
+      if (card.stage !== 'won' && card.stage !== 'lost') setStage(card, 'won');
+    } else if (qs !== 'archived') {
+      // A quote NEWLY appearing always advances the card — sending a
+      // quote from the estimator is a fact, even if the rep had parked
+      // the card by hand. Re-syncs of an already-linked quote respect
+      // rep moves (so a deliberate drag BACK sticks).
+      if (PIPE_STAGE_RANK[card.stage] < PIPE_STAGE_RANK.quoted &&
+          (firstLink || card.stageSetBy !== 'rep')) {
+        setStage(card, 'quoted');
+      }
+    }
+    indexCard(card);
+  });
+
+  // 3) Jobs → decorate + Won. Only touches cards already quoted-or-
+  //    later: an old client's NEW request shouldn't auto-win just
+  //    because they have a job from last year.
+  (snap.jobs || []).forEach(j => {
+    if (!j.clientId) return;
+    (byClient.get(j.clientId) || []).forEach(card => {
+      if (card.stage === 'lost') return;
+      if (PIPE_STAGE_RANK[card.stage] < PIPE_STAGE_RANK.quoted) return;
+      if (card.jobberJobId && card.jobberJobId !== j.id) return; // already tied to a different job
+      if (card.jobberJobId !== j.id) { card.jobberJobId = j.id; touch(card); }
+      setSnap(card, { jobNumber: j.jobNumber || '', jobStatus: j.jobStatus || '',
+                      jobWebUri: j.jobberWebUri || '', jobTitle: j.title || '' });
+      if (card.stage !== 'won') setStage(card, 'won');
+    });
+  });
+
+  return { cards, changed: Array.from(changed) };
+}
+
+/* ---- Load + sync -------------------------------------------------- */
+function openPipelineTab() {
+  renderPipeline();
+  const stale = !__pipe.lastSync || (Date.now() - __pipe.lastSync > 60000);
+  if (!__pipe.loading && (stale || !__pipeLoadedOnce)) loadPipeline(false);
+}
+
+async function loadPipeline(force) {
+  if (__pipe.loading) return;
+  if (!force && __pipe.lastSync && Date.now() - __pipe.lastSync < 15000) { renderPipeline(); return; }
+  __pipe.loading = true;
+  pipeSetSyncPill('sync');
+  try {
+    const results = await Promise.all([ pipeCall('pipelineCards'), pipeCall('pipelineSnapshot') ]);
+    const cardsRes = results[0], snapRes = results[1];
+    if (!cardsRes || !cardsRes.ok) { pipeShowBoardError(cardsRes); return; }
+    let cards = (cardsRes.cards || []).filter(Boolean);
+    // Display-safe stage fold for the disconnected path (reconcile
+    // does the persisting version when Jobber is connected).
+    cards.forEach(c => { if (!(c.stage in PIPE_STAGE_RANK)) c.stage = 'contacted'; });
+    __pipe.connected = !!(snapRes && snapRes.connected);
+    __pipe.sampleData = !!(snapRes && snapRes.local);
+    __pipe.snapErrors = (snapRes && snapRes.errors) || [];
+    if (snapRes && snapRes.connected) {
+      const rec = pipelineReconcile(cards, snapRes);
+      cards = rec.cards;
+      if (rec.changed.length) {
+        const saveRes = await pipeCall('pipelineCardsUpsert', { cards: rec.changed });
+        if (saveRes && saveRes.ok) {
+          (saveRes.cards || []).forEach(sc => {
+            if (!sc || !sc.key) return;
+            const local = cards.find(c => c.key === sc.key);
+            if (local && sc._id) local._id = sc._id;
+          });
+        }
+      }
+    }
+    __pipe.cards = cards;
+    __pipe.lastSync = Date.now();
+    __pipeLoadedOnce = true;
+    renderPipeline();
+  } catch (e) {
+    console.warn('[Pipeline] load failed:', e);
+    pipeShowBoardError({ error: e.message });
+  } finally {
+    __pipe.loading = false;
+    pipeSetSyncPill();
+  }
+}
+
+async function pipeSaveCard(card) {
+  const res = await pipeCall('pipelineCardsUpsert', { cards: [card] });
+  if (res && res.ok && res.cards && res.cards[0] && res.cards[0]._id) {
+    card._id = res.cards[0]._id;
+  } else if (!res || !res.ok) {
+    sssToast('⚠️ Couldn\'t save that change — it will retry on next sync');
+  }
+  return res;
+}
+
+/* ---- Render ------------------------------------------------------- */
+function pipeSetSyncPill(mode) {
+  const el = __doc.getElementById('pipeSyncPill');
+  if (!el) return;
+  if (mode === 'sync') { el.innerHTML = '<span class="dot"></span>Syncing…'; return; }
+  if (!__pipe.lastSync) { el.innerHTML = '<span class="dot off"></span>Not synced yet'; return; }
+  const extra = __pipe.sampleData ? ' · sample data' : '';
+  const errs = (__pipe.snapErrors || []);
+  const errBadge = errs.length
+    ? ' <span title="' + escapeHtml(errs.map(e => (e.slice || '?') + ': ' + (e.error || '')).join(' · ')) + '">⚠️</span>'
+    : '';
+  el.innerHTML = __pipe.connected
+    ? '<span class="dot"></span>Jobber synced ' + pipeRel(new Date(__pipe.lastSync).toISOString()) + extra + errBadge
+    : '<span class="dot off"></span>Jobber not connected — cards only';
+}
+
+function pipeShowBoardError(res) {
+  const board = __doc.getElementById('pipeBoard');
+  if (!board) return;
+  const msg = res && res.error === 'pipeline_collection'
+    ? 'The <b>PipelineCards</b> collection hasn\'t been created in Wix yet. Add a CMS collection with ID exactly <b>PipelineCards</b> (Admin-only permissions), then hit ↻ Sync.'
+    : 'Couldn\'t load pipeline cards — <b>' + escapeHtml((res && res.error) || 'unknown') + '</b>. Hit ↻ Sync to retry.';
+  board.innerHTML = '<div class="pipe-empty">⚠️ ' + msg + '</div>';
+}
+
+function pipeSortCards(list) {
+  return list.slice().sort((a, b) => {
+    const ua = pipelineNextAction(a).urgency, ub = pipelineNextAction(b).urgency;
+    if (ua !== ub) return ub - ua;
+    const da = pipeDaysAgo(a.stageChangedAt || a.createdAt) || 0;
+    const db = pipeDaysAgo(b.stageChangedAt || b.createdAt) || 0;
+    return db - da;
+  });
+}
+
+function updatePipelineTabCount(n) {
+  ['dashTabPipelineCount', 'dbnPipelineCount'].forEach(id => {
+    const el = __doc.getElementById(id);
+    if (el) { el.textContent = String(n); el.style.display = n > 0 ? '' : 'none'; }
+  });
+}
+
+function pipeCardHtml(card) {
+  const na = pipelineNextAction(card);
+  const s = card.snap || {};
+  const amt = (typeof s.quoteTotal === 'number') ? pipeMoney(s.quoteTotal) : '';
+  const chips = [];
+  if (s.quoteNumber) chips.push('<span class="pipe-chip q">Q#' + escapeHtml(s.quoteNumber) + ' · ' + escapeHtml(pipeQStatusLabel(s.quoteStatus)) + '</span>');
+  if (s.jobNumber) chips.push('<span class="pipe-chip j">Job #' + escapeHtml(s.jobNumber) + ' · ' + escapeHtml(pipeJStatusLabel(s.jobStatus)) + '</span>');
+  if (card.manual && !card.jobberRequestId) chips.push('<span class="pipe-chip">Manual</span>');
+  if (card.visitAt) chips.push('<span class="pipe-chip">🏠 Assessed ' + escapeHtml(pipeFuLabel(card.visitAt)) + '</span>');
+  if (card.source) chips.push('<span class="pipe-chip">' + escapeHtml(card.source) + '</span>');
+  if ((card.notes || []).length) chips.push('<span class="pipe-chip note">📝 ' + card.notes.length + '</span>');
+  const cls = ['pipe-card'];
+  if (card.stage === 'won') cls.push('is-won');
+  else if (card.stage === 'lost') cls.push('is-lost');
+  else if (na.urgency === 2) cls.push('u2');
+  else if (na.urgency === 1) cls.push('u1');
+  return '<div class="' + cls.join(' ') + '" draggable="true" data-pipe-card="' + escapeHtml(card.key) + '" ' +
+         'onclick="openPipeCard(\'' + escapeHtml(card.key) + '\')">' +
+    '<div class="top"><span class="nm">' + escapeHtml(card.name || 'Unknown') + '</span>' +
+      (amt ? '<span class="amt">' + amt + '</span>' : '') + '</div>' +
+    (card.title ? '<div class="ttl">' + escapeHtml(card.title) + '</div>' : '') +
+    (na.text ? '<div class="act">' + (na.urgency === 2 ? '⚠️ ' : na.urgency === 1 ? '👉 ' : '') + escapeHtml(na.text) + '</div>' : '') +
+    (chips.length ? '<div class="chips">' + chips.join('') + '</div>' : '') +
+  '</div>';
+}
+
+function renderPipeline() {
+  const board = __doc.getElementById('pipeBoard');
+  if (!board) return;
+  const all = (__pipe.cards || []).filter(Boolean);
+  const unfiltered = all.filter(c => __pipe.showArchived || !c.archived);
+  // Stats/badge always reflect the whole board; only the columns and
+  // Next-up narrow down while a search filter is active.
+  const visible = unfiltered.filter(pipeMatchesFilter);
+
+  // Empty state — before first sync we keep the skeleton.
+  if (!visible.length && __pipeLoadedOnce) {
+    const msg = __pipe.filter
+      ? 'Nothing matches “' + escapeHtml(__pipe.filter) + '”.'
+      : __pipe.connected === false
+        ? 'No cards yet. Connect Jobber in ⚙️ Settings to auto-fill the pipeline from your requests + quotes, or tap <b>＋ Add lead</b> for walk-ins.'
+        : 'Nothing in the pipeline yet — new Jobber requests will appear here automatically, or tap <b>＋ Add lead</b>.';
+    board.innerHTML = '<div class="pipe-empty">' + msg + '</div>';
+    renderPipeStats(unfiltered); renderPipeNext([]);
+    updatePipelineTabCount(unfiltered.filter(c => !c.archived && c.stage !== 'won' && c.stage !== 'lost' && pipelineNextAction(c).urgency === 2).length);
+    pipeSetSyncPill();
+    return;
+  }
+
+  // Insight strip numbers (whole board, not the filtered view)
+  renderPipeStats(unfiltered);
+  const activeCards = visible.filter(c => !c.archived && c.stage !== 'won' && c.stage !== 'lost');
+  const focus = pipeSortCards(activeCards).filter(c => pipelineNextAction(c).urgency >= 1).slice(0, 3);
+  renderPipeNext(focus);
+  const allActive = unfiltered.filter(c => !c.archived && c.stage !== 'won' && c.stage !== 'lost');
+  updatePipelineTabCount(allActive.filter(c => pipelineNextAction(c).urgency === 2).length);
+
+  const prevScroll = board.scrollLeft;
+  board.innerHTML = PIPE_STAGES.map(st => {
+    let list = visible.filter(c => c.stage === st.id);
+    if ((st.id === 'won' || st.id === 'lost') && !__pipe.showArchived) {
+      list = list.filter(c => {
+        const d = pipeDaysAgo(c.wonAt || c.lostAt || c.stageChangedAt);
+        return d === null || d < 60;
+      });
+    }
+    list = pipeSortCards(list);
+    const sum = list.reduce((acc, c) => acc + ((c.snap && typeof c.snap.quoteTotal === 'number') ? c.snap.quoteTotal : 0), 0);
+    const showSum = sum > 0 && ['quoted', 'followup', 'won'].indexOf(st.id) !== -1;
+    return '<div class="pipe-col ' + st.id + '" data-stage="' + st.id + '">' +
+      '<div class="pipe-col-head">' + st.icon + ' ' + st.label +
+        ' <span class="n">' + list.length + '</span>' +
+        (showSum ? '<span class="sum">' + pipeMoney(sum) + '</span>' : '') +
+      '</div>' +
+      '<div class="pipe-cards">' +
+        (list.length ? list.map(pipeCardHtml).join('')
+                     : '<div class="pipe-empty-col">—</div>') +
+      '</div>' +
+    '</div>';
+  }).join('');
+  board.scrollLeft = prevScroll;
+  pipeWireDrag(board);
+  pipeSetSyncPill();
+  const archBtn = __doc.getElementById('pipeArchToggle');
+  if (archBtn) archBtn.classList.toggle('on', !!__pipe.showArchived);
+}
+
+function renderPipeStats(cards) {
+  const el = __doc.getElementById('pipeStats');
+  if (!el) return;
+  const active = cards.filter(c => !c.archived && c.stage !== 'won' && c.stage !== 'lost');
+  const needsAction = active.filter(c => pipelineNextAction(c).urgency === 2).length;
+  const openQ = cards.filter(c => (c.stage === 'quoted' || c.stage === 'followup') &&
+    c.snap && typeof c.snap.quoteTotal === 'number');
+  const openSum = openQ.reduce((a, c) => a + c.snap.quoteTotal, 0);
+  const now = new Date();
+  const wonMonth = cards.filter(c => {
+    if (c.stage !== 'won' || !c.wonAt) return false;
+    const d = new Date(c.wonAt);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  });
+  const wonSum = wonMonth.reduce((a, c) => a + ((c.snap && typeof c.snap.quoteTotal === 'number') ? c.snap.quoteTotal : 0), 0);
+  const newWeek = cards.filter(c => { const d = pipeDaysAgo(c.createdAt); return d !== null && d <= 7; }).length;
+  // Win rate + speed over EVERYTHING ever decided (archived included) —
+  // shown once there's enough history to mean something.
+  const everything = (__pipe.cards || []).filter(Boolean);
+  const wonAll = everything.filter(c => c.stage === 'won');
+  const lostAll = everything.filter(c => c.stage === 'lost');
+  const decided = wonAll.length + lostAll.length;
+  let winChip = '';
+  if (decided >= 3) {
+    const rate = Math.round((wonAll.length / decided) * 100);
+    const closeDays = wonAll
+      .map(c => { const a = pipeDaysAgo(c.createdAt), b = pipeDaysAgo(c.wonAt); return (a !== null && b !== null) ? Math.max(0, a - b) : null; })
+      .filter(v => v !== null);
+    const avgClose = closeDays.length ? Math.round(closeDays.reduce((x, y) => x + y, 0) / closeDays.length) : null;
+    winChip = '<div class="pipe-stat"><div class="v">' + rate + '%</div><div class="l">Win rate' +
+      (avgClose !== null ? ' · ~' + avgClose + 'd to close' : '') + '</div></div>';
+  }
+  el.innerHTML =
+    '<div class="pipe-stat' + (needsAction ? ' hot' : '') + '"><div class="v">' + (needsAction ? '⚠️ ' + needsAction : '0') + '</div><div class="l">Needs action</div></div>' +
+    '<div class="pipe-stat money"><div class="v">' + pipeMoney(openSum) + '</div><div class="l">Quotes out (' + openQ.length + ')</div></div>' +
+    '<div class="pipe-stat money"><div class="v">' + pipeMoney(wonSum) + '</div><div class="l">Won this month (' + wonMonth.length + ')</div></div>' +
+    '<div class="pipe-stat"><div class="v">' + newWeek + '</div><div class="l">New this week</div></div>' +
+    winChip;
+}
+
+function renderPipeNext(focus) {
+  const el = __doc.getElementById('pipeNext');
+  if (!el) return;
+  if (!focus || !focus.length) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="pipe-next"><div class="pipe-next-title">⚡ Next up</div>' +
+    focus.map(c => {
+      const na = pipelineNextAction(c);
+      return '<button class="pipe-next-row" onclick="openPipeCard(\'' + escapeHtml(c.key) + '\')">' +
+        '<span class="who">' + escapeHtml(c.name || 'Unknown') + '</span>' +
+        '<span class="act">' + escapeHtml(na.text) + '</span>' +
+        '<span class="go">→</span></button>';
+    }).join('') + '</div>';
+}
+
+/* ---- Drag & drop (desktop) + tap-to-move (everywhere) ------------- */
+function pipeWireDrag(board) {
+  board.querySelectorAll('.pipe-card').forEach(el => {
+    el.addEventListener('dragstart', ev => {
+      try { ev.dataTransfer.setData('text/pipe', el.getAttribute('data-pipe-card')); ev.dataTransfer.effectAllowed = 'move'; } catch (e) {}
+    });
+  });
+  board.querySelectorAll('.pipe-col').forEach(col => {
+    col.addEventListener('dragover', ev => {
+      let ok = false;
+      try { ok = Array.prototype.indexOf.call(ev.dataTransfer.types, 'text/pipe') !== -1; } catch (e) {}
+      if (ok) { ev.preventDefault(); col.classList.add('drag-over'); }
+    });
+    col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+    col.addEventListener('drop', ev => {
+      ev.preventDefault();
+      col.classList.remove('drag-over');
+      let key = '';
+      try { key = ev.dataTransfer.getData('text/pipe'); } catch (e) {}
+      if (key) pipeMoveStage(key, col.getAttribute('data-stage'));
+    });
+  });
+}
+
+async function pipeMoveStage(key, stage) {
+  const card = pipeFind(key);
+  if (!card || !(stage in PIPE_STAGE_RANK) || card.stage === stage) return;
+  pipeStampVisit(card, stage);
+  card.stage = stage;
+  card.stageSetBy = 'rep';
+  card.stageChangedAt = new Date().toISOString();
+  if (stage === 'won' && !card.wonAt) card.wonAt = card.stageChangedAt;
+  if (stage === 'lost' && !card.lostAt) card.lostAt = card.stageChangedAt;
+  renderPipeline();
+  if (__pipe.openCardId === key) renderPipeCardDialog(card);
+  const savePromise = pipeSaveCard(card);
+  if (stage === 'won') sssToast('🏆 Marked won — nice work!');
+  if (stage === 'lost' && !card.lostReason) {
+    if (__pipe.openCardId !== key) openPipeCard(key);
+    sssToast('Pick a lost reason so Analytics can learn from it');
+  }
+  await savePromise;
+}
+
+/* ---- Card detail dialog ------------------------------------------- */
+function openPipeCard(key) {
+  const card = pipeFind(key);
+  if (!card) return;
+  __pipe.openCardId = card.key;
+  renderPipeCardDialog(card);
+  const dlg = __doc.getElementById('pipeCardDialog');
+  if (!dlg) return;
+  if (!dlg.open) { try { dlg.showModal(); } catch (e) { dlg.setAttribute('open', ''); } }
+}
+function closePipeCard() {
+  __pipe.openCardId = null;
+  const dlg = __doc.getElementById('pipeCardDialog');
+  if (dlg) { try { dlg.close(); } catch (e) { dlg.removeAttribute('open'); } }
+}
+
+// Find a local calculator draft already linked to this card's request.
+function pipeFindLocalQuote(card) {
+  if (!card.jobberRequestId) return null;
+  try {
+    const list = (dashState && dashState.cache && dashState.cache.draft) || [];
+    return list.find(q => q && q.jobberRequestId === card.jobberRequestId) || null;
+  } catch (e) { return null; }
+}
+
+function renderPipeCardDialog(card) {
+  const title = __doc.getElementById('pipeCardTitle');
+  const chip = __doc.getElementById('pipeCardStageChip');
+  const body = __doc.getElementById('pipeCardBody');
+  if (!title || !body) return;
+  const st = PIPE_STAGES[PIPE_STAGE_RANK[card.stage]] || PIPE_STAGES[0];
+  title.textContent = card.name || 'Lead';
+  if (chip) chip.textContent = st.icon + ' ' + st.label;
+
+  const na = pipelineNextAction(card);
+  const s = card.snap || {};
+  const telHref = card.phone ? 'tel:' + String(card.phone).replace(/[^\d+]/g, '') : '';
+  const mapHref = card.address ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(card.address) : '';
+
+  const contact = [];
+  if (card.phone) contact.push('<a href="' + telHref + '"><span class="ico">📞</span>' + escapeHtml(card.phone) + '</a>');
+  if (card.email) contact.push('<a href="mailto:' + escapeHtml(card.email) + '"><span class="ico">✉️</span>' + escapeHtml(card.email) + '</a>');
+  if (card.address) contact.push('<a href="' + escapeHtml(mapHref) + '" target="_blank" rel="noopener"><span class="ico">📍</span>' + escapeHtml(card.address) + '</a>');
+  const metaBits = [];
+  if (card.source) metaBits.push(escapeHtml(card.source));
+  if (card.createdAt) metaBits.push('came in ' + pipeRel(card.createdAt));
+  if (metaBits.length) contact.push('<span class="row" style="color:var(--slate);font-size:12px;"><span class="ico">🕓</span>' + metaBits.join(' · ') + '</span>');
+
+  const links = [];
+  if (s.requestWebUri) links.push('<a class="pipe-link-pill" href="' + escapeHtml(s.requestWebUri) + '" target="_blank" rel="noopener">↗ Request <span class="st">' + escapeHtml(s.requestStatus || '') + '</span></a>');
+  if (s.quoteNumber) {
+    const inner = '↗ Quote #' + escapeHtml(s.quoteNumber) +
+      (typeof s.quoteTotal === 'number' ? ' · ' + pipeMoney(s.quoteTotal) : '') +
+      ' <span class="st">' + escapeHtml(pipeQStatusLabel(s.quoteStatus)) + '</span>';
+    links.push(s.quoteWebUri
+      ? '<a class="pipe-link-pill" href="' + escapeHtml(s.quoteWebUri) + '" target="_blank" rel="noopener">' + inner + '</a>'
+      : '<span class="pipe-link-pill">' + inner + '</span>');
+  }
+  if (s.jobNumber) {
+    const inner = '↗ Job #' + escapeHtml(s.jobNumber) + ' <span class="st">' + escapeHtml(pipeJStatusLabel(s.jobStatus)) + '</span>';
+    links.push(s.jobWebUri
+      ? '<a class="pipe-link-pill" href="' + escapeHtml(s.jobWebUri) + '" target="_blank" rel="noopener">' + inner + '</a>'
+      : '<span class="pipe-link-pill">' + inner + '</span>');
+  }
+
+  const stageBtns = PIPE_STAGES.map(sg =>
+    '<button class="pipe-stage-btn ' + (sg.id === 'won' ? 'won-btn' : sg.id === 'lost' ? 'lost-btn' : '') +
+    (card.stage === sg.id ? ' on' : '') + '" onclick="pipeMoveStage(\'' + escapeHtml(card.key) + '\', \'' + sg.id + '\')">' +
+    sg.icon + ' ' + sg.label + '</button>').join('');
+
+  const lostRow = card.stage === 'lost'
+    ? '<div class="pipe-sec">Lost reason</div><div class="pipe-lost-reasons">' +
+      PIPE_LOST_REASONS.map(r =>
+        '<button class="pipe-stage-btn' + (card.lostReason === r ? ' on lost-btn' : '') + '" onclick="pipeSetLostReason(\'' + r + '\')">' + r + '</button>'
+      ).join('') + '</div>'
+    : '';
+
+  const notes = (card.notes || []).slice().reverse().map(n =>
+    '<div class="pipe-note-item"><div class="meta">' + escapeHtml(n.by || 'Rep') + ' · ' + pipeRel(n.at) +
+    (n.pushed ? ' · <b>pushed to Jobber</b>' : '') + '</div><div class="txt">' + escapeHtml(n.text || '') + '</div></div>'
+  ).join('');
+  const canPushNote = !!(card.jobberRequestId && __pipe.connected);
+
+  const localDraft = pipeFindLocalQuote(card);
+  const actions = [];
+  if (localDraft) {
+    actions.push('<button class="pipe-btn primary" onclick="pipeOpenDraft(\'' + escapeHtml(localDraft._id) + '\')">📂 Open quote draft</button>');
+  } else if (card.stage !== 'won' && card.stage !== 'lost') {
+    actions.push('<button class="pipe-btn primary" onclick="pipeStartQuote(\'' + escapeHtml(card.key) + '\')">🧮 Start quote</button>');
+  }
+  if (card.manual && !card.jobberRequestId) {
+    actions.push('<button class="pipe-btn" onclick="pipePushLead()">➕ Create in Jobber</button>');
+  }
+  actions.push('<button class="pipe-btn ghost" onclick="pipeArchiveCard()">' + (card.archived ? '🗂 Unarchive' : '🗂 Archive') + '</button>');
+  if (__pipe.connected && (card.jobberRequestId || card.jobberQuoteId)) {
+    actions.push('<button class="pipe-btn ghost" onclick="pipeArchiveInJobber()">↗🗂 Archive in Jobber too</button>');
+  }
+  if (card.manual && !card.jobberRequestId) {
+    actions.push('<button class="pipe-btn ghost" onclick="pipeDeleteCard()" style="color:var(--coral);">🗑 Delete</button>');
+  }
+
+  body.innerHTML =
+    (na.text ? '<div class="pipe-insight' + (na.urgency ? ' u' + na.urgency : '') + '">' +
+      (na.urgency === 2 ? '⚠️ ' : na.urgency === 1 ? '👉 ' : '✓ ') + escapeHtml(na.text) + '</div>' : '') +
+    (contact.length ? '<div class="pipe-contact">' + contact.join('') + '</div>' : '') +
+    (card.title ? '<div style="font-size:13px;color:var(--slate);margin-bottom:10px;">“' + escapeHtml(card.title) + '”</div>' : '') +
+    (links.length ? '<div class="pipe-links">' + links.join('') + '</div>' : '') +
+    '<div class="pipe-sec">Stage</div><div class="pipe-stages">' + stageBtns + '</div>' +
+    lostRow +
+    '<div class="pipe-sec">Follow-up date <span style="font-weight:500;text-transform:none;letter-spacing:0;">— estimate appointment or next check-in; future dates snooze the card</span></div>' +
+    '<div class="pipe-fu-row">' +
+      '<input type="date" id="pipeFuInput" value="' + escapeHtml(card.followUpAt || '') + '" onchange="pipeSetFollowUp(this.value)">' +
+      '<button class="pipe-btn ghost mini" onclick="pipeSetFollowUp(pipeTodayStr(2))">+2d</button>' +
+      '<button class="pipe-btn ghost mini" onclick="pipeSetFollowUp(pipeTodayStr(7))">+1w</button>' +
+      (card.followUpAt ? '<button class="pipe-btn ghost mini" onclick="pipeSetFollowUp(\'\')">✕ Clear</button>' : '') +
+    '</div>' +
+    '<div class="pipe-sec">Assessed on <span style="font-weight:500;text-transform:none;letter-spacing:0;">— when the in-person walk-through happened (auto-filled from Jobber\'s assessment, or from the appointment date once the quote goes out)</span></div>' +
+    '<div class="pipe-fu-row">' +
+      '<input type="date" id="pipeVisitInput" value="' + escapeHtml(card.visitAt || '') + '" onchange="pipeSetVisitAt(this.value)">' +
+      (card.visitAt ? '<button class="pipe-btn ghost mini" onclick="pipeSetVisitAt(\'\')">✕ Clear</button>' : '') +
+    '</div>' +
+    '<div class="pipe-sec">Notes</div>' +
+    '<div class="pipe-notes">' + (notes || '<div style="font-size:12.5px;color:var(--slate);">No notes yet.</div>') + '</div>' +
+    '<div class="pipe-note-add">' +
+      '<textarea id="pipeNoteText" placeholder="Add a note — spoke with them, price feedback, scheduling…"></textarea>' +
+      '<div class="pipe-note-foot">' +
+        '<button class="pipe-btn" onclick="pipeAddNote()">📝 Add note</button>' +
+        (canPushNote ? '<label><input type="checkbox" id="pipeNotePush"> Also push to the Jobber request</label>' : '') +
+      '</div>' +
+    '</div>' +
+    '<div class="pipe-d-actions">' + actions.join('') + '</div>';
+}
+
+/* ---- Card actions -------------------------------------------------- */
+async function pipeSetFollowUp(v) {
+  const card = pipeFind(__pipe.openCardId);
+  if (!card) return;
+  card.followUpAt = v || '';
+  renderPipeCardDialog(card);
+  renderPipeline();
+  await pipeSaveCard(card);
+}
+
+async function pipeSetLostReason(r) {
+  const card = pipeFind(__pipe.openCardId);
+  if (!card) return;
+  card.lostReason = r;
+  renderPipeCardDialog(card);
+  renderPipeline();
+  await pipeSaveCard(card);
+}
+
+async function pipeSetVisitAt(v) {
+  const card = pipeFind(__pipe.openCardId);
+  if (!card) return;
+  card.visitAt = v || '';
+  renderPipeCardDialog(card);
+  renderPipeline();
+  await pipeSaveCard(card);
+}
+
+// Archive the linked Jobber object (request preferred, else quote) AND
+// the card. Toast-confirm because it touches real Jobber data; soft-
+// fails to a local-only archive if the API says no.
+function pipeArchiveInJobber() {
+  const card = pipeFind(__pipe.openCardId);
+  if (!card) return;
+  const kind = card.jobberRequestId ? 'request' : (card.jobberQuoteId ? 'quote' : null);
+  if (!kind) return;
+  const id = kind === 'request' ? card.jobberRequestId : card.jobberQuoteId;
+  sssToast('Archive this ' + kind + ' in Jobber too?', 'Confirm', async () => {
+    const res = await pipeCall('pipelineArchiveJobber', { kind, id });
+    card.archived = true;
+    card.snap = card.snap || {};
+    if (res && res.ok) {
+      if (kind === 'request') card.snap.requestStatus = 'archived';
+      else card.snap.quoteStatus = 'archived';
+      sssToast('🗂 Archived in Jobber + hidden from the board');
+    } else {
+      sssToast('⚠️ Jobber said no (' + ((res && res.error) || 'may not be supported') + ') — archived here only');
+    }
+    closePipeCard();
+    renderPipeline();
+    pipeSaveCard(card);
+  }, null, 7000);
+}
+
+async function pipeAddNote() {
+  const card = pipeFind(__pipe.openCardId);
+  const ta = __doc.getElementById('pipeNoteText');
+  if (!card || !ta) return;
+  const text = ta.value.trim();
+  if (!text) { sssToast('Type the note first'); return; }
+  const pushEl = __doc.getElementById('pipeNotePush');
+  const wantPush = !!(pushEl && pushEl.checked && card.jobberRequestId);
+  const note = { at: new Date().toISOString(), by: pipeRepName(), text, pushed: false };
+  card.notes = card.notes || [];
+  card.notes.push(note);
+  renderPipeCardDialog(card);
+  renderPipeline();
+  await pipeSaveCard(card);
+  if (wantPush) {
+    const res = await pipeCall('pipelineNotePush', { requestId: card.jobberRequestId, text });
+    if (res && res.ok) {
+      note.pushed = true;
+      renderPipeCardDialog(card);
+      pipeSaveCard(card);
+      sssToast('📝 Note saved + pushed to Jobber');
+    } else {
+      sssToast('📝 Note saved here — Jobber push failed, kept internal');
+    }
+  } else {
+    sssToast('📝 Note added');
+  }
+}
+
+async function pipeArchiveCard() {
+  const card = pipeFind(__pipe.openCardId);
+  if (!card) return;
+  card.archived = !card.archived;
+  if (card.archived) closePipeCard(); else renderPipeCardDialog(card);
+  renderPipeline();
+  await pipeSaveCard(card);
+  sssToast(card.archived ? '🗂 Archived — the 🗂 button up top shows archived cards' : 'Restored to the board');
+}
+
+function pipeDeleteCard() {
+  const card = pipeFind(__pipe.openCardId);
+  if (!card) return;
+  if (card.jobberRequestId || !card.manual) {
+    sssToast('Jobber-linked cards can\'t be deleted (they\'d re-sync back) — use Archive');
+    return;
+  }
+  const idx = __pipe.cards.indexOf(card);
+  if (idx !== -1) __pipe.cards.splice(idx, 1);
+  closePipeCard();
+  renderPipeline();
+  sssToast('Lead deleted', 'Undo', () => {
+    __pipe.cards.splice(Math.min(idx, __pipe.cards.length), 0, card);
+    renderPipeline();
+  }, () => {
+    if (card._id) pipeCall('pipelineCardDelete', { cardId: card._id });
+  }, 6000);
+}
+
+function pipeStartQuote(key) {
+  const card = pipeFind(key);
+  if (!card) return;
+  closePipeCard();
+  startQuoteFromJobberRequest({
+    id: card.jobberRequestId || '',
+    clientId: card.jobberClientId || '',
+    propertyId: card.jobberPropertyId || '',
+    firstName: card.firstName || '',
+    lastName: card.lastName || '',
+    companyName: card.companyName || '',
+    customerName: card.name || '',
+    email: card.email || '',
+    phone: card.phone || '',
+    street1: '', street2: '', city: '', province: '', postalCode: '',
+    address: card.address || '',
+    title: card.title || ''
+  });
+}
+
+function pipeOpenDraft(rowId) {
+  closePipeCard();
+  resumeCloudQuote(rowId);
+}
+
+async function pipePushLead() {
+  const card = pipeFind(__pipe.openCardId);
+  if (!card) return;
+  if (!card._id) await pipeSaveCard(card);
+  if (!card._id) { sssToast('⚠️ Save failed — try again'); return; }
+  sssToast('Creating client + request in Jobber…');
+  const res = await pipeCall('pipelineLeadPush', { cardId: card._id });
+  if (res && res.ok && res.card) {
+    Object.assign(card, res.card);
+    __pipe.openCardId = card.key;
+    renderPipeCardDialog(card);
+    renderPipeline();
+    sssToast(res.alreadyLinked ? 'Already linked to Jobber' :
+      ('✓ Created in Jobber' + (res.clientExisted ? ' (matched existing client)' : '')));
+  } else {
+    sssToast('⚠️ Jobber push failed: ' + ((res && res.error) || 'unknown'));
+  }
+}
+
+/* ---- Instant link when the calculator pushes a quote --------------
+   Reconcile would catch it on the next sync anyway; this just makes
+   the board correct the moment the push succeeds. */
+function pipelineNotifyQuotePushed(requestId, info) {
+  try {
+    if (!requestId || !(__pipe.cards || []).length) return;
+    const card = __pipe.cards.find(c => c && c.jobberRequestId === requestId);
+    if (!card) return;
+    info = info || {};
+    card.snap = card.snap || {};
+    if (info.jobberQuoteId) card.jobberQuoteId = info.jobberQuoteId;
+    if (info.jobberQuoteNumber) card.snap.quoteNumber = String(info.jobberQuoteNumber);
+    if (info.jobberWebUri) card.snap.quoteWebUri = info.jobberWebUri;
+    if (!card.snap.quoteStatus) card.snap.quoteStatus = 'awaiting_response';
+    if (!card.snap.quoteCreatedAt) card.snap.quoteCreatedAt = new Date().toISOString();
+    if (card.stage !== 'won' && card.stage !== 'lost' && PIPE_STAGE_RANK[card.stage] < PIPE_STAGE_RANK.quoted) {
+      pipeStampVisit(card, 'quoted');
+      card.stage = 'quoted';
+      card.stageSetBy = 'auto';
+      card.stageChangedAt = new Date().toISOString();
+    }
+    pipeSaveCard(card);
+    if (__dashTab === 'pipeline') renderPipeline();
+  } catch (e) { console.warn('[Pipeline] quote-push notify skipped:', e); }
+}
+
+/* ---- Add-lead dialog ---------------------------------------------- */
+function openPipeLeadDialog() {
+  __pipeDupOk = false;
+  ['plName', 'plPhone', 'plEmail', 'plAddress', 'plNote'].forEach(id => {
+    const el = __doc.getElementById(id);
+    if (el) el.value = '';
+  });
+  const src = __doc.getElementById('plSource');
+  if (src) src.value = 'Call-in';
+  const dlg = __doc.getElementById('pipeLeadDialog');
+  if (!dlg) return;
+  try { dlg.showModal(); } catch (e) { dlg.setAttribute('open', ''); }
+  const nm = __doc.getElementById('plName');
+  if (nm) setTimeout(() => nm.focus(), 60);
+}
+function closePipeLeadDialog() {
+  const dlg = __doc.getElementById('pipeLeadDialog');
+  if (dlg) { try { dlg.close(); } catch (e) { dlg.removeAttribute('open'); } }
+}
+async function savePipeLead() {
+  const val = id => { const el = __doc.getElementById(id); return el ? el.value.trim() : ''; };
+  const name = val('plName');
+  if (!name) { sssToast('Name is required'); return; }
+  // Duplicate guard — same phone digits or same name already on an
+  // active card. First tap warns, second tap creates anyway.
+  const phoneDigits = val('plPhone').replace(/\D/g, '');
+  const dup = (__pipe.cards || []).find(c => c && !c.archived && (
+    (phoneDigits && String(c.phone || '').replace(/\D/g, '') === phoneDigits) ||
+    String(c.name || '').trim().toLowerCase() === name.toLowerCase()
+  ));
+  if (dup && !__pipeDupOk) {
+    __pipeDupOk = true;
+    sssToast('Looks like ' + (dup.name || 'this lead') + ' is already on the board (' +
+      (PIPE_STAGES[PIPE_STAGE_RANK[dup.stage]] || {}).label + ') — tap Add again to create anyway');
+    return;
+  }
+  const nowIso = new Date().toISOString();
+  const noteText = val('plNote');
+  const card = {
+    key: 'manual:' + Date.now(),
+    stage: 'new', stageSetBy: 'rep', stageChangedAt: nowIso, createdAt: nowIso,
+    manual: true, archived: false, snap: {},
+    name, phone: val('plPhone'), email: val('plEmail'), address: val('plAddress'),
+    source: val('plSource') || 'Call-in', title: '',
+    notes: noteText ? [{ at: nowIso, by: pipeRepName(), text: noteText, pushed: false }] : []
+  };
+  __pipe.cards.push(card);
+  closePipeLeadDialog();
+  if (__dashTab !== 'pipeline') switchDashTab('pipeline');
+  renderPipeline();
+  await pipeSaveCard(card);
+  sssToast('✓ Lead added — open the card to push it to Jobber');
+}
+
+function pipeToggleArchived() {
+  __pipe.showArchived = !__pipe.showArchived;
+  renderPipeline();
+}
+
+// Keep openCardId honest when the dialog closes via Esc.
+(function initPipelineDialogs() {
+  const d = __doc.getElementById('pipeCardDialog');
+  if (d) d.addEventListener('close', () => { __pipe.openCardId = null; });
+})();
 
 async function loadDashboardData() {
   if (typeof __sssBridge === 'undefined' || !__sssBridge.call) {
@@ -8134,6 +12968,9 @@ async function loadDashboardData() {
   // populated as customers progress through the public calc. Hides
   // itself when empty.
   loadCustomerAbandonedDrafts();
+  // Pipeline prefetch — fire-and-forget so the 🧭 tab badge (needs-
+  // action count) is accurate without visiting the tab.
+  if (!__pipeLoadedOnce) loadPipeline(false);
 
   // Promise.allSettled (not Promise.all) so one slow/failed folder
   // request doesn't cascade into a catch that blanks all caches.
@@ -8251,7 +13088,7 @@ function renderQRow(item, folder) {
   // Project summary chips: "Fence · Deck" with tier labels when present.
   // Falls back to a simple project count if labels aren't available.
   const projects = Array.isArray(item.projects) ? item.projects : [];
-  const PROJECT_LABELS = { fence: 'Fence', deck: 'Deck', pergola: 'Pergola', barn: 'Barn', ceiling: 'Ceiling' };
+  const PROJECT_LABELS = { fence: 'Fence', deck: 'Deck', pergola: 'Pergola', barn: 'Barn', ceiling: 'Ceiling', interior: 'Interior Painting', exterior: 'Exterior Painting', cabinet: 'Cabinet Painting' };
   const TIER_SHORT = { essential: 'Ess', performance: 'Perf', showcase: 'Show' };
   const projChipsHtml = projects.length > 0
     ? projects.slice(0, 4).map(p => {
@@ -8703,21 +13540,188 @@ function openPricingAdmin() {
   if (paBody && !paBody._previewWired) {
     paBody._previewWired = true;
     paBody.addEventListener('input', (e) => {
-      if (e.target && e.target.matches && e.target.matches('input[data-pa-path]')) {
-        try { updatePaTierPreview(); } catch (e2) {}
-      }
+      const inp = e.target;
+      if (!(inp && inp.matches && inp.matches('input[data-pa-path]'))) return;
+      try { updatePaTierPreview(); } catch (e2) {}
+      try { updatePaInteriorPreview(); } catch (e2) {}
+      // Live override styling — gold ring the moment the value differs
+      // from the code default, gone the moment it matches again.
+      const def = parseFloat(inp.dataset.paDefault);
+      const v = parseFloat(inp.value);
+      if (!isNaN(def)) inp.classList.toggle('pa-overridden', !isNaN(v) && v !== def);
+      __paDirty = true;
+      const pill = __doc.getElementById('paDirtyPill');
+      if (pill) pill.style.display = '';
+      // Debounced badge refresh (capture current tab first so counts
+      // include what's being typed).
+      clearTimeout(__paBadgeTimer);
+      __paBadgeTimer = setTimeout(() => { try { paCaptureCurrentTab(); paRefreshTabBadges(); } catch (e3) {} }, 400);
+    });
+    // Per-field reset chips
+    paBody.addEventListener('click', (e) => {
+      const btn = e.target && e.target.closest && e.target.closest('[data-pa-reset]');
+      if (!btn) return;
+      const inp = btn.parentElement && btn.parentElement.querySelector('input[data-pa-path]');
+      if (!inp) return;
+      inp.value = inp.dataset.paDefault;
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+      inp.focus();
     });
   }
+  // Search — index built fresh each open (cheap string renders) so new
+  // fields are always findable.
+  __paDirty = false;
+  const dirtyPill = __doc.getElementById('paDirtyPill');
+  if (dirtyPill) dirtyPill.style.display = 'none';
+  try { __paSearchIndex = paBuildSearchIndex(); } catch (e) { __paSearchIndex = []; }
+  const searchInp = __doc.getElementById('paSearch');
+  if (searchInp) {
+    searchInp.value = '';
+    if (!searchInp._wired) {
+      searchInp._wired = true;
+      searchInp.addEventListener('input', () => paRenderSearchResults(searchInp.value));
+      searchInp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const first = __doc.querySelector('#paSearchResults .pa-sr-row');
+          if (first) first.click();
+        }
+        if (e.key === 'Escape') paRenderSearchResults('');
+      });
+    }
+  }
+  try { paRefreshTabBadges(); } catch (e) {}
   const dlg = __doc.getElementById('pricingAdminDialog');
+  if (dlg && !dlg._cancelWired) {
+    dlg._cancelWired = true;
+    // ESC key — same unsaved-changes guard as the Close button.
+    dlg.addEventListener('cancel', (e) => {
+      if (__paDirty && !confirm('Discard unsaved pricing changes?')) { e.preventDefault(); return; }
+      __paDirty = false;
+    });
+  }
   if (dlg && dlg.showModal) dlg.showModal();
   else if (dlg) dlg.setAttribute('open', '');
 }
 
-function closePricingAdmin() {
+// Dirty flag + badge debounce for the settings editor.
+var __paDirty = false;
+var __paBadgeTimer = null;
+var __paSearchIndex = null;
+
+function closePricingAdmin(force) {
+  if (!force && __paDirty) {
+    if (!confirm('Discard unsaved pricing changes?')) return;
+  }
+  __paDirty = false;
   const dlg = __doc.getElementById('pricingAdminDialog');
   if (dlg && dlg.close) dlg.close();
   else if (dlg) dlg.removeAttribute('open');
   __paWorking = null;
+}
+
+// ---- Settings search + override badges ---------------------------
+// The index is parsed out of the tab renderers' own HTML, so any new
+// paField added to any tab is searchable with zero bookkeeping.
+function paBuildSearchIndex() {
+  const idx = [];
+  PA_GROUPS.pricing.forEach(tab => {
+    let html = '';
+    try { html = renderPricingAdminTab(tab); } catch (e) { return; }
+    const doc = new DOMParser().parseFromString('<div id="paIdxRoot">' + html + '</div>', 'text/html');
+    doc.querySelectorAll('.pa-grid').forEach(grid => {
+      const section = (grid.closest('.pa-section')?.querySelector('.pa-section-title')?.textContent || '').replace(/\s+/g, ' ').trim();
+      const heads = [...grid.querySelectorAll('.pa-grid-head')].map(h => h.textContent.trim());
+      const colHeads = heads.slice(1).filter(Boolean);
+      let label = null, k = 0;
+      [...grid.children].forEach(cell => {
+        if (cell.classList && cell.classList.contains('pa-grid-label')) {
+          label = cell.textContent.replace(/\s+/g, ' ').trim();
+          k = 0;
+          return;
+        }
+        const inp = cell.querySelector && cell.querySelector('input[data-pa-path]');
+        if (inp && label) {
+          const col = colHeads.length > 1 ? colHeads[k] : '';
+          idx.push({
+            tab,
+            tabLabel: PA_TAB_LABELS[tab] || tab,
+            section,
+            label: label + (col ? ' — ' + col : ''),
+            path: inp.dataset.paPath,
+            q: (section + ' ' + label + ' ' + col + ' ' + (PA_TAB_LABELS[tab] || tab)).toLowerCase()
+          });
+          k++;
+        }
+      });
+    });
+  });
+  return idx;
+}
+
+function paRenderSearchResults(query) {
+  const box = __doc.getElementById('paSearchResults');
+  if (!box) return;
+  const q = (query || '').trim().toLowerCase();
+  if (!q || q.length < 2) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  const terms = q.split(/\s+/);
+  const hits = (__paSearchIndex || []).filter(e => terms.every(t => e.q.indexOf(t) >= 0)).slice(0, 12);
+  if (!hits.length) {
+    box.innerHTML = '<div class="pa-sr-empty">No rates match — try a shorter word.</div>';
+    box.style.display = '';
+    return;
+  }
+  box.innerHTML = hits.map((h, i) => `
+    <button type="button" class="pa-sr-row" data-sr="${i}">
+      <span class="pa-sr-label">${escapeHtml(h.label)}</span>
+      <span class="pa-sr-where">${escapeHtml(h.section || '')} · ${escapeHtml(h.tabLabel)}</span>
+    </button>`).join('');
+  box.style.display = '';
+  box.querySelectorAll('.pa-sr-row').forEach(row => row.addEventListener('click', () => {
+    const hit = hits[+row.dataset.sr];
+    box.style.display = 'none';
+    const s = __doc.getElementById('paSearch');
+    if (s) s.value = '';
+    paJumpToField(hit);
+  }));
+}
+
+function paJumpToField(hit) {
+  if (!hit) return;
+  // All searchable tabs live in the Pricing group.
+  try { switchPaGroup('pricing'); } catch (e) {}
+  switchPricingAdminTab(hit.tab);
+  const inp = __doc.querySelector(`#pricingAdminBody input[data-pa-path="${hit.path}"]`);
+  if (!inp) return;
+  try { inp.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { inp.scrollIntoView(); }
+  inp.classList.add('pa-flash');
+  setTimeout(() => inp.classList.remove('pa-flash'), 2400);
+  setTimeout(() => { try { inp.focus({ preventScroll: true }); } catch (e) {} }, 350);
+}
+
+// Per-tab count of fields that differ from code defaults — shown as a
+// small gold badge on each tab button so overrides are findable at a
+// glance.
+function paRefreshTabBadges() {
+  if (!__paSearchIndex || !__paWorking) return;
+  const counts = {};
+  __paSearchIndex.forEach(e => {
+    const ov = paWalk(__paWorking, e.path);
+    const def = paDefaultFor(e.path);
+    if (typeof ov === 'number' && typeof def === 'number' && ov !== def) {
+      counts[e.tab] = (counts[e.tab] || 0) + 1;
+    }
+  });
+  __doc.querySelectorAll('#pricingAdminTabs .pa-tab').forEach(t => {
+    const tab = t.dataset.paTab;
+    let badge = t.querySelector('.pa-tab-count');
+    const n = counts[tab] || 0;
+    if (n > 0) {
+      if (!badge) { badge = document.createElement('span'); badge.className = 'pa-tab-count'; t.appendChild(badge); }
+      badge.textContent = n;
+    } else if (badge) {
+      badge.remove();
+    }
+  });
 }
 
 function switchPricingAdminTab(tab) {
@@ -8729,6 +13733,8 @@ function switchPricingAdminTab(tab) {
   });
   __doc.getElementById('pricingAdminBody').innerHTML = renderPricingAdminTab(tab);
   if (tab === 'tiers') { try { updatePaTierPreview(); } catch (e) {} }
+  if (tab === 'interior') { try { updatePaInteriorPreview(); } catch (e) {} }
+  try { paRefreshTabBadges(); } catch (e) {}
 }
 
 function paCaptureCurrentTab() {
@@ -8807,7 +13813,12 @@ function paField(path, step) {
   const formatted = (Math.abs(value) < 1 && value !== 0)
     ? value.toFixed(2)
     : (Number.isInteger(value) ? String(value) : (+value.toFixed(2)).toString());
-  return `<input type="number" inputmode="decimal" class="pa-input${isOverridden ? ' pa-overridden' : ''}" data-pa-path="${path}" value="${formatted}" step="${step || '0.01'}">`;
+  // The ↺ chip resets THIS field back to its code default — visible
+  // only while the value differs (CSS keys off .pa-overridden).
+  const resetBtn = (typeof def === 'number')
+    ? `<button type="button" class="pa-reset" data-pa-reset tabindex="-1" title="Reset to default (${def})">↺</button>`
+    : '';
+  return `<span class="pa-cell"><input type="number" inputmode="decimal" class="pa-input${isOverridden ? ' pa-overridden' : ''}" data-pa-path="${path}" data-pa-default="${typeof def === 'number' ? def : ''}" value="${formatted}" step="${step || '0.01'}">${resetBtn}</span>`;
 }
 
 const PA_PROJECT_TYPES = [
@@ -8815,7 +13826,11 @@ const PA_PROJECT_TYPES = [
   { id: 'deck',    label: 'Deck',    unit: 'per sq ft' },
   { id: 'pergola', label: 'Pergola', unit: 'per sq ft' },
   { id: 'barn',    label: 'Barn',    unit: 'per sq ft' },
-  { id: 'ceiling', label: 'Ceiling', unit: 'per sq ft' }
+  { id: 'ceiling', label: 'Ceiling', unit: 'per sq ft' },
+  // Interior tier rates are the WALL $/sq ft (SuperPaint / Duration /
+  // Emerald); component rates (ceiling, trim, doors…) scale with the
+  // tier automatically relative to Performance.
+  { id: 'interior', label: 'Interior Painting', unit: 'per wall sq ft' }
 ];
 
 // SW edition's built-in tier rates differ from this build on the
@@ -8862,8 +13877,13 @@ function renderPASw() {
 
 // Pricing | Team grouping — pricing knobs vs people/device management.
 const PA_GROUPS = {
-  pricing: ['tiers', 'prep', 'extras', 'addons', 'discounts', 'diy', 'quote', 'sw'],
+  pricing: ['tiers', 'interior', 'exteriorpaint', 'cabinetpaint', 'prep', 'extras', 'addons', 'discounts', 'diy', 'quote', 'sw'],
   team:    ['reps', 'devices']
+};
+const PA_TAB_LABELS = {
+  tiers: 'Base rates', interior: 'Interior', exteriorpaint: 'Exterior', cabinetpaint: 'Cabinets',
+  prep: 'Prep', extras: 'Project extras',
+  addons: 'Add-ons', discounts: 'Discounts', diy: 'DIY comparison', quote: 'Quote rules', sw: 'SW Edition'
 };
 function switchPaGroup(g) {
   const tabs = PA_GROUPS[g] || PA_GROUPS.pricing;
@@ -8911,8 +13931,127 @@ function updatePaTierPreview() {
     + ' <span style="opacity:0.75;">(staining only — before prep, add-ons, and discounts)</span>';
 }
 
+function renderPAExteriorPaint() {
+  return `
+    <div class="pa-section">
+      <h4 class="pa-section-title">Siding — $/sq ft by paint level</h4>
+      <p class="pa-note">The exterior anchor rates (SuperPaint Ext / Duration Ext / Emerald Ext). Every "scales" rate below moves with the level. Substrate multipliers stack on top of these.</p>
+      <div class="pa-grid">
+        <div class="pa-grid-head">Surface</div>
+        <div class="pa-grid-head">SuperPaint Ext</div>
+        <div class="pa-grid-head">Duration Ext</div>
+        <div class="pa-grid-head">Emerald Ext</div>
+        <div class="pa-grid-label">Siding <small style="color:var(--slate);font-weight:500;">(per sq ft)</small></div>
+        ${paField('rules.exterior.tiers.essential', '0.01')}
+        ${paField('rules.exterior.tiers.performance', '0.01')}
+        ${paField('rules.exterior.tiers.showcase', '0.01')}
+      </div>
+    </div>
+    <div class="pa-section">
+      <h4 class="pa-section-title">Substrate multipliers &amp; height</h4>
+      <div class="pa-grid pa-grid-2col">
+        <div class="pa-grid-head" style="text-align:left;">Factor</div>
+        <div class="pa-grid-head">Value</div>
+        <div class="pa-grid-label">Vinyl (×)</div>${paField('rules.exterior.substrate.vinyl', '0.05')}
+        <div class="pa-grid-label">Wood / LP (×)</div>${paField('rules.exterior.substrate.wood', '0.05')}
+        <div class="pa-grid-label">Hardie / fiber-cement (×)</div>${paField('rules.exterior.substrate.fiber_cement', '0.05')}
+        <div class="pa-grid-label">Stucco (×)</div>${paField('rules.exterior.substrate.stucco', '0.05')}
+        <div class="pa-grid-label">Brick / masonry (×)</div>${paField('rules.exterior.substrate.brick', '0.05')}
+        <div class="pa-grid-label">High-work multiplier (sides ≥ trigger height)</div>${paField('rules.exterior.highWorkMult', '0.05')}
+        <div class="pa-grid-label">High-work trigger height (ft)</div>${paField('rules.exterior.highWorkAtFt', '1')}
+        <div class="pa-grid-label">Light peeling prep ($/sq ft on that side)</div>${paField('rules.exterior.peel.light', '0.05')}
+        <div class="pa-grid-label">Heavy peeling prep ($/sq ft on that side)</div>${paField('rules.exterior.peel.heavy', '0.05')}
+      </div>
+    </div>
+    <div class="pa-section">
+      <h4 class="pa-section-title">House details <small style="font-weight:600;color:var(--slate);text-transform:none;letter-spacing:0;">(at Performance — they scale with the level)</small></h4>
+      <div class="pa-grid pa-grid-2col">
+        <div class="pa-grid-head" style="text-align:left;">Line item</div>
+        <div class="pa-grid-head">Rate</div>
+        <div class="pa-grid-label">Trim, casings &amp; fascia ($/ln ft)</div>${paField('rules.exterior.rates.trimFascia', '0.05')}
+        <div class="pa-grid-label">Soffits &amp; eaves ($/ln ft)</div>${paField('rules.exterior.rates.soffit', '0.05')}
+        <div class="pa-grid-label">Gutters + downspouts ($/ln ft)</div>${paField('rules.exterior.rates.gutters', '0.05')}
+        <div class="pa-grid-label">Window trim ($ each)</div>${paField('rules.exterior.rates.windowTrim', '1')}
+        <div class="pa-grid-label">Shutter ($ each)</div>${paField('rules.exterior.rates.shutter', '1')}
+        <div class="pa-grid-label">Entry door ($ each)</div>${paField('rules.exterior.rates.door', '1')}
+        <div class="pa-grid-label">1-car garage door ($ each)</div>${paField('rules.exterior.rates.garage1', '1')}
+        <div class="pa-grid-label">2-car garage door ($ each)</div>${paField('rules.exterior.rates.garage2', '1')}
+        <div class="pa-grid-label">Porch ceiling ($/sq ft)</div>${paField('rules.exterior.rates.porchCeiling', '0.05')}
+        <div class="pa-grid-label">Railings ($/ln ft)</div>${paField('rules.exterior.rates.railing', '0.05')}
+        <div class="pa-grid-label">Column / post ($ each)</div>${paField('rules.exterior.rates.column', '1')}
+        <div class="pa-grid-label">Exterior job minimum ($)</div>${paField('rules.exterior.minimumJob', '25')}
+      </div>
+    </div>
+    <div class="pa-section">
+      <h4 class="pa-section-title">DIY paint — SW list $/gal</h4>
+      <p class="pa-note">Verified from SW.com July 2026: SuperPaint Ext $86.99 · Duration Ext $111.49 · Emerald Ext $117.99. Re-verify from the product pages if they look off. Same fields as the DIY tab.</p>
+      <div class="pa-grid">
+        <div class="pa-grid-head"></div>
+        <div class="pa-grid-head">SuperPaint Ext</div>
+        <div class="pa-grid-head">Duration Ext</div>
+        <div class="pa-grid-head">Emerald Ext</div>
+        <div class="pa-grid-label">$/gallon (list)</div>
+        ${paField('rules.diy.exteriorPaint.perGal.essential', '0.01')}
+        ${paField('rules.diy.exteriorPaint.perGal.performance', '0.01')}
+        ${paField('rules.diy.exteriorPaint.perGal.showcase', '0.01')}
+      </div>
+    </div>`;
+}
+
+function renderPACabinetPaint() {
+  return `
+    <div class="pa-section">
+      <h4 class="pa-section-title">Per-door rate by level</h4>
+      <p class="pa-note">The cabinet anchor: $ per DOOR at each level (ProClassic brushed · Emerald Urethane doors sprayed · full spray). Drawer/panel/glass rates scale with the door multiplier.</p>
+      <div class="pa-grid">
+        <div class="pa-grid-head">Piece</div>
+        <div class="pa-grid-head">ProClassic</div>
+        <div class="pa-grid-head">Emerald Ure. (spray doors)</div>
+        <div class="pa-grid-head">Full spray</div>
+        <div class="pa-grid-label">Door <small style="color:var(--slate);font-weight:500;">($ each)</small></div>
+        ${paField('rules.cabinet.tiers.essential', '1')}
+        ${paField('rules.cabinet.tiers.performance', '1')}
+        ${paField('rules.cabinet.tiers.showcase', '1')}
+      </div>
+    </div>
+    <div class="pa-section">
+      <h4 class="pa-section-title">Piece rates &amp; options <small style="font-weight:600;color:var(--slate);text-transform:none;letter-spacing:0;">(at Performance — they scale with the level)</small></h4>
+      <div class="pa-grid pa-grid-2col">
+        <div class="pa-grid-head" style="text-align:left;">Line item</div>
+        <div class="pa-grid-head">Rate</div>
+        <div class="pa-grid-label">Drawer front ($ each)</div>${paField('rules.cabinet.pieceRates.drawer', '1')}
+        <div class="pa-grid-label">End / island panel ($ each)</div>${paField('rules.cabinet.pieceRates.endPanel', '1')}
+        <div class="pa-grid-label">Glass-front door frame ($ each)</div>${paField('rules.cabinet.pieceRates.glassDoor', '1')}
+        <div class="pa-grid-label">Cabinet crown / light rail ($/ln ft, flat)</div>${paField('rules.cabinet.crownPerLnFt', '0.5')}
+        <div class="pa-grid-label">Box interior ($ each, flat)</div>${paField('rules.cabinet.insideBox', '1')}
+        <div class="pa-grid-label">Stained / lacquered finish multiplier (×)</div>${paField('rules.cabinet.finishMult.stained', '0.05')}
+        <div class="pa-grid-label">Factory finish multiplier (×)</div>${paField('rules.cabinet.finishMult.factory', '0.05')}
+        <div class="pa-grid-label">Unfinished / raw wood multiplier (×)</div>${paField('rules.cabinet.finishMult.unfinished', '0.05')}
+        <div class="pa-grid-label">Oak grain-fill ($ per door/drawer)</div>${paField('rules.cabinet.oakGrainPerPiece', '1')}
+        <div class="pa-grid-label">Cabinet job minimum ($)</div>${paField('rules.cabinet.minimumJob', '25')}
+      </div>
+    </div>
+    <div class="pa-section">
+      <h4 class="pa-section-title">DIY paint — SW list $/gal</h4>
+      <p class="pa-note">Verified from SW.com July 2026: ProClassic Waterborne $106.99 · Emerald Urethane $130.49. Primer default $69.99 (verify at the counter).</p>
+      <div class="pa-grid">
+        <div class="pa-grid-head"></div>
+        <div class="pa-grid-head">ProClassic</div>
+        <div class="pa-grid-head">Emerald Ure.</div>
+        <div class="pa-grid-head">Primer</div>
+        <div class="pa-grid-label">$/gallon (list)</div>
+        ${paField('rules.diy.cabinetPaint.perGal.essential', '0.01')}
+        ${paField('rules.diy.cabinetPaint.perGal.performance', '0.01')}
+        ${paField('rules.diy.cabinetPaint.primerPerGal', '0.01')}
+      </div>
+    </div>`;
+}
+
 function renderPricingAdminTab(tab) {
   if (tab === 'tiers') return renderPATiers();
+  if (tab === 'interior') return renderPAInterior();
+  if (tab === 'exteriorpaint') return renderPAExteriorPaint();
+  if (tab === 'cabinetpaint') return renderPACabinetPaint();
   if (tab === 'prep')  return renderPAPrep();
   if (tab === 'extras') return renderPAExtras();
   if (tab === 'addons') return renderPAAddons();
@@ -9395,8 +14534,122 @@ function renderPATiers() {
     </div>`;
 }
 
+// Interior tab — EVERY interior knob in one place: wall tiers (same
+// fields as Base rates, repeated here so "change interior pricing"
+// is one stop), per-room line rates, drywall severities, extras, and
+// the interior job minimum. Paint $/gal lives on the DIY tab; the
+// whole-house discount rate lives on the Discounts tab (search finds
+// both).
+function renderPAInterior() {
+  return `
+    <div class="pa-preview" id="paInteriorPreview"></div>
+    <div class="pa-section">
+      <h4 class="pa-section-title">Walls — $/wall sq ft by paint level</h4>
+      <p class="pa-note">The anchor rates. Every "scales" rate below moves with the level automatically (Essential ×0.85, Showcase ×1.20 of Performance by default). Same fields as the Base rates tab.</p>
+      <div class="pa-grid">
+        <div class="pa-grid-head">Surface</div>
+        <div class="pa-grid-head">SuperPaint</div>
+        <div class="pa-grid-head">Duration Home</div>
+        <div class="pa-grid-head">Emerald</div>
+        <div class="pa-grid-label">Walls <small style="color:var(--slate);font-weight:500;">(per wall sq ft)</small></div>
+        ${paField('rules.interior.tiers.essential', '0.01')}
+        ${paField('rules.interior.tiers.performance', '0.01')}
+        ${paField('rules.interior.tiers.showcase', '0.01')}
+      </div>
+    </div>
+    <div class="pa-section">
+      <h4 class="pa-section-title">Per-room line rates <small style="font-weight:600;color:var(--slate);text-transform:none;letter-spacing:0;">(at Performance — they scale with the level)</small></h4>
+      <div class="pa-grid pa-grid-2col">
+        <div class="pa-grid-head" style="text-align:left;">Line item</div>
+        <div class="pa-grid-head">Rate</div>
+        <div class="pa-grid-label">Ceiling ($/ceiling sq ft)</div>${paField('rules.interior.rates.ceiling', '0.01')}
+        <div class="pa-grid-label">Trim &amp; baseboards ($/ln ft of perimeter)</div>${paField('rules.interior.rates.trim', '0.01')}
+        <div class="pa-grid-label">Crown molding ($/ln ft of perimeter)</div>${paField('rules.interior.rates.crown', '0.01')}
+        <div class="pa-grid-label">Door — slab both sides + jamb ($ each)</div>${paField('rules.interior.rates.door', '1')}
+        <div class="pa-grid-label">Single window ($ each)</div>${paField('rules.interior.rates.window', '1')}
+        <div class="pa-grid-label">Double / mulled window ($ each)</div>${paField('rules.interior.rates.windowDouble', '1')}
+        <div class="pa-grid-label">Closet interior ($ per closet)</div>${paField('rules.interior.rates.closet', '1')}
+        <div class="pa-grid-label">Accent wall ($/sq ft — width × ceiling height)</div>${paField('rules.interior.rates.accentWallPerSqFt', '0.25')}
+        <div class="pa-grid-label">Accent wall minimum ($)</div>${paField('rules.interior.rates.accentWallMin', '1')}
+      </div>
+    </div>
+    <div class="pa-section">
+      <h4 class="pa-section-title">Drywall repairs <small style="font-weight:600;color:var(--slate);text-transform:none;letter-spacing:0;">($ at a standard room — auto-scales ×0.7–×1.6 with room size)</small></h4>
+      <p class="pa-note">Each severity price covers a STANDARD room (the baseline below — 12×12×8 ft = 384 gross wall sq ft). Bigger rooms scale the charge up, smaller rooms scale it down, clamped between ×0.7 and ×1.6.</p>
+      <div class="pa-grid pa-grid-2col">
+        <div class="pa-grid-head" style="text-align:left;">Severity</div>
+        <div class="pa-grid-head">Price</div>
+        <div class="pa-grid-label">Minor — nail holes, dings, hairline cracks</div>${paField('rules.interior.drywall.minor', '1')}
+        <div class="pa-grid-label">Moderate — patches to ~6", popped screws, seam cracks</div>${paField('rules.interior.drywall.moderate', '1')}
+        <div class="pa-grid-label">Major — large holes, water damage, corner bead</div>${paField('rules.interior.drywall.major', '1')}
+        <div class="pa-grid-label">Standard-room baseline (gross wall sq ft)</div>${paField('rules.interior.drywallRefWallSqFt', '1')}
+      </div>
+    </div>
+    <div class="pa-section">
+      <h4 class="pa-section-title">Room premiums &amp; per-room discount</h4>
+      <div class="pa-grid pa-grid-2col">
+        <div class="pa-grid-head" style="text-align:left;">Knob</div>
+        <div class="pa-grid-head">Value</div>
+        <div class="pa-grid-label">Bathroom wall multiplier (× on walls — mirrors, vanities, tight cut-ins; 1.20 = +20%)</div>${paField('rules.interior.bathroomWallMult', '0.01')}
+        <div class="pa-grid-label">Multi-area discount rate (off the room's painting when earned; 0.10 = 10%)</div>${paField('rules.interior.roomBundle.rate', '0.01')}
+        <div class="pa-grid-label">Areas needed to earn it (walls/ceiling/trim/crown/accent/closet/shelving — doors &amp; windows don't count)</div>${paField('rules.interior.roomBundle.minAreas', '1')}
+      </div>
+    </div>
+    <div class="pa-section">
+      <h4 class="pa-section-title">Less-common options</h4>
+      <div class="pa-grid pa-grid-2col">
+        <div class="pa-grid-head" style="text-align:left;">Option</div>
+        <div class="pa-grid-head">Rate</div>
+        <div class="pa-grid-label">Popcorn ceiling removal ($/ceiling sq ft — scrape, skim, prime, refinish)</div>${paField('rules.interior.extras.popcorn', '0.25')}
+        <div class="pa-grid-label">Wallpaper removal ($/wall sq ft)</div>${paField('rules.interior.extras.wallpaper', '0.25')}
+        <div class="pa-grid-label">Bold color change ($/wall sq ft — 3rd coat)</div>${paField('rules.interior.extras.boldColor', '0.05')}
+        <div class="pa-grid-label">Built-ins ($/ln ft of unit face)</div>${paField('rules.interior.extras.builtinsPerLnFt', '1')}
+        <div class="pa-grid-label">Built-ins minimum ($)</div>${paField('rules.interior.extras.builtinsMin', '1')}
+        <div class="pa-grid-label">Shelving &amp; rod runs ($/ln ft — walk-in closets, pantries, laundry)</div>${paField('rules.interior.extras.shelvingPerLnFt', '1')}
+        <div class="pa-grid-label">Vaulted / 2-story multiplier (× on walls+ceiling+trim+crown)</div>${paField('rules.interior.extras.vaultedMult', '0.01')}
+      </div>
+    </div>
+    <div class="pa-section">
+      <h4 class="pa-section-title">Interior job minimum</h4>
+      <div class="pa-grid pa-grid-2col">
+        <div class="pa-grid-label">Minimum per interior project ($ — stain projects use the Quote rules minimum)</div>${paField('rules.interior.minimumJob', '25')}
+      </div>
+      <p class="pa-note" style="margin-top:10px;">Also interior, elsewhere: paint $/gal &amp; coverage + DIY supplies → <a href="javascript:void(0)" onclick="switchPricingAdminTab('diy')">DIY comparison</a> · 4+ room discount rate → <a href="javascript:void(0)" onclick="switchPricingAdminTab('discounts')">Discounts</a> · banister / stairwell / furniture add-ons → <a href="javascript:void(0)" onclick="switchPricingAdminTab('addons')">Add-ons</a>.</p>
+    </div>`;
+}
+
+// Live worked example under the interior fields — a standard bedroom
+// priced from whatever is currently typed, so edits show their dollar
+// effect before saving. Uses the same formula as the engine for this
+// fixed room (12×12×8, walls+ceiling+trim, 1 door, 1 single window,
+// minor drywall) at the Performance anchor.
+function updatePaInteriorPreview() {
+  const el = __doc.getElementById('paInteriorPreview');
+  if (!el) return;
+  const wall = paLiveVal('rules.interior.tiers.performance');
+  const ceil = paLiveVal('rules.interior.rates.ceiling');
+  const trim = paLiveVal('rules.interior.rates.trim');
+  const door = paLiveVal('rules.interior.rates.door');
+  const win  = paLiveVal('rules.interior.rates.window');
+  const dwMinor = paLiveVal('rules.interior.drywall.minor');
+  const walls = 350 * wall;            // 2×(12+12)×8 = 384 − 20 door − 14 window
+  const ceilC = 144 * ceil;
+  const trimC = 48 * trim;
+  const total = walls + ceilC + trimC + door + win + dwMinor;
+  el.innerHTML = '<strong>Live preview — standard bedroom (12×12×8, walls + ceiling + trim, 1 door, 1 window, minor repairs) at Duration Home:</strong> '
+    + 'walls $' + Math.round(walls).toLocaleString()
+    + ' · ceiling $' + Math.round(ceilC).toLocaleString()
+    + ' · trim $' + Math.round(trimC).toLocaleString()
+    + ' · door/window $' + Math.round(door + win).toLocaleString()
+    + ' · repairs $' + Math.round(dwMinor).toLocaleString()
+    + ' → <strong>$' + Math.round(total).toLocaleString() + '</strong>';
+}
+
 function renderPAPrep() {
-  const rows = PA_PROJECT_TYPES.map(p => `
+  // Interior painting has no wash/strip prep — its prep (drywall,
+  // popcorn, wallpaper) is per-room and lives in rules.interior.drywall
+  // / rules.interior.extras, editable via the Tier rates JSON overrides.
+  const rows = PA_PROJECT_TYPES.filter(p => p.id !== 'interior').map(p => `
     <div class="pa-grid-label">${p.label} <small style="color:var(--slate);font-weight:500;">(${p.unit})</small></div>
     ${paField(`rules.${p.id}.prep.no_wash`, '0.01')}
     ${paField(`rules.${p.id}.prep.soft_wash`, '0.01')}
@@ -9417,8 +14670,22 @@ function renderPAPrep() {
     <div class="pa-section">
       <h4 class="pa-section-title">Fence — complex-style soft wash</h4>
       <div class="pa-grid">
-        <div class="pa-grid-label" style="grid-column: 1 / 4;">Soft wash on shadowbox / board-on-board / Charleston BOB ($/ln ft)<br><small style="color:var(--slate);font-weight:500;">Simple styles (privacy, Charleston, farm rail) use the fence “Soft wash” rate above. Both carry the $250 minimum.</small></div>
+        <div class="pa-grid-label" style="grid-column: 1 / 4;">Soft wash on shadowbox / board-on-board / Charleston BOB ($/ln ft)<br><small style="color:var(--slate);font-weight:500;">Simple styles (privacy, Charleston, farm rail) use the fence “Soft wash” rate above. Both carry the soft-wash minimum below.</small></div>
         ${paField('rules.fence.prep.soft_wash_complex', '0.01')}
+      </div>
+    </div>
+    <div class="pa-section">
+      <h4 class="pa-section-title">Prep-service minimums</h4>
+      <p style="font-size:12px;color:var(--slate);margin:0 0 10px;">Small jobs still incur the fixed chemistry, setup, and truck costs. The charge is max(minimum, footage × prep rate) — the per-unit scaling above takes over once the job is big enough. Defaults apply to every stain project; the deck override wins on decks.</p>
+      <div class="pa-grid" style="grid-template-columns: minmax(220px, 1fr) 140px;">
+        <div class="pa-grid-head" style="text-align:left;">Floor</div>
+        <div class="pa-grid-head">Minimum ($)</div>
+        <div class="pa-grid-label">Soft wash — all stain projects</div>
+        ${paField('rules.prepMinimums.default.soft_wash', '1')}
+        <div class="pa-grid-label">Strip &amp; sand restoration — all stain projects</div>
+        ${paField('rules.prepMinimums.default.strip_sand', '1')}
+        <div class="pa-grid-label">Deck restoration override<br><small style="color:var(--slate);font-weight:500;">Strip &amp; sand floor on decks specifically</small></div>
+        ${paField('rules.prepMinimums.deck.strip_sand', '1')}
       </div>
     </div>`;
 }
@@ -9463,7 +14730,9 @@ function renderPADIY() {
   `).join('');
   const toolsRows = projects.map(p => `
     <div class="pa-grid-label">${p.label}</div>
-    ${paField(`rules.diy.projectTools.${p.id}`, '1')}
+    ${p.id === 'interior'
+      ? '<div class="pa-grid-label" style="align-self:center;color:var(--slate);">itemized below ↓</div>'
+      : paField(`rules.diy.projectTools.${p.id}`, '1')}
     ${paField(`rules.diy.projectTimeDivisor.${p.id}`, '1')}
   `).join('');
   return `
@@ -9476,6 +14745,28 @@ function renderPADIY() {
         <div class="pa-grid-head">Performance</div>
         <div class="pa-grid-head">Showcase</div>
         ${pailRows}
+      </div>
+    </div>
+    <div class="pa-section">
+      <h4 class="pa-section-title">Interior paint — per-gallon SW list prices</h4>
+      <p style="font-size:12px;color:var(--slate);margin:0 0 10px;">Verified SW.com homeowner list price per GALLON (no contractor discount). Wall paint by tier — SuperPaint / Duration Home / Emerald. <strong>Trim uses the same tiered product</strong> (semi-gloss) as a comp, so it prices off these too. Ceilings use SW Premium Ceiling Paint. Every distinct color is a separate whole-gallon bucket.</p>
+      <div class="pa-grid">
+        <div class="pa-grid-head">Product</div>
+        <div class="pa-grid-head">SuperPaint</div>
+        <div class="pa-grid-head">Duration Home</div>
+        <div class="pa-grid-head">Emerald</div>
+        <div class="pa-grid-label">Walls &amp; trim — $/gal (list)</div>
+        ${paField('rules.diy.interiorPaint.perGal.essential', '0.01')}
+        ${paField('rules.diy.interiorPaint.perGal.performance', '0.01')}
+        ${paField('rules.diy.interiorPaint.perGal.showcase', '0.01')}
+      </div>
+      <div class="pa-grid" style="grid-template-columns: minmax(220px, 1fr) 120px; margin-top:8px;">
+        <div class="pa-grid-label">Ceiling paint — $/gal (SW Premium Ceiling Paint, flat)</div>
+        ${paField('rules.diy.interiorPaint.ceilingPerGal', '0.01')}
+        <div class="pa-grid-label">Effective coverage (sq ft / gal / coat — TDS says 350–400; lower = more cut-in &amp; waste)</div>
+        ${paField('rules.diy.interiorPaint.coverageSqFtPerGal', '1')}
+        <div class="pa-grid-label">Coats planned</div>
+        ${paField('rules.diy.interiorPaint.coats', '1')}
       </div>
     </div>
     <div class="pa-section">
@@ -9506,6 +14797,26 @@ function renderPADIY() {
         <div class="pa-grid-head">Tools ($)</div>
         <div class="pa-grid-head">Time divisor</div>
         ${toolsRows}
+      </div>
+    </div>
+    <div class="pa-section">
+      <h4 class="pa-section-title">Interior DIY supplies <small style="font-weight:600;color:var(--slate);text-transform:none;letter-spacing:0;">(itemized — scales per room)</small></h4>
+      <p style="font-size:12px;color:var(--slate);margin:0 0 10px;">Shown as individual lines in the DIY comparison. Base = one-time kit; per-room amounts are added for every room in the quote. No sprayers or pro equipment here — this is the brush-and-roller homeowner kit.</p>
+      <div class="pa-grid" style="grid-template-columns: minmax(220px, 1fr) 120px;">
+        <div class="pa-grid-head" style="text-align:left;">Item</div>
+        <div class="pa-grid-head">Price ($)</div>
+        <div class="pa-grid-label">Brushes, rollers, trays &amp; pads — base kit</div>
+        ${paField('rules.diy.interiorSupplies.kitBase', '1')}
+        <div class="pa-grid-label">Roller covers &amp; pads — per room</div>
+        ${paField('rules.diy.interiorSupplies.kitPerRoom', '1')}
+        <div class="pa-grid-label">Painter's tape &amp; masking — per room</div>
+        ${paField('rules.diy.interiorSupplies.tapePerRoom', '1')}
+        <div class="pa-grid-label">Drop cloths &amp; sheeting — base</div>
+        ${paField('rules.diy.interiorSupplies.dropsBase', '1')}
+        <div class="pa-grid-label">Drop cloths &amp; sheeting — per room</div>
+        ${paField('rules.diy.interiorSupplies.dropsPerRoom', '1')}
+        <div class="pa-grid-label">Repair compound, sanding sponges &amp; caulk (kit)</div>
+        ${paField('rules.diy.interiorSupplies.repairKit', '1')}
       </div>
     </div>`;
 }
@@ -9618,7 +14929,8 @@ async function savePricingAdmin() {
     __pricingMeta = { lastEditedBy: res.lastEditedBy || '', lastEditedAt: res.lastEditedAt || new Date().toISOString() };
     await applyPricingOverrides();   // re-merge so the live PRICING object is fresh
     paToast('Saved. Pricing now uses your new rates.');
-    closePricingAdmin();
+    __paDirty = false;
+    closePricingAdmin(true);
   } catch (e) {
     paToast('Save failed: ' + (e && e.message ? e.message : 'unknown error'));
   }
@@ -9636,7 +14948,8 @@ async function resetPricingAdmin() {
     __pricingMeta = { lastEditedBy: '', lastEditedAt: null };
     await applyPricingOverrides();
     paToast('Reset complete. Calculator is back to code defaults.');
-    closePricingAdmin();
+    __paDirty = false;
+    closePricingAdmin(true);
   } catch (e) {
     paToast('Reset failed: ' + (e && e.message ? e.message : 'unknown error'));
   }
@@ -9855,7 +15168,7 @@ function renderViewMode(q) {
   const leadEl     = __doc.getElementById('stageViewLead');
   if (titleLabel) titleLabel.textContent = labelMap[status] || 'QUOTE';
 
-  const PROJECT_LABELS = { fence: 'Fence', deck: 'Deck', pergola: 'Pergola', barn: 'Barn', ceiling: 'Ceiling' };
+  const PROJECT_LABELS = { fence: 'Fence', deck: 'Deck', pergola: 'Pergola', barn: 'Barn', ceiling: 'Ceiling', interior: 'Interior Painting', exterior: 'Exterior Painting', cabinet: 'Cabinet Painting' };
   const TIER_LABELS = { essential: 'Essential', performance: 'Performance', showcase: 'Showcase' };
 
   const cust = q.customer || {};
@@ -9881,11 +15194,16 @@ function renderViewMode(q) {
     if (!p || !p.type) return '';
     const label = PROJECT_LABELS[p.type] || p.type;
     const tier  = TIER_LABELS[p.tier] || p.tier || '';
-    const product = p.productType === 'water' ? 'Water-based' : p.productType === 'oil' ? 'Oil-based' : (p.productType || '');
+    const product = p.productType === 'water' ? 'Water-based' : p.productType === 'oil' ? 'Oil-based'
+      : p.productType === 'interior_paint' ? ((TIER_META.interior_paint[p.tier] || {}).product || 'SW interior paint')
+      : p.productType === 'exterior_paint' ? ((TIER_META.exterior_paint[p.tier] || {}).product || 'SW exterior paint')
+      : p.productType === 'cabinet_paint' ? ((TIER_META.cabinet_paint[p.tier] || {}).product || 'SW cabinet enamel')
+      : (p.productType || '');
     const color = p.selectedColor && p.selectedColor.name ? p.selectedColor.name : (p.selectedColor || '');
     const m = p.measurements || {};
     let scopeStr = '';
-    if (p.type === 'fence' && m.linearft) scopeStr = `${m.linearft} ln ft × ${m.height || 0} ft`;
+    if (p.type === 'interior' && Array.isArray(m.rooms)) scopeStr = `${m.rooms.length} room${m.rooms.length === 1 ? '' : 's'} · ${m.sqft || 0} wall sq ft`;
+    else if (p.type === 'fence' && m.linearft) scopeStr = `${m.linearft} ln ft × ${m.height || 0} ft`;
     else if (p.type === 'deck')          scopeStr = `${(m.flat || 0)} sq ft flat${m.rail ? `, ${m.rail} ln ft railing` : ''}`;
     else if (m.sqft)                      scopeStr = `${m.sqft} sq ft`;
     else if (m.length && m.width)         scopeStr = `${m.length}' × ${m.width}'`;
@@ -10023,7 +15341,16 @@ async function resendViewedQuoteToJobber(rowId, alreadyPushed) {
     }
     // Refresh the view from the (now-updated) cloud row so the block reflects reality.
     const fetched = await __sssBridge.call('getQuote', { quoteRowId: rowId });
-    if (fetched && fetched.ok && fetched.quote) renderViewMode(fetched.quote);
+    if (fetched && fetched.ok && fetched.quote) {
+      renderViewMode(fetched.quote);
+      if (data && data.ok) {
+        pipelineNotifyQuotePushed(fetched.quote.jobberRequestId, {
+          jobberQuoteId: fetched.quote.jobberQuoteId,
+          jobberQuoteNumber: fetched.quote.jobberQuoteNumber,
+          jobberWebUri: fetched.quote.jobberWebUri
+        });
+      }
+    }
   } catch (e) {
     alert('Network error pushing to Jobber: ' + e.message);
   }
@@ -10395,7 +15722,7 @@ renderDashboard();
   }, { capture: true });
 })();
   // Expose for inline onclick=/onchange= handlers in markup.
-  Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, returnToDashboard, cancelNewQuote, refreshDashboardHard, pickCustSearchResult, clearPickedCustomer, convertJobberRequestToQuote, copyJobberErrorToClipboard, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, onFolderToggle, onDashSearchInput, openRowMenu, closeRowMenu, resumeCloudQuote, resumeLocalDraft, deleteLocalDraft, moveCloudQuote, duplicateCloudQuote, permanentlyDeleteCloud, duplicateCurrentForEdit, onCustSubsToggle, onCustDraftsToggle, onCustAbandonedToggle, loadCustomerSubmissions, renderCustomerSubmissions, renderCustomerDrafts, loadCustomerAbandonedDrafts, renderCustomerAbandonedDrafts, dismissAbandonedDraft, dismissCustomerSubmission, openSubmissionDetails, openDraftDetails, closeSubmissionDetails, openCustCalcAnalytics, closeCustCalcAnalytics, loadCustCalcAnalytics, renderCustCalcAnalytics, toggleBulkMode, toggleBulkRow, bulkClearSelection, bulkSetStatus, bulkPermanentlyDelete, openPricingAdmin, closePricingAdmin, switchPricingAdminTab, savePricingAdmin, resetPricingAdmin, removeReferencePhoto, signOutAndReload, openChangePinPrompt, closeRepMenu, adminCreateRep, adminResetRepPin, adminDeleteRep, adminRevokeDevice, adminRevokeAllDevices, toggleAdminDevicesShowAll, resetSwDeviceTag, resetSwAllDevices, toggleSwReferral, setSwReferral, switchDashTab, loadDashAnalytics, updateLeadsTabCount, openLeadMenu, openAbandonedMenu, toggleDashDateFilter, switchPaGroup, openProjectSwitchDialog, closeProjectSwitchDialog, confirmAddAnotherProject, confirmSwitchProject, openJobberPanel, closeJobberPanel, jobberConnect, jobberManualRefresh, jobberDisconnectConfirm, jobberTestConnection, pushFinishedQuoteToJobber, resendFinishedToJobber, resendViewedQuoteToJobber, resendCurrentQuoteFromSuccess, resendCurrentViewedToJobber, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, toggleEditPanel, applyCustomColor, removeCustomAddon, state });
+  Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, returnToDashboard, cancelNewQuote, refreshDashboardHard, pickCustSearchResult, clearPickedCustomer, convertJobberRequestToQuote, copyJobberErrorToClipboard, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, onFolderToggle, onDashSearchInput, openRowMenu, closeRowMenu, resumeCloudQuote, resumeLocalDraft, deleteLocalDraft, moveCloudQuote, duplicateCloudQuote, permanentlyDeleteCloud, duplicateCurrentForEdit, onCustSubsToggle, onCustDraftsToggle, onCustAbandonedToggle, loadCustomerSubmissions, renderCustomerSubmissions, renderCustomerDrafts, loadCustomerAbandonedDrafts, renderCustomerAbandonedDrafts, dismissAbandonedDraft, dismissCustomerSubmission, openSubmissionDetails, openDraftDetails, closeSubmissionDetails, openCustCalcAnalytics, closeCustCalcAnalytics, loadCustCalcAnalytics, renderCustCalcAnalytics, toggleBulkMode, toggleBulkRow, bulkClearSelection, bulkSetStatus, bulkPermanentlyDelete, openPricingAdmin, closePricingAdmin, switchPricingAdminTab, savePricingAdmin, resetPricingAdmin, removeReferencePhoto, signOutAndReload, openChangePinPrompt, closeRepMenu, adminCreateRep, adminResetRepPin, adminDeleteRep, adminRevokeDevice, adminRevokeAllDevices, toggleAdminDevicesShowAll, resetSwDeviceTag, resetSwAllDevices, toggleSwReferral, setSwReferral, switchDashTab, loadDashAnalytics, updateLeadsTabCount, openLeadMenu, openAbandonedMenu, toggleDashDateFilter, switchPaGroup, openProjectSwitchDialog, closeProjectSwitchDialog, confirmAddAnotherProject, confirmSwitchProject, openJobberPanel, closeJobberPanel, jobberConnect, jobberManualRefresh, jobberDisconnectConfirm, jobberTestConnection, pushFinishedQuoteToJobber, resendFinishedToJobber, resendViewedQuoteToJobber, resendCurrentQuoteFromSuccess, resendCurrentViewedToJobber, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, toggleEditPanel, applyCustomColor, removeCustomAddon, renderFinalBreakdown, openInteriorPricingSheet, loadPipeline, pipeToggleArchived, pipeSetFilter, openPipeCard, closePipeCard, openPipeLeadDialog, closePipeLeadDialog, savePipeLead, pipeMoveStage, pipeSetLostReason, pipeSetFollowUp, pipeSetVisitAt, pipeAddNote, pipeArchiveCard, pipeArchiveInJobber, pipeDeleteCard, pipeStartQuote, pipeOpenDraft, pipePushLead, pipeTodayStr, state });
 
   }
 
