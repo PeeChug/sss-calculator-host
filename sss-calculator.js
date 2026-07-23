@@ -233,24 +233,26 @@ const PRICING = {
   },
   cabinet: {
     // Priced by FACE COUNT (doors + drawers + panels), the industry
-    // standard — never "per kitchen." Door rate is the tier anchor;
-    // other pieces scale with it. Tiers are process + product:
-    // Essential = ProClassic brushed & rolled · Performance = Emerald
-    // Urethane with doors sprayed · Showcase = full spray finish.
-    tiers: { essential: 85, performance: 100, showcase: 125 },   // per door
-    pieceRates: {          // at Performance; scale with door-rate multiplier
-      drawer:    40,       // per drawer front
-      endPanel:  60,       // per exposed end / island panel
+    // standard — never "per kitchen." ONE spec only (per Adrian):
+    // SW Gallery Series Waterborne Topcoat, everything SPRAYED —
+    // there's one way to do cabinets correctly and it's the only one
+    // we sell. No tier ladder: all three tier keys hold the same
+    // door rate so legacy saved quotes (any tier id) price identically;
+    // the engine reads `performance` as the single source of truth.
+    tiers: { essential: 120, performance: 120, showcase: 120 },   // per door
+    pieceRates: {
+      drawer:    80,       // per drawer front
+      endPanel:  80,       // per exposed end / island panel
       glassDoor: 70       // per glass-front door (frame only)
     },
-    crownPerLnFt: 6,       // cabinet crown / light rail, flat across tiers
+    crownPerLnFt: 6,       // cabinet crown / light rail, per ln ft
     insideBox:   30,       // per box interior when requested
     // Existing-finish prep multipliers on the piece subtotal. Painted
-    // is the baseline; stained needs adhesion priming; slick factory
-    // coatings need the heaviest scuff + bonding primer; raw wood has
-    // no old finish to fight.
-    finishMult: { painted: 1.0, stained: 1.15, factory: 1.20, unfinished: 0.90 },
-    oakGrainPerPiece:  15,   // grain-fill for a glass-smooth finish on open-grain oak
+    // is the baseline; stained needs adhesion priming; factory
+    // coatings are handled by our standard scuff + Gallery bonding
+    // primer (no upcharge, per Adrian); raw wood preps lighter.
+    finishMult: { painted: 1.0, stained: 1.15, factory: 1.0, unfinished: 0.90 },
+    oakGrainPerPiece:  30,   // grain-fill for a glass-smooth finish on open-grain oak
     minimumJob: 1200,
     unit: 'piece'
   },
@@ -420,11 +422,13 @@ const PRICING = {
       coats: 2
     },
     cabinetPaint: {
-      // Verified SW.com list, July 2026: ProClassic Waterborne $106.99,
-      // Emerald Urethane Trim Enamel $130.49 (Performance AND Showcase
-      // — Showcase is the same enamel with a full spray process).
-      perGal: { essential: 106.99, performance: 130.49, showcase: 130.49 },
-      primerPerGal: 69.99,     // bonding/adhesion primer (verify at counter)
+      // SW Gallery Series Waterborne Topcoat — the pro spray-only
+      // cabinet coating we run exclusively. Its price is gated behind
+      // the SW pro sign-in; $130.99 is the publicly referenced list
+      // price (verify at the counter). Same value on all three keys —
+      // one product, one process.
+      perGal: { essential: 130.99, performance: 130.99, showcase: 130.99 },
+      primerPerGal: 69.99,     // Gallery Series Waterborne Primer (verify at counter)
       coverageSqFtPerGal: 350,
       coats: 2,
       primerCoats: 1
@@ -1057,43 +1061,29 @@ const TIER_META = {
       bestFor: 'Forever homes, deep/bold colors, and full-sun exposures'
     }
   },
-  // CABINET PAINTING — product + process tiers.
-  cabinet_paint: {
-    explain: "Cabinet finishes are product AND process. Every tier includes degrease, scuff-sand, adhesion primer, and two enamel coats — the difference is the enamel itself and how much of the job is sprayed to a factory-smooth finish.",
-    essential: {
-      product: 'SW ProClassic Enamel — brushed & rolled',
-      badge: 'Budget Friendly',
-      badgeClass: 'flag-green',
-      tagline: 'Classic trim enamel, hand-applied',
-      life: 'Durable satin enamel finish',
-      details: 'Sherwin-Williams ProClassic Waterborne Acrylic Enamel applied by brush and fine-nap roller. Self-leveling formula minimizes brush marks. A proven, budget-friendly cabinet refresh.',
-      pros: ['Most affordable full-prep option', 'Self-leveling — minimal brush marks', 'Durable, washable enamel', 'Full degrease + prime prep included'],
-      cons: ['Light hand-applied texture vs. spraying', 'Softer film than Emerald Urethane'],
-      bestFor: 'Budget refreshes, laundry rooms, and painted-before cabinets'
-    },
-    performance: {
-      product: 'SW Emerald Urethane — doors sprayed',
-      badge: 'Most Popular',
-      badgeClass: 'flag-blue',
-      tagline: 'Urethane-modified enamel, doors sprayed flat',
-      life: 'Kitchen-proof urethane finish',
-      details: 'Sherwin-Williams Emerald Urethane Trim Enamel — a urethane-modified enamel that cures into a harder, kitchen-proof film. Doors and drawer fronts come off, get labeled, and are SPRAYED flat for a smooth factory feel; frames are brushed tight.',
-      pros: ['Urethane-hard, chip-resistant film', 'Doors + drawers sprayed — smooth faces', 'Excellent blocking (doors don\'t stick)', 'The go-to for busy kitchens'],
-      cons: ['Costs more than ProClassic', 'Frames show minor hand texture up close'],
-      bestFor: 'Most kitchens — the durability + finish sweet spot'
-    },
-    showcase: {
-      product: 'SW Emerald Urethane — full spray finish',
-      badge: 'Factory Finish',
+  // CABINET PAINTING — ONE spec, no tiers (per Adrian: "There is only
+  // one way to do them correctly, and that is the way we will do it").
+  // SW Gallery Series Waterborne Topcoat, everything sprayed. All
+  // three tier keys alias the same card so legacy saved quotes (any
+  // tier id) still resolve; the tier stage renders a single card.
+  cabinet_paint: (() => {
+    const only = {
+      product: 'SW Gallery Series — full spray finish',
+      badge: 'The Only Way We Do It',
       badgeClass: 'flag-gold',
-      tagline: 'Everything sprayed — the closest thing to new cabinets',
-      life: 'Showroom-grade finish',
-      details: 'The same Emerald Urethane Trim Enamel with the full spray treatment: doors and drawers sprayed flat off-site, frames and boxes masked and sprayed in place with dust containment. Glass-smooth on every surface — the closest result to factory-new cabinetry without replacing them.',
-      pros: ['Sprayed EVERYTHING — no brush texture anywhere', 'Showroom-grade, light-catching finish', 'Full dust containment + masking', 'Urethane-hard film throughout'],
-      cons: ['Highest cost — most masking + spray labor'],
-      bestFor: 'Showpiece kitchens, islands, and dark colors that show every ripple'
-    }
-  }
+      nameOverride: 'Our cabinet finish',
+      tagline: 'Professional sprayed finish with the coating built for cabinets',
+      life: 'Factory-like professional coating',
+      details: 'Sherwin-Williams Gallery Series Waterborne Topcoat — the professional coating SW makes specifically for spray-finishing cabinets, over its matched Gallery Series bonding primer. Doors and drawer fronts come off, get labeled, and are sprayed flat off-site; frames and boxes are masked and sprayed in place with full dust containment. Glass-smooth on every surface. There is one correct way to paint cabinets, and this is the only way we do them.',
+      pros: ['Purpose-built PROFESSIONAL cabinet coating — not wall paint', 'Sprayed EVERYTHING — no brush texture anywhere', 'Factory-like, light-catching finish', 'Hard-wearing film made for kitchen abuse', 'Full dust containment + masking', 'Free 30-day touch-up visit'],
+      cons: [],
+      bestFor: 'Every cabinet job we take — we don\'t offer a lesser version'
+    };
+    return {
+      explain: 'Cabinets are product AND process, and we run one spec only: full degrease, scuff-sand, Gallery Series bonding primer, and sprayed Gallery Series topcoat on every surface. No brushed budget tier — one way, done right.',
+      essential: only, performance: only, showcase: only
+    };
+  })()
 };
 
 /* ============================================================
@@ -1108,7 +1098,7 @@ const PROJECT_META = {
   pergola: { name: 'Pergola',        icon: '⛱️', unit: 'sq ft', img: 'https://static.wixstatic.com/media/6616da_ab2a8aeff2ec435b8f8385c1c0454c91~mv2.jpg', desc: 'Total surface sq ft — top + bottom of beams + posts. Plant tarping included.' },
   interior: { name: 'Interior Painting', icon: '🎨', unit: 'room', img: 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=600&q=80&auto=format&fit=crop', desc: 'Walk the house room by room — walls, ceilings, trim, crown, and repairs quoted per room. Sherwin-Williams paints.', badge: 'New' },
   exterior: { name: 'Exterior Painting', icon: '🏡', unit: 'sq ft', img: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&q=80&auto=format&fit=crop', desc: 'Side-by-side siding measurements plus trim, windows, doors, shutters, and gutters. Pressure wash included. SW exterior paints.', badge: 'New' },
-  cabinet: { name: 'Cabinet Painting', icon: '🚪', unit: 'piece', img: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=600&q=80&auto=format&fit=crop', desc: 'Count doors, drawers, and panels area by area. Degrease, prime, and spray-grade enamel finishes. ProClassic & Emerald Urethane.', badge: 'New' },
+  cabinet: { name: 'Cabinet Painting', icon: '🚪', unit: 'piece', img: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=600&q=80&auto=format&fit=crop', desc: 'Count doors, drawers, and panels area by area. One spec: full prep, Gallery Series bonding primer, everything sprayed. SW Gallery Series.', badge: 'New' },
   barn:    { name: 'Barn',           icon: '🏚️', unit: 'sq ft', img: 'https://images.unsplash.com/photo-1625512078789-f89843023df6?w=600&q=80&auto=format&fit=crop', desc: 'Siding sq ft. Height premium above 12 ft. Optional lift rental for tall walls.' },
   ceiling: { name: 'Wooden Ceiling', icon: '🏠', unit: 'sq ft', img: 'https://static.wixstatic.com/media/6616da_36be1e29989c4a349547c1bf70ed16ec~mv2.jpg', desc: 'Porch ceilings, exposed beams, T&G. Easier than exterior — protected from weather.' }
 };
@@ -2801,20 +2791,26 @@ function openInteriorPricingSheet() {
     const cxc = computeCabinetAreaCost(cxa, 'performance');
     const cxRows = cxc.lines.map(l => `<tr><td>${escapeHtml(l.label)}</td><td class="num">$${l.amount.toFixed(2)}</td></tr>`).join('');
     return `
-  <h2>Per-piece rates by level</h2>
-  <table><tr><th>Piece</th><th class="num">ProClassic (brush)</th><th class="num">Emerald Ure. (spray doors)</th><th class="num">Full spray</th></tr>
-    <tr><td>Door (each)</td><td class="num">${money(C.tiers.essential)}</td><td class="num">${money(C.tiers.performance)}</td><td class="num">${money(C.tiers.showcase)}</td></tr>
+  <h2>Per-piece rates — one spec: SW Gallery Series, everything sprayed</h2>
+  <table><tr><th>Piece</th><th class="num">Rate</th></tr>
+    <tr><td>Door (each)</td><td class="num">${money(C.tiers.performance)}</td></tr>
+    <tr><td>Drawer front (each)</td><td class="num">${money(C.pieceRates.drawer)}</td></tr>
+    <tr><td>End / island panel (each)</td><td class="num">${money(C.pieceRates.endPanel)}</td></tr>
+    <tr><td>Glass-front door frame (each)</td><td class="num">${money(C.pieceRates.glassDoor)}</td></tr>
+    <tr><td>Cabinet crown / light rail (per ln ft)</td><td class="num">${money(C.crownPerLnFt)}</td></tr>
+    <tr><td>Box interior (each)</td><td class="num">${money(C.insideBox)}</td></tr>
+    <tr><td>Oak grain-fill (per door/drawer)</td><td class="num">${money(C.oakGrainPerPiece)}</td></tr>
   </table>
-  <p class="note">Drawer front ${money(C.pieceRates.drawer)} · end/island panel ${money(C.pieceRates.endPanel)} · glass-door frame ${money(C.pieceRates.glassDoor)} (at Performance — they scale with the door multiplier). Cabinet crown ${money(C.crownPerLnFt)}/ln ft flat · box interior ${money(C.insideBox)} flat · oak grain-fill ${money(C.oakGrainPerPiece)} per door/drawer.</p>
+  <p class="note">No levels on cabinets: every job is full degrease, scuff-sand, Gallery Series bonding primer, and sprayed Gallery Series topcoat on every surface.</p>
   <h2>Existing-finish prep multipliers</h2>
   <table><tr><th>Finish found</th><th class="num">Multiplier</th></tr>
     <tr><td>Painted before (baseline)</td><td class="num">×${fm.painted != null ? fm.painted : 1.0}</td></tr>
     <tr><td>Stained / lacquered — adhesion prime</td><td class="num">×${fm.stained != null ? fm.stained : 1.15}</td></tr>
-    <tr><td>Factory finish — heaviest scuff + bonding primer</td><td class="num">×${fm.factory != null ? fm.factory : 1.2}</td></tr>
+    <tr><td>Factory finish — handled by standard prep, no upcharge</td><td class="num">×${fm.factory != null ? fm.factory : 1.0}</td></tr>
     <tr><td>Unfinished / raw wood — lighter prep</td><td class="num">×${fm.unfinished != null ? fm.unfinished : 0.9}</td></tr>
   </table>
-  <p class="note">Thermofoil doors get FLAGGED, not priced — strip/swap/decline is an on-site call. Cabinet job minimum $${C.minimumJob}. DIY at SW list: ProClassic ${money((cg.perGal || {}).essential || 106.99)} / Emerald Urethane ${money((cg.perGal || {}).performance || 130.49)} per gal + primer ${money(cg.primerPerGal || 69.99)}.</p>
-  <h2>Worked example — medium kitchen (18 doors, 7 drawers, 2 end panels, painted before) · Performance</h2>
+  <p class="note">Thermofoil doors get FLAGGED, not priced — strip/swap/decline is an on-site call. Cabinet job minimum $${C.minimumJob}. DIY at SW list: Gallery Series Waterborne Topcoat ${money((cg.perGal || {}).performance || 130.99)} per gal (pro product — price gated behind SW sign-in, verify at counter) + Gallery primer ${money(cg.primerPerGal || 69.99)}.</p>
+  <h2>Worked example — medium kitchen (18 doors, 7 drawers, 2 end panels, painted before)</h2>
   <table>${cxRows}<tr class="total"><td>Kitchen total</td><td class="num">$${cxc.total.toLocaleString()}</td></tr></table>`;
   })()}
 
@@ -2992,7 +2988,7 @@ const CABINET_AREA_TYPES = {
 const CABINET_FINISH_META = {
   painted:    { label: 'Painted before',      hint: 'Standard prep — degrease, scuff, prime.' },
   stained:    { label: 'Stained / lacquered', hint: 'Site-finished stain — extra adhesion prime + heavier scuff.' },
-  factory:    { label: 'Factory finish',      hint: 'Slick catalyzed factory coating — heaviest scuff + bonding primer.' },
+  factory:    { label: 'Factory finish',      hint: 'Slick catalyzed factory coating — our standard scuff + Gallery bonding primer handles it. No upcharge.' },
   unfinished: { label: 'Unfinished / raw',    hint: 'Raw wood — no old finish to fight; prime + paint.' }
 };
 const CABINET_SHEENS = ['Satin', 'Semi-Gloss'];
@@ -3037,9 +3033,10 @@ function syncCabinetDerived() {
 
 function computeCabinetAreaCost(area, tierId) {
   const P = PRICING.cabinet;
-  const t = tierId || state.activeProject.tier || 'performance';
-  const doorRate = P.tiers[t] || P.tiers.performance;
-  const mult = doorRate / P.tiers.performance;
+  // Single spec: `performance` is the one true rate regardless of the
+  // tier id a (possibly legacy) quote carries — no tier multiplier.
+  const doorRate = P.tiers.performance || 120;
+  const mult = 1;
   const lines = [];
   let pieces = 0;
 
@@ -3746,16 +3743,19 @@ function renderPaintTierCardsFor(kind) {
       ]
     },
     cabinet: {
-      metaKey: 'cabinet_paint', lockText: `<strong>🚪 Cabinet Painting</strong> — every level includes full degrease, scuff-sand, and adhesion primer; the levels change the <strong>enamel and how much gets sprayed</strong>.`,
+      metaKey: 'cabinet_paint',
+      // ONE spec — the single card below IS the offer; it auto-selects.
+      tiers: ['performance'],
+      lockText: `<strong>🚪 Cabinet Painting</strong> — one spec only: full prep, Gallery Series bonding primer, and <strong>everything sprayed</strong> with SW Gallery Series topcoat. The price comes from your piece counts on Step 3.`,
       emptyTitle: '🚪 Count at least one area before prices can be calculated',
       emptyBody: 'Cabinet prices are calculated from the doors, drawers, and panels you count on the measurements step.',
       backLabel: '← Go back to Step 3: Areas',
       countLine: () => { const m = state.activeProject.measurements; return `${m.pieceCount || 0} pieces`; },
       included: [
-        '✓ Doors &amp; drawers labeled, removed, finished flat',
-        '✓ Full degrease, scuff-sand &amp; adhesion primer',
+        '✓ Doors &amp; drawers labeled, removed, sprayed flat',
+        '✓ Full degrease, scuff-sand &amp; Gallery Series bonding primer',
         '✓ Counters, floors &amp; appliances masked with dust control',
-        '✓ Two enamel coats + hinge re-hang &amp; adjust',
+        '✓ Sprayed topcoats + hinge re-hang &amp; adjust',
         '✓ Free 30-day touch-up visit',
         '✓ Fully insured &amp; licensed in South Carolina'
       ]
@@ -3777,14 +3777,21 @@ function renderPaintTierCardsFor(kind) {
 
   const meta = TIER_META[CFG.metaKey];
   const sample = computeSampleTierPrices(CFG.metaKey);
-  __doc.getElementById('tierCards').innerHTML = ['essential', 'performance', 'showcase'].map(t => {
+  const tierList = CFG.tiers || ['essential', 'performance', 'showcase'];
+  // Single-spec kinds (cabinets) auto-select their only option — the
+  // card is a confirmation, not a choice.
+  if (tierList.length === 1 && (!state.activeProject.tierConfirmed || state.activeProject.tier !== tierList[0])) {
+    state.activeProject.tier = tierList[0];
+    state.activeProject.tierConfirmed = true;
+  }
+  __doc.getElementById('tierCards').innerHTML = tierList.map(t => {
     const tm = meta[t];
     const isSelected = state.activeProject.tierConfirmed && state.activeProject.tier === t;
     const prosHtml = tm.pros.map((p, i) => `<li${i === 0 ? ' class="standout"' : ''}>${p}</li>`).join('');
     return `
-      <button class="tier-card ${isSelected ? 'selected' : ''}" data-tier="${t}">
+      <button class="tier-card ${isSelected ? 'selected' : ''}" data-tier="${t}" ${tierList.length === 1 ? 'style="grid-column: 1 / -1; max-width: 560px; margin: 0 auto; width: 100%;"' : ''}>
         ${tm.badge ? `<div class="reco-flag ${tm.badgeClass}">${tm.badge}</div>` : ''}
-        <div class="tier-name">${t}</div>
+        <div class="tier-name">${tm.nameOverride || t}</div>
         <div class="tier-product">${tm.product}</div>
         <div class="tier-tagline">${tm.tagline}</div>
         <div class="tier-price">$${Math.round(sample[t]).toLocaleString()}<span style="font-size:14px;color:var(--slate);font-weight:600;"> total</span></div>
@@ -3898,15 +3905,12 @@ function computeCabinetPaintPlan(p) {
   const coats = cfg.coats || 2;
   const coverage = cfg.coverageSqFtPerGal || 350;
   const t = p.tier || 'performance';
-  const NAMES = { essential: 'SW ProClassic Waterborne Enamel', performance: 'SW Emerald Urethane Trim Enamel', showcase: 'SW Emerald Urethane Trim Enamel' };
-  const URLS = {
-    essential: 'https://www.sherwin-williams.com/homeowners/products/proclassic-waterborne-interior-acrylic-enamel',
-    performance: 'https://www.sherwin-williams.com/homeowners/products/emerald-urethane-trim-enamel',
-    showcase: 'https://www.sherwin-williams.com/homeowners/products/emerald-urethane-trim-enamel'
-  };
-  const perGal = (cfg.perGal && cfg.perGal[t]) || 130.49;
-  const product = NAMES[t];
-  const url = URLS[t];
+  // One product for every job: SW Gallery Series Waterborne Topcoat
+  // (pro spray-only cabinet coating; price gated behind SW sign-in,
+  // so the list URL points at the pro products hub).
+  const perGal = (cfg.perGal && cfg.perGal.performance) || 130.99;
+  const product = 'SW Gallery Series Waterborne Topcoat';
+  const url = 'https://www.sherwin-williams.com/products/paint-coatings';
   const sheen = (cp.sheen || 'Satin').toLowerCase();
 
   const areaOf = (a) => Math.round(
@@ -3926,7 +3930,7 @@ function computeCabinetPaintPlan(p) {
   if (islandArea > 0) buckets.push({ role: 'enamel', product, perGal, url, roleLabel: 'island', sheen, colorName: (cp.island && cp.island.name) || 'color TBD', colorCode: (cp.island && cp.island.code) || '', coatArea: islandArea * coats });
   const totalFaceArea = mainArea + islandArea;
   if (totalFaceArea > 0) {
-    buckets.push({ role: 'primer', product: 'SW bonding/adhesion primer', perGal: cfg.primerPerGal || 69.99,
+    buckets.push({ role: 'primer', product: 'SW Gallery Series Waterborne Primer', perGal: cfg.primerPerGal || 69.99,
       url: '', roleLabel: 'primer', sheen: 'primer', colorName: 'White (tint to topcoat)', colorCode: '',
       coatArea: totalFaceArea * (cfg.primerCoats || 1) });
   }
@@ -8402,17 +8406,12 @@ function computeDIYComparison(proTotal) {
       return { name: names[tierKey] || 'SW Exterior Paint', perGal, tag: 'SW list price', url: urls[tierKey] || '' };
     }
     if (p.type === 'cabinet' || p.productType === 'cabinet_paint') {
-      const names = { essential: 'SW ProClassic Waterborne Enamel', performance: 'SW Emerald Urethane Trim Enamel', showcase: 'SW Emerald Urethane Trim Enamel' };
-      const urls = {
-        essential:   'https://www.sherwin-williams.com/homeowners/products/proclassic-waterborne-interior-acrylic-enamel',
-        performance: 'https://www.sherwin-williams.com/homeowners/products/emerald-urethane-trim-enamel',
-        showcase:    'https://www.sherwin-williams.com/homeowners/products/emerald-urethane-trim-enamel'
-      };
+      // One product only: Gallery Series (pro spray-only coating).
+      // `performance` is the single editable price — authoritative
+      // for every tier id a legacy quote might carry.
       const gal = (D.cabinetPaint && D.cabinetPaint.perGal) || {};
-      const fallbackGal = { essential: 106.99, performance: 130.49, showcase: 130.49 };
-      const tierKey = p.tier || 'performance';
-      const perGal = (typeof gal[tierKey] === 'number') ? gal[tierKey] : fallbackGal[tierKey];
-      return { name: names[tierKey] || 'SW Cabinet Enamel', perGal, tag: 'SW list price', url: urls[tierKey] || '' };
+      const perGal = (typeof gal.performance === 'number') ? gal.performance : 130.99;
+      return { name: 'SW Gallery Series Waterborne Topcoat', perGal, tag: 'SW list price', url: 'https://www.sherwin-williams.com/products/paint-coatings' };
     }
     if (p.type === 'interior' || p.productType === 'interior_paint') {
       const names = { essential: 'SW SuperPaint Interior', performance: 'SW Duration Home', showcase: 'SW Emerald Interior' };
@@ -14037,21 +14036,17 @@ function renderPAExteriorPaint() {
 function renderPACabinetPaint() {
   return `
     <div class="pa-section">
-      <h4 class="pa-section-title">Per-door rate by level</h4>
-      <p class="pa-note">The cabinet anchor: $ per DOOR at each level (ProClassic brushed · Emerald Urethane doors sprayed · full spray). Drawer/panel/glass rates scale with the door multiplier.</p>
-      <div class="pa-grid">
-        <div class="pa-grid-head">Piece</div>
-        <div class="pa-grid-head">ProClassic</div>
-        <div class="pa-grid-head">Emerald Ure. (spray doors)</div>
-        <div class="pa-grid-head">Full spray</div>
-        <div class="pa-grid-label">Door <small style="color:var(--slate);font-weight:500;">($ each)</small></div>
-        ${paField('rules.cabinet.tiers.essential', '1')}
+      <h4 class="pa-section-title">Door rate — one spec, everything sprayed</h4>
+      <p class="pa-note">The cabinet anchor: $ per DOOR. There are no levels on cabinets — every job is Gallery Series bonding primer + sprayed Gallery Series topcoat. This single rate is the one the engine uses.</p>
+      <div class="pa-grid pa-grid-2col">
+        <div class="pa-grid-head" style="text-align:left;">Piece</div>
+        <div class="pa-grid-head">Rate</div>
+        <div class="pa-grid-label">Door ($ each)</div>
         ${paField('rules.cabinet.tiers.performance', '1')}
-        ${paField('rules.cabinet.tiers.showcase', '1')}
       </div>
     </div>
     <div class="pa-section">
-      <h4 class="pa-section-title">Piece rates &amp; options <small style="font-weight:600;color:var(--slate);text-transform:none;letter-spacing:0;">(at Performance — they scale with the level)</small></h4>
+      <h4 class="pa-section-title">Piece rates &amp; options</h4>
       <div class="pa-grid pa-grid-2col">
         <div class="pa-grid-head" style="text-align:left;">Line item</div>
         <div class="pa-grid-head">Rate</div>
@@ -14068,17 +14063,17 @@ function renderPACabinetPaint() {
       </div>
     </div>
     <div class="pa-section">
-      <h4 class="pa-section-title">DIY paint — SW list $/gal</h4>
-      <p class="pa-note">Verified from SW.com July 2026: ProClassic Waterborne $106.99 · Emerald Urethane $130.49. Primer default $69.99 (verify at the counter).</p>
+      <h4 class="pa-section-title">DIY paint — SW Gallery Series $/gal</h4>
+      <p class="pa-note">Gallery Series Waterborne Topcoat is a PRO product — SW gates the price behind sign-in. $130.99 is the publicly referenced list price; verify at the counter. Primer = Gallery Series Waterborne Primer, default $69.99 (verify).</p>
       <div class="pa-grid">
         <div class="pa-grid-head"></div>
-        <div class="pa-grid-head">ProClassic</div>
-        <div class="pa-grid-head">Emerald Ure.</div>
-        <div class="pa-grid-head">Primer</div>
+        <div class="pa-grid-head">Gallery Topcoat</div>
+        <div class="pa-grid-head">Gallery Primer</div>
+        <div class="pa-grid-head"></div>
         <div class="pa-grid-label">$/gallon (list)</div>
-        ${paField('rules.diy.cabinetPaint.perGal.essential', '0.01')}
         ${paField('rules.diy.cabinetPaint.perGal.performance', '0.01')}
         ${paField('rules.diy.cabinetPaint.primerPerGal', '0.01')}
+        <div></div>
       </div>
     </div>`;
 }
