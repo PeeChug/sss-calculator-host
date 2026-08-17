@@ -539,6 +539,11 @@ const HOA_TIER_META = {
 
 function getTierMeta(productType, tier, projectType) {
   if (productType === 'hoa') return HOA_TIER_META[tier] || HOA_TIER_META.performance;
+  const pt = projectType || (typeof state !== 'undefined' && state.activeProject && state.activeProject.type);
+  if (productType === 'water') {
+    const meta = waterTierMetaFor(pt);
+    return meta && meta[tier];
+  }
   return TIER_META[productType] && TIER_META[productType][tier];
 }
 
@@ -627,9 +632,68 @@ const PRODUCT_FAMILY_META = {
 /* ============================================================
    TIER METADATA — enhanced value comparison
    ============================================================ */
+// WATER-BASED **DECK** LINEUP — Sherwin-Williams SuperDeck.
+//
+// Woodscapes (the standard water lineup below) is a VERTICAL-surface
+// house stain: siding, fences, log walls. It's film-forming and carries
+// no deck warranty, so on horizontal wood that holds standing water and
+// takes foot traffic it peels. Decks get the SuperDeck waterborne line,
+// which Sherwin-Williams formulates specifically for horizontal wood.
+// Resolved per-project by getTierMeta(); fences, barns, pergolas, and
+// porch ceilings keep Woodscapes.
+//
+// SW's own ladder, weakest -> strongest weathering defense:
+//   Semi-Transparent -> Semi-Solid -> Solid Color.
+const TIER_META_WATER_DECK = {
+  explain: "Water-based stains dry fast, clean up with water, and have low odor. For decks we use the Sherwin-Williams SuperDeck line, formulated for horizontal wood that takes foot traffic and standing water, so it wears instead of peeling.",
+  essential: {
+    product: 'SW SuperDeck Waterborne Semi-Transparent',
+    badge: 'Budget Friendly',
+    badgeClass: 'flag-green',
+    tagline: 'Penetrating finish that lets the grain show',
+    life: '2–3 years',
+    details: 'Sherwin-Williams SuperDeck Exterior Waterborne Semi-Transparent Stain, built specifically for horizontal wood: decks, docks, and rails. It penetrates into the boards instead of forming a surface film, so it wears away gradually rather than peeling. Iron-oxide pigments deliver real UV protection while letting the wood grain show through. Soap-and-water cleanup and low odor.',
+    pros: ['Made for decks: horizontal-rated, not a siding stain', 'Penetrates instead of filming, so it will not peel', 'Wood grain stays visible', 'Easy water cleanup, low VOC', 'Simplest finish to refresh later'],
+    cons: ['Shortest recoat cycle on high-traffic decks', 'Lightest pigment load, so the least UV defense of the three'],
+    bestFor: 'Newer decks in good shape where you want the grain to show'
+  },
+  performance: {
+    product: 'SW SuperDeck Waterborne Semi-Solid',
+    badge: 'Most Popular',
+    badgeClass: 'flag-blue',
+    tagline: 'More pigment, more protection, still no peeling',
+    life: '3–4 years',
+    details: 'Sherwin-Williams SuperDeck Exterior Waterborne Semi-Solid Color Stain. SW rates it for greater defense against weathering than the semi-transparent, with a heavier pigment load for stronger UV resistance. Still a penetrating finish made for horizontal surfaces, so it wears rather than peels, and it evens out boards that have aged unevenly while keeping some grain and texture.',
+    pros: ['The balance point for a deck: real pigment, no peeling film', 'Noticeably stronger UV defense than semi-transparent', 'Evens out weathered or patchy boards', 'Deck-rated for foot traffic and standing water', 'Free 30-day touch-up visit'],
+    cons: ['Grain shows through less than the semi-transparent', 'Costs more than the Essential tier'],
+    bestFor: 'Most decks. The durability sweet spot for South Carolina sun'
+  },
+  showcase: {
+    product: 'SW SuperDeck Waterborne Solid Color',
+    badge: 'Longest-Lasting',
+    badgeClass: 'flag-gold',
+    tagline: 'Maximum pigment and UV defense',
+    life: '4–5 years',
+    details: 'Sherwin-Williams SuperDeck Exterior Waterborne Solid Color Deck Stain, the heaviest pigment load in the waterborne deck line and the strongest UV and moisture defense we can put on horizontal wood. Because it is engineered for decks rather than siding, it stands up to foot traffic and standing water. Full opaque color completely hides greyed, weathered, or mismatched boards.',
+    pros: ['Strongest UV and moisture protection in the waterborne deck line', 'Completely hides weathered or mismatched boards', 'Widest color range', 'Deck-rated for horizontal wear', 'Free 30-day touch-up visit'],
+    cons: ['Opaque, so the wood grain no longer shows', 'Highest up-front cost', 'Needs the most thorough prep to bond properly'],
+    bestFor: 'Older or previously solid-stained decks that need maximum protection and one uniform color'
+  }
+};
+
+// Which project types get the horizontal-wood (SuperDeck) water lineup.
+// Decks only — fences, barns, pergolas, and porch ceilings are
+// vertical or protected, where Woodscapes is the correct product.
+function usesDeckWaterLine(projectType) {
+  return projectType === 'deck';
+}
+function waterTierMetaFor(projectType) {
+  return usesDeckWaterLine(projectType) ? TIER_META_WATER_DECK : TIER_META.water;
+}
+
 const TIER_META = {
   water: {
-    explain: "Water-based stains dry fast, clean up with water, and have lower odor. Best for fences, decks, and most exterior wood.",
+    explain: "Water-based stains dry fast, clean up with water, and have lower odor. Best for fences, siding, and vertical exterior wood.",
     essential: {
       product: 'SW Woodscapes Solid Color Exterior Stain',
       badge: 'Budget Friendly',
@@ -3967,6 +4031,11 @@ function renderProductStage() {
   const order = ['water', 'oil', 'hoa'];
   __doc.getElementById('productChoiceCards').innerHTML = order.map(prod => {
     const meta = PRODUCT_FAMILY_META[prod];
+    // On decks the water family is SuperDeck, not the Woodscapes house
+    // stain — say the right product name on the card.
+    const famSummary = (prod === 'water' && usesDeckWaterLine(state.activeProject.type))
+      ? 'Fast-drying, low odor, easy water cleanup. SW SuperDeck line, formulated for horizontal deck boards. Best when the wood was previously stained with water-based.'
+      : meta.summary;
     const isSelected = state.activeProject.productType === prod;
     const isReco = (prod === recommended) && (prod !== 'hoa');
     return `
@@ -3977,7 +4046,7 @@ function renderProductStage() {
           <div class="icon">${meta.icon}</div>
           <div class="h">${meta.heading}</div>
           <!-- Preview line — always visible, even on collapsed mobile. -->
-          <div class="d">${meta.summary}</div>
+          <div class="d">${famSummary}</div>
           <div class="cust-mc">
             <ul class="prod-pros">${meta.pros.map(p => `<li>${p}</li>`).join('')}</ul>
             <ul class="prod-cons">${meta.cons.map(c => `<li>${c}</li>`).join('')}</ul>
@@ -4103,8 +4172,13 @@ function renderTierCards() {
   // Midpoint years for cost-per-year math — matches the life ranges shown on each card.
   // Water:  Essential ~4.5y, Performance ~6y, Showcase ~8y
   // Oil:    Essential ~2y, Performance ~3.5y, Showcase ~4.5y
+  const isDeckWater = product === 'water' && usesDeckWaterLine(proj);
+  // Deck water lives on horizontal wood: foot traffic, standing water,
+  // full sun. Quoting fence lifespans there overstates cost-per-year.
   const lifespanYears = product === 'water'
-    ? { essential: 4.5, performance: 6, showcase: 8 }
+    ? (isDeckWater
+        ? { essential: 2.5, performance: 3.5, showcase: 4.5 }
+        : { essential: 4.5, performance: 6, showcase: 8 })
     : { essential: 3.5, performance: 5, showcase: 7 };
 
   // SW oil recommendation: the Exotic Timber Oil (essential) is the
@@ -4172,6 +4246,30 @@ function renderTierCards() {
         '✓ Longest manufacturer warranty (up to 15 years on fences)',
         '✓ Custom-tintable to 100+ Sherwin-Williams colors',
         '✓ Siding &amp; hardware protection during application',
+        '✓ Free 30-day touch-up visit',
+        '✓ Fully insured &amp; licensed work'
+      ];
+    } else if (isDeckWater && t === 'essential') {
+      included = [
+        '✓ <strong>SW SuperDeck Waterborne Semi-Transparent</strong>: deck-rated, penetrating',
+        '✓ Formulated for horizontal wood, so it wears instead of peeling',
+        '✓ Plants, siding &amp; hardware protection during application',
+        '✓ Full job-site cleanup',
+        '✓ Fully insured &amp; licensed work'
+      ];
+    } else if (isDeckWater && t === 'performance') {
+      included = [
+        '✓ <strong>SW SuperDeck Waterborne Semi-Solid</strong>: heavier pigment, stronger UV defense',
+        '✓ Rated by Sherwin-Williams above semi-transparent for weathering',
+        '✓ Plants, siding &amp; hardware protection during application',
+        '✓ Free 30-day touch-up visit',
+        '✓ Fully insured &amp; licensed work'
+      ];
+    } else if (isDeckWater && t === 'showcase') {
+      included = [
+        '✓ <strong>SW SuperDeck Waterborne Solid Color</strong>: the heaviest pigment load we apply',
+        '✓ Strongest UV &amp; moisture defense in the waterborne deck line',
+        '✓ Hides greyed, weathered, or mismatched boards completely',
         '✓ Free 30-day touch-up visit',
         '✓ Fully insured &amp; licensed work'
       ];
@@ -4388,13 +4486,20 @@ function renderColorStage() {
   if (shouldSkipColorStage()) { showStage(8); return; }
   const libKey = getColorLibrary(state.activeProject.productType, state.activeProject.tier);
   const lib = COLORS[libKey];
-  __doc.getElementById('colorTitle').textContent = `Pick a color — ${lib.line}`;
+  // Water-based decks apply SuperDeck, so the color step must say so —
+  // the swatch palette is the same SW solid-color range (SW tints the
+  // SuperDeck base to it), only the product name differs.
+  const deckWaterColors = state.activeProject.productType === 'water' && usesDeckWaterLine(state.activeProject.type);
+  __doc.getElementById('colorTitle').textContent = `Pick a color — ${deckWaterColors ? 'SW SuperDeck (Water-Based)' : lib.line}`;
 
   // Flatten to count + handle grouped vs flat color libraries
   const allColors = lib.grouped
     ? lib.groups.flatMap(g => g.colors)
     : lib.colors;
-  __doc.getElementById('colorLead').innerHTML = `${allColors.length} colors available. ${lib.note || ''}`;
+  const libNote = deckWaterColors
+    ? 'Sherwin-Williams tints the SuperDeck deck base to this solid-color range. Hex values are approximations. Confirm against a physical sample.'
+    : (lib.note || '');
+  __doc.getElementById('colorLead').innerHTML = `${allColors.length} colors available. ${libNote}`;
 
   const renderSwatch = (c) => {
     const isSelected = state.activeProject.selectedColor && state.activeProject.selectedColor.name === c.name;
@@ -5462,6 +5567,11 @@ function computeDIYComparison(proTotal) {
   // products, so every tag is "SW List Price" and links to sherwin-
   // williams.com.
   const STAIN_LIST = {
+    // DECK water tiers use the SuperDeck line (horizontal-rated) —
+    // verified SW.com list prices, Aug 2026.
+    'deckwater-essential':   { name: 'SW SuperDeck Waterborne Semi-Transparent', perGal: 84.49, tag: 'SW List Price', url: 'https://www.sherwin-williams.com/homeowners/products/superdeck-exterior-waterborne-semi-transparent-stain' },
+    'deckwater-performance': { name: 'SW SuperDeck Waterborne Semi-Solid',       perGal: 84.49, tag: 'SW List Price', url: 'https://www.sherwin-williams.com/homeowners/products/superdeck-exterior-waterborne-semi-solid-color-stain' },
+    'deckwater-showcase':    { name: 'SW SuperDeck Waterborne Solid Color',      perGal: 81.49, tag: 'SW List Price', url: 'https://www.sherwin-williams.com/homeowners/products/superdeck-exterior-waterborne-solid-color-deck-stain' },
     'water-essential':   { name: 'SW Woodscapes Solid Color',            perGal: 84.99,  tag: 'SW List Price', url: 'https://www.sherwin-williams.com/homeowners/products/woodscapes-acrylic-solid-color-exterior-house-stain-pl-9519726' },
     'water-performance': { name: 'SW Woodscapes Rain Refresh',           perGal: 106.49, tag: 'SW List Price', url: 'https://www.sherwin-williams.com/homeowners/products/woodscapes-rain-refresh-exterior-house-stain-with-selfcleaning-technology' },
     'water-showcase':    { name: 'SW Acrylic Alkyd Stain',               perGal: 81.49,  tag: 'SW List Price', url: 'https://www.sherwin-williams.com/homeowners/products/superdeck-9600-series-acrylicalkyd-solid-color-stain' },
@@ -5470,7 +5580,10 @@ function computeDIYComparison(proTotal) {
     'oil-showcase':      { name: 'SuperDeck Solid Color (Acrylic-Alkyd)', perGal: 81.49, tag: 'SW List Price', url: 'https://www.sherwin-williams.com/homeowners/products/superdeck-9600-series-acrylicalkyd-solid-color-stain' }
   };
   function stainListFor(p) {
-    const e = STAIN_LIST[`${p.productType}-${p.tier}`];
+    // Water-based DECKS run the SuperDeck line, not Woodscapes — the
+    // DIY comparison has to quote the product we'd actually apply.
+    const fam = (p.productType === 'water' && usesDeckWaterLine(p.type)) ? 'deckwater' : p.productType;
+    const e = STAIN_LIST[`${fam}-${p.tier}`];
     if (e) return e;
     return { name: 'Stain', perGal: pailCostFor(p) / 5, tag: '', url: '' };
   }
@@ -7150,6 +7263,17 @@ function buildJobberLineItem(p, idx, total) {
     'showcase-oil':      'SuperDeck Solid Color Stain (Acrylic-Alkyd)',
     'showcase-water':    'SW Acrylic Alkyd Stain'
   };
+  // Water-based DECKS get the SuperDeck line — Woodscapes is a
+  // vertical house stain and would peel on horizontal boards, so the
+  // quote must name what we actually apply.
+  if (usesDeckWaterLine(p.type)) {
+    Object.assign(STAIN_PRODUCT_BY_TIER, {
+      'essential-water':   'SW SuperDeck Exterior Waterborne Semi-Transparent Stain',
+      'performance-water': 'SW SuperDeck Exterior Waterborne Semi-Solid Color Stain',
+      'showcase-water':    'SW SuperDeck Exterior Waterborne Solid Color Deck Stain'
+    });
+  }
+
   const wKey = `${p.tier}-${p.productType}`;
   if (STAIN_PRODUCT_BY_TIER[wKey]) lines.push(kv('Stain', STAIN_PRODUCT_BY_TIER[wKey]));
 
@@ -7340,6 +7464,17 @@ function buildJobberLineItem(p, idx, total) {
     'essential-oil':     'Budget tier — pigmented tri-oil, no extended manufacturer color warranty',
     'essential-water':   '3-year manufacturer warranty on color & sheen (SW Woodscapes Solid)'
   };
+  // Deck water tiers carry the SuperDeck line's terms, not Woodscapes'.
+  // Deliberately no invented year counts — SW publishes deck warranty
+  // terms per product and we don't restate numbers we haven't verified.
+  if (usesDeckWaterLine(p.type)) {
+    Object.assign(WARRANTY_BY_TIER, {
+      'essential-water':   'Manufacturer warranty per Sherwin-Williams (SuperDeck waterborne semi-transparent) + our free 30-day touch-up visit',
+      'performance-water': 'Manufacturer warranty per Sherwin-Williams (SuperDeck waterborne semi-solid) + our free 30-day touch-up visit',
+      'showcase-water':    'Manufacturer warranty per Sherwin-Williams (SuperDeck waterborne solid color) + our free 30-day touch-up visit'
+    });
+  }
+
   if (WARRANTY_BY_TIER[wKey]) {
     lines.push('');
     lines.push(kv('Warranty', WARRANTY_BY_TIER[wKey]));
