@@ -6,7 +6,7 @@ Apply these files on **`akg696/websites`** inside `superior-stain-solutions/`. T
 
 - New URL: `/employee-portal/` (trailing slash, same as the rest of the Astro site)
 - Footer: one Company-column link, same style as Contact
-- Page loads the **existing** employee custom element from jsDelivr at commit `2d491ea71c4d9e1d4cdf0d4e8492a1a6f19c7bc8`
+- Page loads **`sss-calculator-pages.js`** first-party from `/js/sss-calculator-pages.js` (a copy of the live employee calc). Live Wix keeps `sss-calculator.js`.
 - Pages Function proxies `/_functions/*` to live Wix Velo so PIN login and quotes keep working
 - `GET /_functions/jobberStartAuth` 302s to Wix so Jobber OAuth stays on www
 
@@ -22,8 +22,11 @@ Apply these files on **`akg696/websites`** inside `superior-stain-solutions/`. T
 | Drop-in path | Destination in `superior-stain-solutions/` |
 |---|---|
 | `src/pages/employee-portal.astro` | `src/pages/employee-portal.astro` |
+| repo root `sss-calculator-pages.js` | `public/js/sss-calculator-pages.js` |
 | `functions/_functions/[name].ts` | `functions/_functions/[name].ts` (keep the brackets) |
 | `functions/api/[[path]].ts` | Only if you must deploy Functions without the original `lead.ts` / `google-rating.ts`. **Do not** add this if those files are already in the websites repo. |
+
+Edit `sss-calculator-pages.js` to improve the new site. Never edit `sss-calculator.js` (Wix /employee-estimator-v2). PIN and quotes on the draft still hit live Wix `/_functions` until a backend fork exists. UI-only changes are safe; do not test quote/Jobber writes against production data.
 
 Do not overwrite `functions/api/lead.ts` or `functions/api/google-rating.ts` when those exist.
 
@@ -110,4 +113,4 @@ Residual: photo upload and some Jobber buttons send cookies only, not Bearer. Th
 
 ## Why not iframe Wix
 
-Wix wraps the calc in a custom-element iframe. Nesting that inside Pages would bring back the iOS scroll bug this Shadow DOM build was made to avoid. Proxy plus first-party `<sss-calculator>` keeps the live JS file and the live backend without nesting Wix chrome.
+Wix wraps the calc in a custom-element iframe. Nesting that inside Pages would bring back the iOS scroll bug this Shadow DOM build was made to avoid. Proxy plus first-party `<sss-calculator>` from `sss-calculator-pages.js` keeps the live Wix JS file untouched and avoids nesting Wix chrome.

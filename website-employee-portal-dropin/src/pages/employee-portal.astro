@@ -2,8 +2,9 @@
 import Base from '../layouts/Base.astro';
 
 /**
- * Internal crew calculator. Loads the SAME pinned sss-calculator.js
- * employees already use on Wix. Do not edit that file from this page.
+ * Internal crew calculator on the Cloudflare draft.
+ * Loads sss-calculator-pages.js (a copy). Do not point this at
+ * sss-calculator.js. That file stays on Wix /employee-estimator-v2.
  *
  * BLOCKER: copy Base props from font-samples.astro exactly. If that
  * page uses robots="noindex, nofollow" instead of noindex, switch it.
@@ -20,8 +21,8 @@ import Base from '../layouts/Base.astro';
       <p class="eyebrow">Internal</p>
       <h1>Employee portal</h1>
       <p class="lede">
-        Crew calculator. Sign in with your PIN. Same tool as the live estimator.
-        Quotes still save to Jobber the way they do today.
+        Draft copy of the crew calculator on the new site. Sign in with your PIN.
+        The live estimator on www is unchanged.
       </p>
     </div>
   </section>
@@ -31,10 +32,7 @@ import Base from '../layouts/Base.astro';
       <sss-calculator></sss-calculator>
     </div>
   </section>
-  <script
-    is:inline
-    src="https://cdn.jsdelivr.net/gh/PeeChug/sss-calculator-host@2d491ea71c4d9e1d4cdf0d4e8492a1a6f19c7bc8/sss-calculator.js"
-  ></script>
+  <script is:inline src="/js/sss-calculator-pages.js"></script>
 </Base>
 
 <style>
