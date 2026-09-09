@@ -23,8 +23,13 @@ Apply these files on **`akg696/websites`** inside `superior-stain-solutions/`. T
 |---|---|
 | `src/pages/employee-portal.astro` | `src/pages/employee-portal.astro` |
 | `functions/_functions/[name].ts` | `functions/_functions/[name].ts` (keep the brackets) |
+| `functions/api/[[path]].ts` | Only if you must deploy Functions without the original `lead.ts` / `google-rating.ts`. **Do not** add this if those files are already in the websites repo. |
 
-Do not overwrite `functions/api/lead.ts`.
+Do not overwrite `functions/api/lead.ts` or `functions/api/google-rating.ts` when those exist.
+
+## Pages direct-upload fallback (no Origin repo)
+
+The websites repo is on Cursor Origin, not GitHub. If you cannot clone it, do **not** deploy a static-only upload (that would wipe `/api/lead`). Mirror the current hashed production files, add the portal page + footer + `_functions` proxy, and keep `/api/*` working by proxying to that same hash (`functions/api/[[path]].ts` in this drop-in). Pin the upstream hash in that file before deploy. Rollback target: the hashed deployment you mirrored.
 
 ## Footer
 
