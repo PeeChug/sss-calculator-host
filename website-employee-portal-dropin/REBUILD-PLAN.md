@@ -1,6 +1,6 @@
 # Employee calc Pages rebuild (research + action plan)
 
-Status: research only. Do not implement until Adrian signs off.
+Status: implemented on Pages (`sss-calculator-pages.js` + native Functions + draft D1/R2 + Chalk custom quotes). Live Wix and `sss-calculator.js` stay frozen.
 
 Hard rule: live Wix and `sss-calculator.js` never change. This plan is only for `sss-calculator-pages.js` and new Cloudflare resources that are not production Jobber / Velo / EmployeeQuotes.
 
