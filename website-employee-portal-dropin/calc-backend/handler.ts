@@ -157,6 +157,25 @@ function chalkAdminQuoteUrl(env: CalcEnv, chalkId: string): string {
   return base + '/quotes/' + encodeURIComponent(chalkId);
 }
 
+function officeQuoteUrlFromStored(row: { chalk_quote_id?: string | null; chalk_web_uri?: string | null }): string {
+  const id = String(row.chalk_quote_id || '').trim();
+  if (!id) return String(row.chalk_web_uri || '');
+  const stored = String(row.chalk_web_uri || '');
+  if (stored && !stored.includes('hub.chalkcrm.com') && /\/quotes\//.test(stored)) return stored;
+  return 'https://app.chalkcrm.com/quotes/' + id;
+}
+
+async function resolveChalkOfficeQuoteUrl(env: CalcEnv, chalkId: string): Promise<string> {
+  const fallback = chalkAdminQuoteUrl(env, chalkId);
+  const linked = await chalkJson(env, '/api/quotes/' + encodeURIComponent(chalkId) + '/link', {
+    method: 'POST',
+    body: '{}',
+  });
+  const app = String(linked.data?.app_url || '').trim();
+  if (linked.status < 400 && app && !app.includes('hub.chalkcrm.com')) return app;
+  return fallback;
+}
+
 function buildQuoteScopeText(payload: any): string {
   const typed = String(payload?.notes || '').trim();
   const parts: string[] = [];
@@ -193,11 +212,15 @@ function collectPhotoRefs(payload: any): { url: string; name: string }[] {
 
 function mapChalkClientNode(raw: any, fallback?: any): Json {
   const data = raw && typeof raw === 'object' ? raw : {};
-  const client =
-    data.client && typeof data.client === 'object' ? { ...data, ...data.client } : data;
-  const emails = Array.isArray(data.emails) ? data.emails : [];
-  const phones = Array.isArray(data.phones) ? data.phones : [];
-  const properties = Array.isArray(data.properties) ? data.properties : [];
+  const nested = data.client && typeof data.client === 'object' ? data.client : {};
+  const client = { ...(fallback && typeof fallback === 'object' ? fallback : {}), ...data, ...nested };
+  const emails = Array.isArray(data.emails) ? data.emails : Array.isArray(client.emails) ? client.emails : [];
+  const phones = Array.isArray(data.phones) ? data.phones : Array.isArray(client.phones) ? client.phones : [];
+  const properties = Array.isArray(data.properties)
+    ? data.properties
+    : Array.isArray(client.properties)
+      ? client.properties
+      : [];
   const primaryEmail =
     client.primary_email ||
     client.email ||
@@ -213,43 +236,28 @@ function mapChalkClientNode(raw: any, fallback?: any): Json {
   const prop =
     properties.find((p: any) => p && (p.is_billing || p.is_primary)) || properties[0] || {};
   const id = String(client.id || fallback?.id || '').trim();
+  let firstName = String(client.first_name || client.firstName || '').trim();
+  let lastName = String(client.last_name || client.lastName || '').trim();
+  if (!firstName && !lastName) {
+    const split = splitName(String(client.name || client.display_name || fallback?.name || ''));
+    firstName = split.first === 'Customer' && !client.name ? '' : split.first;
+    lastName = split.last;
+  }
   return {
     id,
     propertyId: String(prop.id || client.primary_property_id || client.property_id || '').trim(),
     companyName: client.company_name || client.companyName || '',
-    firstName: client.first_name || client.firstName || '',
-    lastName: client.last_name || client.lastName || '',
-    displayName: client.display_name || fallback?.title || '',
+    firstName,
+    lastName,
+    displayName: client.display_name || client.name || fallback?.title || fallback?.name || '',
     email: primaryEmail,
     phone: primaryPhone,
-    street1: prop.street1 || client.street1 || '',
+    street1: prop.street1 || client.street1 || client.street || '',
     street2: prop.street2 || client.street2 || '',
     city: prop.city || client.city || '',
     province: prop.province || client.province || '',
     postalCode: prop.postal_code || client.postal_code || client.postalCode || '',
   };
-}
-
-function clientMatchesQuery(node: Json, q: string): boolean {
-  const needle = q.toLowerCase().replace(/\s+/g, ' ').trim();
-  if (!needle) return false;
-  const digits = needle.replace(/\D/g, '');
-  const hay = [
-    node.displayName,
-    node.firstName,
-    node.lastName,
-    node.companyName,
-    node.email,
-    node.phone,
-    node.street1,
-    node.city,
-    node.postalCode,
-  ]
-    .map((v) => String(v || '').toLowerCase())
-    .join(' ');
-  if (hay.includes(needle)) return true;
-  if (digits.length >= 3 && String(node.phone || '').replace(/\D/g, '').includes(digits)) return true;
-  return false;
 }
 
 type RepRow = {
@@ -396,9 +404,7 @@ function dashboardItem(row: {
     jobberJobNum: payload.jobberJobNum || '',
     jobberQuoteId: row.chalk_quote_id || '',
     jobberQuoteNumber: row.chalk_quote_number || '',
-    jobberWebUri: row.chalk_quote_id
-      ? 'https://app.chalkcrm.com/quotes/' + row.chalk_quote_id
-      : row.chalk_web_uri || '',
+    jobberWebUri: officeQuoteUrlFromStored(row),
     jobberStatus: row.chalk_quote_id ? 'pushed' : '',
     projects,
     totals,
@@ -685,6 +691,16 @@ async function hydrateChalkClient(env: CalcEnv, id: string, fallback?: any): Pro
   return mapChalkClientNode(data, fallback);
 }
 
+async function ingestClientHits(env: CalcEnv, data: unknown, take: (node: Json | null) => void) {
+  for (const row of chalkList(data).slice(0, 8)) {
+    if ((row?.kind || row?.type) && row.kind !== 'client' && row.type !== 'client') continue;
+    const inner = row?.client && typeof row.client === 'object' ? { ...row, ...row.client } : row;
+    const id = String(inner?.id || '').trim();
+    if (id) take(await hydrateChalkClient(env, id, inner));
+    else take(mapChalkClientNode(inner));
+  }
+}
+
 async function lookupChalkClients(env: CalcEnv, q: string): Promise<Json[]> {
   const encoded = encodeURIComponent(q);
   const found = new Map<string, Json>();
@@ -695,46 +711,18 @@ async function lookupChalkClients(env: CalcEnv, q: string): Promise<Json[]> {
     if (!found.has(id)) found.set(id, node);
   };
 
-  // Chalk's /api/clients/lookup currently returns `{ matches: [] }` for
-  // real names/phones. /api/search?kind=client is the working find.
-  const search = await chalkJson(env, '/api/search?q=' + encoded + '&kind=client');
-  if (search.status < 400) {
-    for (const hit of chalkList(search.data).slice(0, 8)) {
-      const id = String(hit?.id || '').trim();
-      if (!id || (hit.kind && hit.kind !== 'client' && hit.type !== 'client')) continue;
-      take(await hydrateChalkClient(env, id, hit));
-    }
-  }
-
-  if (!found.size) {
-    const dash = await chalkJson(env, '/api/dashboard/search?q=' + encoded);
-    if (dash.status < 400) {
-      for (const hit of chalkList(dash.data)) {
-        if ((hit?.type || hit?.kind) && hit.type !== 'client' && hit.kind !== 'client') continue;
-        const id = String(hit?.id || '').trim();
-        if (id) take(await hydrateChalkClient(env, id, hit));
-      }
-    }
-  }
-
-  if (!found.size) {
-    const list = await chalkJson(env, '/api/clients');
-    if (list.status < 400) {
-      for (const row of chalkList(list.data)) {
-        const node = mapChalkClientNode(row);
-        if (clientMatchesQuery(node, q)) take(node);
-      }
-    }
-  }
-
+  // Documented find: name, company, email, digit-stripped phone (4+), street/city/zip.
   const lookup = await chalkJson(env, '/api/clients/lookup?q=' + encoded);
-  if (lookup.status < 400) {
-    for (const row of chalkList(lookup.data).slice(0, 8)) {
-      const inner = row?.client && typeof row.client === 'object' ? { ...row, ...row.client } : row;
-      const id = String(inner?.id || '').trim();
-      if (id) take(await hydrateChalkClient(env, id, inner));
-      else take(mapChalkClientNode(inner));
-    }
+  if (lookup.status < 400) await ingestClientHits(env, lookup.data, take);
+
+  if (!found.size) {
+    const list = await chalkJson(env, '/api/clients?q=' + encoded);
+    if (list.status < 400) await ingestClientHits(env, list.data, take);
+  }
+
+  if (!found.size) {
+    const search = await chalkJson(env, '/api/search?q=' + encoded + '&kind=client');
+    if (search.status < 400) await ingestClientHits(env, search.data, take);
   }
 
   return Array.from(found.values()).slice(0, 8);
@@ -774,6 +762,8 @@ async function attachQuotePhotos(
         bytes = await fetched.arrayBuffer();
         contentType = fetched.headers.get('content-type') || contentType;
       }
+      // PUT /api/files: entity_type + entity_id + optional filename in the
+      // query string. Body is raw bytes (not JSON). Needs the files scope.
       const params = new URLSearchParams({
         entity_type: 'quote',
         entity_id: chalkId,
@@ -797,6 +787,8 @@ async function attachQuotePhotos(
 }
 
 async function postQuoteNote(env: CalcEnv, chalkId: string, body: string): Promise<void> {
+  // Line-item description is the printed quote line, not an office note.
+  // Office notes are POST /api/notes with `body` (or `message`).
   const text = String(body || '').trim();
   if (!text) return;
   await chalkJson(env, '/api/notes', {
@@ -942,7 +934,7 @@ async function handleChalk(
     const row = await env.CALC_DB.prepare('SELECT * FROM quotes WHERE id = ?').bind(quoteRowId).first<any>();
     if (!row) return json({ ok: false, error: 'quote_not_found' });
     if (row.chalk_quote_id && !body.force) {
-      const adminUrl = chalkAdminQuoteUrl(env, String(row.chalk_quote_id));
+      const adminUrl = await resolveChalkOfficeQuoteUrl(env, String(row.chalk_quote_id));
       return json({
         ok: true,
         alreadyPushed: true,
@@ -1039,7 +1031,7 @@ async function handleChalk(
     const chalkNumber = createdQ.number;
     await postQuoteNote(env, chalkId, scopeText);
     const attachments = await attachQuotePhotos(env, _request, chalkId, payload);
-    const web = chalkAdminQuoteUrl(env, chalkId);
+    const web = await resolveChalkOfficeQuoteUrl(env, chalkId);
     await env.CALC_DB.prepare(
       'UPDATE quotes SET chalk_quote_id = ?, chalk_quote_number = ?, chalk_web_uri = ?, updated_at = ? WHERE id = ?',
     )
@@ -1084,7 +1076,7 @@ async function handleChalk(
           email: false,
           sms: true,
           jobberQuoteId: chalkId,
-          jobberWebUri: chalkAdminQuoteUrl(env, chalkId),
+          jobberWebUri: await resolveChalkOfficeQuoteUrl(env, chalkId),
           warning: sent.data?.error || 'Email was skipped.',
         });
       }
@@ -1102,7 +1094,7 @@ async function handleChalk(
       email: true,
       sms: true,
       jobberQuoteId: chalkId,
-      jobberWebUri: chalkAdminQuoteUrl(env, chalkId),
+      jobberWebUri: await resolveChalkOfficeQuoteUrl(env, chalkId),
     });
   }
 
