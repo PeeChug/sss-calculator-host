@@ -1,0 +1,76 @@
+---
+import Base from '../layouts/Base.astro';
+
+/**
+ * Internal crew calculator. Loads the SAME pinned sss-calculator.js
+ * employees already use on Wix. Do not edit that file from this page.
+ *
+ * BLOCKER: copy Base props from font-samples.astro exactly. If that
+ * page uses robots="noindex, nofollow" instead of noindex, switch it.
+ */
+---
+
+<Base
+  title="Employee portal"
+  description="Internal crew calculator. Sign in with your PIN."
+  noindex
+>
+  <section class="portal-intro">
+    <div class="wrap">
+      <p class="eyebrow">Internal</p>
+      <h1>Employee portal</h1>
+      <p class="lede">
+        Crew calculator. Sign in with your PIN. Same tool as the live estimator.
+        Quotes still save to Jobber the way they do today.
+      </p>
+    </div>
+  </section>
+
+  <section class="portal-calc" aria-label="Crew calculator">
+    <div class="portal-calc-in">
+      <sss-calculator></sss-calculator>
+    </div>
+  </section>
+  <script
+    is:inline
+    src="https://cdn.jsdelivr.net/gh/PeeChug/sss-calculator-host@2d491ea71c4d9e1d4cdf0d4e8492a1a6f19c7bc8/sss-calculator.js"
+  ></script>
+</Base>
+
+<style>
+  .portal-intro {
+    background: var(--linen, #f7f5f1);
+    padding: 1.75rem 0 1.25rem;
+  }
+  .portal-intro h1 {
+    font-family: var(--font-display, inherit);
+    font-weight: 600;
+    font-size: clamp(1.6rem, 3vw, 2.1rem);
+    margin: 0 0 0.5rem;
+  }
+  .portal-intro .lede {
+    max-width: 52ch;
+    margin: 0;
+    color: var(--slate, #5a6378);
+  }
+  .portal-intro .eyebrow {
+    margin: 0 0 0.35rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--slate, #5a6378);
+  }
+  .portal-calc {
+    background: #f7f5f1;
+    padding: 0 0 3rem;
+  }
+  .portal-calc-in {
+    width: min(1120px, calc(100% - 1.5rem));
+    margin: 0 auto;
+  }
+  .portal-calc-in :global(sss-calculator) {
+    display: block;
+    width: 100%;
+    min-height: 80vh;
+  }
+</style>
