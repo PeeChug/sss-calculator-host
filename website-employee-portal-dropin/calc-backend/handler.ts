@@ -595,7 +595,7 @@ async function lookupChalkClients(env: CalcEnv, q: string): Promise<any[]> {
   return [];
 }
 
-function buildQuoteLineItems(payload: any): { line_items: Json[]; sentLineItems: Json[]; bundle: number } {
+export function buildQuoteLineItems(payload: any): { line_items: Json[]; sentLineItems: Json[]; bundle: number } {
   // Custom lines only: calc dollars in unit_price_cents. Never set product_id.
   const projects = Array.isArray(payload?.projects) ? payload.projects : [];
   const bundle = Number(payload?.totals?.bundleDiscount || 0);
