@@ -146,10 +146,110 @@ function chalkList(data: unknown): any[] {
   if (Array.isArray(data)) return data;
   if (typeof data !== 'object') return [];
   const obj = data as Record<string, unknown>;
-  for (const k of ['matches', 'clients', 'nodes', 'items', 'data']) {
+  for (const k of ['matches', 'clients', 'nodes', 'items', 'data', 'hits', 'results']) {
     if (Array.isArray(obj[k])) return obj[k] as any[];
   }
   return [];
+}
+
+function chalkAdminQuoteUrl(env: CalcEnv, chalkId: string): string {
+  const base = (env.CHALK_API_BASE || CHALK_DEFAULT).replace(/\/$/, '');
+  return base + '/quotes/' + encodeURIComponent(chalkId);
+}
+
+function buildQuoteScopeText(payload: any): string {
+  const typed = String(payload?.notes || '').trim();
+  const parts: string[] = [];
+  for (const p of Array.isArray(payload?.projects) ? payload.projects : []) {
+    const name = String(p?._jobberName || p?.type || '').trim();
+    const desc = String(p?._jobberDescription || '').trim();
+    if (!name && !desc) continue;
+    parts.push([name, desc].filter(Boolean).join('\n'));
+  }
+  const scope = parts.join('\n\n').trim();
+  if (typed && scope && typed !== scope) return typed + '\n\n' + scope;
+  return typed || scope;
+}
+
+function collectPhotoRefs(payload: any): { url: string; name: string }[] {
+  const out: { url: string; name: string }[] = [];
+  const seen = new Set<string>();
+  const push = (url: unknown, name?: unknown) => {
+    const u = String(url || '').trim();
+    if (!u || seen.has(u)) return;
+    seen.add(u);
+    const rawName = String(name || '').trim() || u.split('/').pop() || 'photo.jpg';
+    out.push({ url: u, name: rawName.replace(/[^\w.\-]+/g, '_') });
+  };
+  for (const p of Array.isArray(payload?.projects) ? payload.projects : []) {
+    for (const ph of p?.referencePhotos || []) {
+      if (typeof ph === 'string') push(ph);
+      else if (ph && typeof ph === 'object') push(ph.url, ph.name);
+    }
+    for (const url of p?._jobberReferencePhotoUrls || []) push(url);
+  }
+  return out;
+}
+
+function mapChalkClientNode(raw: any, fallback?: any): Json {
+  const data = raw && typeof raw === 'object' ? raw : {};
+  const client =
+    data.client && typeof data.client === 'object' ? { ...data, ...data.client } : data;
+  const emails = Array.isArray(data.emails) ? data.emails : [];
+  const phones = Array.isArray(data.phones) ? data.phones : [];
+  const properties = Array.isArray(data.properties) ? data.properties : [];
+  const primaryEmail =
+    client.primary_email ||
+    client.email ||
+    emails.find((e: any) => e && (e.is_primary || e.primary))?.address ||
+    emails[0]?.address ||
+    '';
+  const primaryPhone =
+    client.primary_phone ||
+    client.phone ||
+    phones.find((p: any) => p && (p.is_primary || p.primary))?.number ||
+    phones[0]?.number ||
+    '';
+  const prop =
+    properties.find((p: any) => p && (p.is_billing || p.is_primary)) || properties[0] || {};
+  const id = String(client.id || fallback?.id || '').trim();
+  return {
+    id,
+    propertyId: String(prop.id || client.primary_property_id || client.property_id || '').trim(),
+    companyName: client.company_name || client.companyName || '',
+    firstName: client.first_name || client.firstName || '',
+    lastName: client.last_name || client.lastName || '',
+    displayName: client.display_name || fallback?.title || '',
+    email: primaryEmail,
+    phone: primaryPhone,
+    street1: prop.street1 || client.street1 || '',
+    street2: prop.street2 || client.street2 || '',
+    city: prop.city || client.city || '',
+    province: prop.province || client.province || '',
+    postalCode: prop.postal_code || client.postal_code || client.postalCode || '',
+  };
+}
+
+function clientMatchesQuery(node: Json, q: string): boolean {
+  const needle = q.toLowerCase().replace(/\s+/g, ' ').trim();
+  if (!needle) return false;
+  const digits = needle.replace(/\D/g, '');
+  const hay = [
+    node.displayName,
+    node.firstName,
+    node.lastName,
+    node.companyName,
+    node.email,
+    node.phone,
+    node.street1,
+    node.city,
+    node.postalCode,
+  ]
+    .map((v) => String(v || '').toLowerCase())
+    .join(' ');
+  if (hay.includes(needle)) return true;
+  if (digits.length >= 3 && String(node.phone || '').replace(/\D/g, '').includes(digits)) return true;
+  return false;
 }
 
 type RepRow = {
@@ -296,7 +396,9 @@ function dashboardItem(row: {
     jobberJobNum: payload.jobberJobNum || '',
     jobberQuoteId: row.chalk_quote_id || '',
     jobberQuoteNumber: row.chalk_quote_number || '',
-    jobberWebUri: row.chalk_web_uri || '',
+    jobberWebUri: row.chalk_quote_id
+      ? 'https://app.chalkcrm.com/quotes/' + row.chalk_quote_id
+      : row.chalk_web_uri || '',
     jobberStatus: row.chalk_quote_id ? 'pushed' : '',
     projects,
     totals,
@@ -576,24 +678,136 @@ async function handlePhoto(env: CalcEnv, body: Json, request: Request, rep: RepR
   return json({ ok: true, url });
 }
 
-async function lookupChalkClients(env: CalcEnv, q: string): Promise<any[]> {
+async function hydrateChalkClient(env: CalcEnv, id: string, fallback?: any): Promise<Json | null> {
+  if (!id) return null;
+  const { status, data } = await chalkJson(env, '/api/clients/' + encodeURIComponent(id));
+  if (status >= 400 || !data) return fallback ? mapChalkClientNode(fallback) : null;
+  return mapChalkClientNode(data, fallback);
+}
+
+async function lookupChalkClients(env: CalcEnv, q: string): Promise<Json[]> {
   const encoded = encodeURIComponent(q);
-  const paths = [
-    '/api/clients/lookup?q=' + encoded,
-    '/api/clients?q=' + encoded,
-    '/api/clients/search?q=' + encoded,
-  ];
-  for (const path of paths) {
-    try {
-      const { status, data } = await chalkJson(env, path);
-      if (status === 404) continue;
-      if (status >= 400) continue;
-      return chalkList(data);
-    } catch {
-      continue;
+  const found = new Map<string, Json>();
+
+  const take = (node: Json | null) => {
+    if (!node || !node.id) return;
+    const id = String(node.id);
+    if (!found.has(id)) found.set(id, node);
+  };
+
+  // Chalk's /api/clients/lookup currently returns `{ matches: [] }` for
+  // real names/phones. /api/search?kind=client is the working find.
+  const search = await chalkJson(env, '/api/search?q=' + encoded + '&kind=client');
+  if (search.status < 400) {
+    for (const hit of chalkList(search.data).slice(0, 8)) {
+      const id = String(hit?.id || '').trim();
+      if (!id || (hit.kind && hit.kind !== 'client' && hit.type !== 'client')) continue;
+      take(await hydrateChalkClient(env, id, hit));
     }
   }
-  return [];
+
+  if (!found.size) {
+    const dash = await chalkJson(env, '/api/dashboard/search?q=' + encoded);
+    if (dash.status < 400) {
+      for (const hit of chalkList(dash.data)) {
+        if ((hit?.type || hit?.kind) && hit.type !== 'client' && hit.kind !== 'client') continue;
+        const id = String(hit?.id || '').trim();
+        if (id) take(await hydrateChalkClient(env, id, hit));
+      }
+    }
+  }
+
+  if (!found.size) {
+    const list = await chalkJson(env, '/api/clients');
+    if (list.status < 400) {
+      for (const row of chalkList(list.data)) {
+        const node = mapChalkClientNode(row);
+        if (clientMatchesQuery(node, q)) take(node);
+      }
+    }
+  }
+
+  const lookup = await chalkJson(env, '/api/clients/lookup?q=' + encoded);
+  if (lookup.status < 400) {
+    for (const row of chalkList(lookup.data).slice(0, 8)) {
+      const inner = row?.client && typeof row.client === 'object' ? { ...row, ...row.client } : row;
+      const id = String(inner?.id || '').trim();
+      if (id) take(await hydrateChalkClient(env, id, inner));
+      else take(mapChalkClientNode(inner));
+    }
+  }
+
+  return Array.from(found.values()).slice(0, 8);
+}
+
+async function attachQuotePhotos(
+  env: CalcEnv,
+  request: Request,
+  chalkId: string,
+  payload: any,
+): Promise<{ ok: boolean; attempted: number; attached: number; errors: string[] }> {
+  const refs = collectPhotoRefs(payload);
+  const errors: string[] = [];
+  let attached = 0;
+  const origin = publicOrigin(request);
+  for (const ref of refs) {
+    try {
+      let bytes: ArrayBuffer | null = null;
+      let contentType = 'image/jpeg';
+      const marker = '/calc-photos/';
+      const idx = ref.url.indexOf(marker);
+      if (idx >= 0) {
+        const key = decodeURIComponent(ref.url.slice(idx + marker.length).split('?')[0]);
+        const obj = await env.CALC_PHOTOS.get(key);
+        if (obj) {
+          bytes = await obj.arrayBuffer();
+          contentType = obj.httpMetadata?.contentType || contentType;
+        }
+      }
+      if (!bytes) {
+        const abs = ref.url.startsWith('http') ? ref.url : origin + (ref.url.startsWith('/') ? '' : '/') + ref.url;
+        const fetched = await fetch(abs);
+        if (!fetched.ok) {
+          errors.push(ref.name + ': fetch ' + fetched.status);
+          continue;
+        }
+        bytes = await fetched.arrayBuffer();
+        contentType = fetched.headers.get('content-type') || contentType;
+      }
+      const params = new URLSearchParams({
+        entity_type: 'quote',
+        entity_id: chalkId,
+        filename: ref.name || 'photo.jpg',
+      });
+      const put = await chalkJson(env, '/api/files?' + params.toString(), {
+        method: 'PUT',
+        headers: { 'content-type': contentType },
+        body: bytes,
+      });
+      if (put.status >= 400) {
+        errors.push(ref.name + ': ' + (put.data?.error || put.status));
+      } else {
+        attached += 1;
+      }
+    } catch (e) {
+      errors.push(ref.name + ': ' + (e instanceof Error ? e.message : 'upload_failed'));
+    }
+  }
+  return { ok: errors.length === 0, attempted: refs.length, attached, errors };
+}
+
+async function postQuoteNote(env: CalcEnv, chalkId: string, body: string): Promise<void> {
+  const text = String(body || '').trim();
+  if (!text) return;
+  await chalkJson(env, '/api/notes', {
+    method: 'POST',
+    body: JSON.stringify({
+      entity_type: 'quote',
+      entity_id: chalkId,
+      body: text.slice(0, 8000),
+      pinned: 1,
+    }),
+  });
 }
 
 export function buildQuoteLineItems(payload: any): { line_items: Json[]; sentLineItems: Json[]; bundle: number } {
@@ -668,7 +882,7 @@ async function handleChalk(
   if (name === 'jobberStartAuth') {
     return new Response(
       `<!doctype html><meta charset="utf-8"><title>Chalk CRM</title>
-       <body style="font-family:system-ui;padding:2rem;background:#1b110c;color:#f6eee0">
+       <body style="font-family:system-ui;padding:2rem;background:#1a2540;color:#f6eee0">
        <p>Chalk is connected with an API key. You can close this tab.</p>
        </body>`,
       { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } },
@@ -689,28 +903,9 @@ async function handleChalk(
   if (name === 'searchJobberClients') {
     const q = String(body.q || '').trim();
     if (q.length < 2) return json({ ok: true, nodes: [] });
-    if (!connected) return json({ ok: true, nodes: [] });
-    const matches = await lookupChalkClients(env, q);
-    const nodes = matches.slice(0, Number(body.limit) || 8).map((c: any) => {
-      const inner =
-        c && typeof c === 'object' && c.client && typeof c.client === 'object' ? { ...c, ...c.client } : c || {};
-      const id = unwrap(inner, ['id'])?.id || inner.id || '';
-      return {
-        id,
-        propertyId: inner.primary_property_id || inner.property_id || '',
-        companyName: inner.company_name || '',
-        firstName: inner.first_name || '',
-        lastName: inner.last_name || '',
-        email: inner.primary_email || inner.email || '',
-        phone: inner.primary_phone || inner.phone || '',
-        street1: inner.street1 || '',
-        street2: inner.street2 || '',
-        city: inner.city || '',
-        province: inner.province || '',
-        postalCode: inner.postal_code || '',
-      };
-    });
-    return json({ ok: true, nodes });
+    if (!connected) return json({ ok: true, nodes: [], error: 'chalk_disconnected' });
+    const nodes = await lookupChalkClients(env, q);
+    return json({ ok: true, nodes: nodes.slice(0, Number(body.limit) || 8) });
   }
 
   if (name === 'jobberRequests') {
@@ -747,12 +942,13 @@ async function handleChalk(
     const row = await env.CALC_DB.prepare('SELECT * FROM quotes WHERE id = ?').bind(quoteRowId).first<any>();
     if (!row) return json({ ok: false, error: 'quote_not_found' });
     if (row.chalk_quote_id && !body.force) {
+      const adminUrl = chalkAdminQuoteUrl(env, String(row.chalk_quote_id));
       return json({
         ok: true,
         alreadyPushed: true,
         jobberQuoteId: row.chalk_quote_id,
         jobberQuoteNumber: row.chalk_quote_number,
-        jobberWebUri: row.chalk_web_uri,
+        jobberWebUri: adminUrl,
       });
     }
     let payload: any = {};
@@ -821,13 +1017,14 @@ async function handleChalk(
       (projects[0] && (projects[0]._jobberName || projects[0].type)) ||
       customer.name ||
       'Estimate';
+    const scopeText = buildQuoteScopeText(payload);
     const createdQuote = await chalkJson(env, '/api/quotes', {
       method: 'POST',
       body: JSON.stringify({
         client_id: clientId,
         property_id: propertyId,
         title,
-        message: payload.notes || '',
+        message: scopeText || payload.notes || '',
         line_items,
       }),
     });
@@ -840,11 +1037,9 @@ async function handleChalk(
     }
     const chalkId = String(createdQ.id);
     const chalkNumber = createdQ.number;
-    let hub = '';
-    const link = await chalkJson(env, '/api/quotes/' + chalkId + '/link', { method: 'POST', body: '{}' });
-    const linked = unwrap(link.data, ['hub_url']);
-    if (link.status < 400 && linked?.hub_url) hub = String(linked.hub_url);
-    const web = hub || 'https://app.chalkcrm.com/quotes/' + chalkId;
+    await postQuoteNote(env, chalkId, scopeText);
+    const attachments = await attachQuotePhotos(env, _request, chalkId, payload);
+    const web = chalkAdminQuoteUrl(env, chalkId);
     await env.CALC_DB.prepare(
       'UPDATE quotes SET chalk_quote_id = ?, chalk_quote_number = ?, chalk_web_uri = ?, updated_at = ? WHERE id = ?',
     )
@@ -861,8 +1056,53 @@ async function handleChalk(
       sentSubtotal: payload.totals?.sumBeforeBundle || sentFinal,
       sentDiscount: bundle,
       sentFinalTotal: sentFinal,
-      referencePhotoCount: 0,
-      attachments: { ok: true, attempted: 0 },
+      referencePhotoCount: attachments.attached,
+      attachments,
+    });
+  }
+
+  if (name === 'sendQuoteToCustomer') {
+    if (!rep) return json({ ok: false, error: 'not_signed_in' }, 401);
+    if (!connected) return json({ ok: false, error: 'Chalk API key is not set on this draft.' });
+    const quoteRowId = String(body.quoteRowId || '');
+    const row = await env.CALC_DB.prepare('SELECT * FROM quotes WHERE id = ?').bind(quoteRowId).first<any>();
+    if (!row) return json({ ok: false, error: 'quote_not_found' });
+    const chalkId = String(row.chalk_quote_id || '').trim();
+    if (!chalkId) return json({ ok: false, error: 'not_pushed', detail: 'Push the quote to Chalk first.' });
+    const sent = await chalkJson(env, '/api/quotes/' + encodeURIComponent(chalkId) + '/send', {
+      method: 'POST',
+      body: JSON.stringify({ email: true, sms: true }),
+    });
+    if (sent.status >= 400) {
+      const smsOnly = await chalkJson(env, '/api/quotes/' + encodeURIComponent(chalkId) + '/send', {
+        method: 'POST',
+        body: JSON.stringify({ email: false, sms: true }),
+      });
+      if (smsOnly.status < 400) {
+        return json({
+          ok: true,
+          email: false,
+          sms: true,
+          jobberQuoteId: chalkId,
+          jobberWebUri: chalkAdminQuoteUrl(env, chalkId),
+          warning: sent.data?.error || 'Email was skipped.',
+        });
+      }
+      return json(
+        {
+          ok: false,
+          error: (sent.data && sent.data.error) || 'chalk_send_failed',
+          detail: sent.data,
+        },
+        502,
+      );
+    }
+    return json({
+      ok: true,
+      email: true,
+      sms: true,
+      jobberQuoteId: chalkId,
+      jobberWebUri: chalkAdminQuoteUrl(env, chalkId),
     });
   }
 
