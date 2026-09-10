@@ -1023,10 +1023,49 @@ async function postQuoteNote(env: CalcEnv, chalkId: string, body: string): Promi
   await upsertQuoteNote(env, chalkId, body);
 }
 
-export function buildQuoteLineItems(payload: any): { line_items: Json[]; sentLineItems: Json[]; bundle: number } {
-  // Custom lines only: calc dollars in unit_price_cents. Never set product_id.
+const DISCOUNT_REASON_LABELS: Record<string, string> = {
+  bundle: 'Bundle (2+ projects)',
+  whole_house: '4+ room discount',
+  vet_responder: 'Veteran / First Responder',
+  senior: 'Senior (65+)',
+  teacher_edu: 'Teacher / Education',
+  referral: 'Referral',
+  repeat: 'Repeat customer',
+  same_day: 'Book today',
+  sw_referral: 'Sherwin-Williams referral',
+};
+
+function quoteDiscount(payload: any): { cents: number; reason: string } {
+  const totals = payload?.totals || {};
   const projects = Array.isArray(payload?.projects) ? payload.projects : [];
-  const bundle = Number(payload?.totals?.bundleDiscount || 0);
+  const bundle = Number(totals.bundleDiscount || 0);
+  let stacked = Number(totals.totalDiscountSavings || 0);
+  if (!stacked) {
+    stacked = projects.reduce((s: number, p: any) => s + (Number(p?.discountAmount) || 0), 0);
+  }
+  const cents = dollarsToCents(bundle + stacked);
+  const ids = new Set<string>();
+  for (const p of projects) {
+    for (const id of Array.isArray(p?.selectedDiscounts) ? p.selectedDiscounts : []) {
+      if (id && id !== 'bundle') ids.add(String(id));
+    }
+  }
+  if (bundle > 0) ids.add('bundle');
+  if (totals._swReferral) ids.add('sw_referral');
+  const labels = [...ids].map((id) => DISCOUNT_REASON_LABELS[id] || id).filter(Boolean);
+  return { cents, reason: labels.length ? labels.join(' + ') : 'Quote discount' };
+}
+
+export function buildQuoteLineItems(payload: any): {
+  line_items: Json[];
+  sentLineItems: Json[];
+  discountCents: number;
+  discountReason: string;
+} {
+  // Custom lines only: calc dollars in unit_price_cents. Never set product_id.
+  // Discounts go on the quote (discount_cents), not as a negative line.
+  const projects = Array.isArray(payload?.projects) ? payload.projects : [];
+  const discount = quoteDiscount(payload);
   const hasProjectLines = projects.some(
     (p: any) => String(p?._jobberName || '').trim() || p?.preDiscountSubtotal != null || p?.subtotal != null,
   );
@@ -1048,19 +1087,10 @@ export function buildQuoteLineItems(payload: any): { line_items: Json[]; sentLin
       });
       sentLineItems.push({ name, unitPrice: dollars, totalPrice: dollars });
     }
-    if (bundle > 0) {
-      line_items.push({
-        name: 'Bundle discount',
-        description: 'Calc-generated bundle discount',
-        quantity: 1,
-        unit: 'each',
-        unit_price_cents: -dollarsToCents(bundle),
-      });
-    }
   }
 
   if (!line_items.length) {
-    const final = Number(payload?.totals?.final || 0);
+    const pre = Number(payload?.totals?.sumBeforeBundle || payload?.totals?.final || 0);
     const name = 'Estimate';
     const description = String(payload?.notes || '');
     line_items.push({
@@ -1068,12 +1098,12 @@ export function buildQuoteLineItems(payload: any): { line_items: Json[]; sentLin
       description,
       quantity: 1,
       unit: 'each',
-      unit_price_cents: dollarsToCents(final),
+      unit_price_cents: dollarsToCents(pre),
     });
-    sentLineItems.push({ name, unitPrice: final, totalPrice: final });
+    sentLineItems.push({ name, unitPrice: pre, totalPrice: pre });
   }
 
-  return { line_items, sentLineItems, bundle };
+  return { line_items, sentLineItems, discountCents: discount.cents, discountReason: discount.reason };
 }
 
 async function handleChalk(
@@ -1234,21 +1264,27 @@ async function handleChalk(
     }
 
     const projects = Array.isArray(payload.projects) ? payload.projects : [];
-    const { line_items, sentLineItems, bundle } = buildQuoteLineItems(payload);
+    const { line_items, sentLineItems, discountCents, discountReason } = buildQuoteLineItems(payload);
 
     const title =
       (projects[0] && (projects[0]._jobberName || projects[0].type)) ||
       customer.name ||
       'Estimate';
     const officeNotes = buildChalkOfficeNotes(payload);
+    // Leave deposit unset so Chalk applies the shop default (percent/bp in CRM prefs).
+    const quoteBody: Json = {
+      client_id: clientId,
+      property_id: propertyId,
+      title,
+      line_items,
+    };
+    if (discountCents > 0) {
+      quoteBody.discount_cents = discountCents;
+      quoteBody.discount_reason = discountReason.slice(0, 120);
+    }
     const createdQuote = await chalkJson(env, '/api/quotes', {
       method: 'POST',
-      body: JSON.stringify({
-        client_id: clientId,
-        property_id: propertyId,
-        title,
-        line_items,
-      }),
+      body: JSON.stringify(quoteBody),
     });
     const createdQ = unwrap(createdQuote.data, ['id', 'number', 'total_cents']);
     if (createdQuote.status >= 400 || !createdQ?.id) {
@@ -1259,6 +1295,15 @@ async function handleChalk(
     }
     const chalkId = String(createdQ.id);
     const chalkNumber = createdQ.number;
+    if (discountCents > 0) {
+      await chalkJson(env, '/api/quotes/' + encodeURIComponent(chalkId), {
+        method: 'PATCH',
+        body: JSON.stringify({
+          discount_cents: discountCents,
+          discount_reason: discountReason.slice(0, 120),
+        }),
+      });
+    }
     await postQuoteNote(env, chalkId, officeNotes);
     const attachments = await attachQuotePhotos(env, _request, chalkId, payload);
     const web = await resolveChalkOfficeQuoteUrl(env, chalkId);
@@ -1276,7 +1321,7 @@ async function handleChalk(
       jobberWebUri: web,
       sentLineItems,
       sentSubtotal: payload.totals?.sumBeforeBundle || sentFinal,
-      sentDiscount: bundle,
+      sentDiscount: discountCents / 100,
       sentFinalTotal: sentFinal,
       referencePhotoCount: attachments.attached,
       attachments,
