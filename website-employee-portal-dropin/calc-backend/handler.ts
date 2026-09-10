@@ -368,12 +368,6 @@ function buildChalkCustomerMessage(payload: any): string {
     lines.push('This estimate covers:');
     for (const n of unique) lines.push('- ' + n);
   }
-  const materials = buildMaterialsLines(payload);
-  if (materials.length) {
-    lines.push('');
-    lines.push("What we'll use");
-    for (const l of materials) lines.push(l);
-  }
   lines.push('');
   if (wisetack) {
     lines.push(
