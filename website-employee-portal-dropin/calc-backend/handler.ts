@@ -176,19 +176,6 @@ async function resolveChalkOfficeQuoteUrl(env: CalcEnv, chalkId: string): Promis
   return fallback;
 }
 
-function fmtUsd(n: unknown): string {
-  const v = Math.round(Number(n) || 0);
-  return '$' + v.toLocaleString('en-US');
-}
-
-function customerFirstName(payload: any): string {
-  const c = payload?.customer || {};
-  const first = String(c.firstName || '').trim();
-  if (first) return first;
-  const split = splitName(String(c.name || ''));
-  return split.first && split.first !== 'Customer' ? split.first : 'there';
-}
-
 function projectDisplayName(p: any): string {
   return String(p?._jobberName || p?.type || 'Work').trim() || 'Work';
 }
@@ -342,62 +329,6 @@ function buildMaterialsLines(payload: any): string[] {
     }
   }
   return lines;
-}
-
-/** Customer-facing quote letter. Not the line-item spec (that stays on each line). */
-function buildChalkCustomerMessage(payload: any): string {
-  const projects = Array.isArray(payload?.projects) ? payload.projects : [];
-  const names = projects.map(projectDisplayName).filter(Boolean);
-  const unique = [...new Set(names.map((n) => n.replace(/\s+\(#\d+\)$/, '')))];
-  const list =
-    unique.length === 0
-      ? 'this work'
-      : unique.length === 1
-        ? unique[0].toLowerCase()
-        : unique.slice(0, -1).join(', ') + ' and ' + unique[unique.length - 1];
-  const final = Number(payload?.totals?.final || payload?.finalTotal || 0);
-  const deposit = Math.round(final * 0.25);
-  const balance = Math.round(final * 0.75);
-  const wisetack = String(payload?.paymentMethod || '') === 'wisetack';
-  const lines: string[] = [];
-  lines.push('Hi ' + customerFirstName(payload) + ',');
-  lines.push('');
-  lines.push('Thank you for the chance to quote your ' + list + '.');
-  if (unique.length) {
-    lines.push('');
-    lines.push('This estimate covers:');
-    for (const n of unique) lines.push('- ' + n);
-  }
-  lines.push('');
-  if (wisetack) {
-    lines.push(
-      'Payment: 25% deposit (' +
-        fmtUsd(deposit) +
-        ') due at scheduling. Wisetack financing is available for the remaining ' +
-        fmtUsd(balance) +
-        '.',
-    );
-  } else {
-    lines.push(
-      'Payment: 25% deposit (' +
-        fmtUsd(deposit) +
-        ') due at scheduling. Remaining 75% (' +
-        fmtUsd(balance) +
-        ') due when the job is done. Wisetack financing is available if you want to spread the balance out.',
-    );
-  }
-  lines.push('');
-  lines.push(
-    'You are covered by our 12-month workmanship warranty. Manufacturer stain warranties are listed on each line of this quote.',
-  );
-  lines.push('');
-  lines.push('This quote is good for 30 days. Final price may vary if on-site measurements differ.');
-  const typed = String(payload?.notes || '').trim();
-  if (typed) {
-    lines.push('');
-    lines.push(typed);
-  }
-  return lines.join('\n').trim();
 }
 
 /** Office / crew notes. Photos, materials, and rep notes live here. */
@@ -1073,13 +1004,8 @@ async function upsertQuoteNote(env: CalcEnv, chalkId: string, body: string): Pro
 }
 
 async function syncChalkQuoteCopy(env: CalcEnv, chalkId: string, payload: any): Promise<void> {
-  const customerMessage = buildChalkCustomerMessage(payload);
-  const officeNotes = buildChalkOfficeNotes(payload);
-  await chalkJson(env, '/api/quotes/' + encodeURIComponent(chalkId), {
-    method: 'PATCH',
-    body: JSON.stringify({ message: customerMessage }),
-  });
-  await upsertQuoteNote(env, chalkId, officeNotes);
+  // Leave quote.message empty so Chalk uses the shop default intro.
+  await upsertQuoteNote(env, chalkId, buildChalkOfficeNotes(payload));
 }
 
 async function postQuoteNote(env: CalcEnv, chalkId: string, body: string): Promise<void> {
@@ -1303,7 +1229,6 @@ async function handleChalk(
       (projects[0] && (projects[0]._jobberName || projects[0].type)) ||
       customer.name ||
       'Estimate';
-    const customerMessage = buildChalkCustomerMessage(payload);
     const officeNotes = buildChalkOfficeNotes(payload);
     const createdQuote = await chalkJson(env, '/api/quotes', {
       method: 'POST',
@@ -1311,7 +1236,6 @@ async function handleChalk(
         client_id: clientId,
         property_id: propertyId,
         title,
-        message: customerMessage,
         line_items,
       }),
     });
