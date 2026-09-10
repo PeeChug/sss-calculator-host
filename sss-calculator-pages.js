@@ -4400,6 +4400,7 @@ const state = {
   activeProject: makeBlankProject(),
   bundledProjects: [],
   editingBundleIdx: null,
+  _applyToAllStain: true,       // Product / tier / color copy onto other stain jobs
   paymentMethod: 'deposit',
   notes: '',                    // Quote-level free-form notes — shown on Review, sent to Jobber
   quoteId: '',
@@ -5280,7 +5281,7 @@ function cancelNewQuote() {
 /* ============================================================
    STAGE LOGIC
    ============================================================ */
-function isHoa() { return state.activeProject.productType === 'hoa'; }
+function isHoa(p) { return ((p || state.activeProject) || {}).productType === 'hoa'; }
 function isClearSealer() {
   // No tier is a clear (no-pigment) sealer anymore — the essential oil
   // tier is now the pigmented Exotic Timber Oil, which DOES get a color
@@ -5288,8 +5289,317 @@ function isClearSealer() {
   // that branch on it simply take the normal pigmented path.
   return false;
 }
-function shouldSkipColorStage() {
-  return isClearSealer() || isHoa();
+function shouldSkipColorStage(p) {
+  return isClearSealer() || isHoa(p);
+}
+
+/* ============================================================
+   MULTI-PROJECT QUOTE HELPERS
+   Quote is still activeProject + bundledProjects (cloud payload
+   unchanged). These helpers treat that pair as one list so Step 2
+   can multi-select, Step 3 can measure every project before
+   leaving, and Steps 4–9 can switch focus without rewinding the
+   10-step bar.
+   ============================================================ */
+function quoteProjects() {
+  const list = [];
+  if (state.activeProject && state.activeProject.type) list.push(state.activeProject);
+  (state.bundledProjects || []).forEach((p) => {
+    if (p && p.type) list.push(p);
+  });
+  return list;
+}
+
+function stainProjects() {
+  return quoteProjects().filter((p) => p && !isPaintProject(p));
+}
+
+function quoteSkipsConditionProduct() {
+  const ps = quoteProjects();
+  if (!ps.length) return isPaintProject();
+  return ps.every((p) => isPaintProject(p));
+}
+
+function quoteSkipsColor() {
+  const ps = quoteProjects();
+  if (!ps.length) return shouldSkipColorStage();
+  return ps.every((p) => {
+    if (isPaintProject(p)) return false;
+    return isHoa(p);
+  });
+}
+
+function projectNeedsStage(p, n) {
+  if (!p || !p.type) return false;
+  if (n === 4 || n === 5) return !isPaintProject(p);
+  if (n === 7) {
+    if (isPaintProject(p)) return true;
+    return !isHoa(p);
+  }
+  return true;
+}
+
+function projectLabel(p) {
+  if (!p || !p.type) return 'Project';
+  const meta = PROJECT_META[p.type] || { icon: '', name: p.type };
+  if (typeof p._seq === 'number') {
+    const same = quoteProjects().filter((x) => x.type === p.type).length;
+    if (same > 1) return `${meta.icon} ${meta.name} #${p._seq}`;
+  }
+  return `${meta.icon} ${meta.name}`;
+}
+
+function projectHasMeaningfulData(p) {
+  if (!p || !p.type) return false;
+  const m = p.measurements || {};
+  if (Array.isArray(m.rooms) && m.rooms.length) return true;
+  if (Array.isArray(m.sides) && m.sides.length) return true;
+  if (Array.isArray(m.areas) && m.areas.length) return true;
+  if (m.linearft || m.flat || m.rail || m.stairs || m.sqft || m.length || m.width) return true;
+  if (p.tierConfirmed && (state.maxStageReached || 0) > 3) return true;
+  if (p.addons && Object.keys(p.addons).length) return true;
+  if (p.selectedColor) return true;
+  if (p.referencePhotos && p.referencePhotos.length) return true;
+  return false;
+}
+
+function measurementsAreComplete(p) {
+  if (!p || !p.type) return false;
+  const m = p.measurements || {};
+  const t = p.type;
+  if (t === 'interior') {
+    const rooms = m.rooms || [];
+    if (!rooms.length) return false;
+    if (rooms.some((r) => !(+r.len > 0) || !(+r.wid > 0) || !(+r.height > 0))) return false;
+    try {
+      return rooms.every((r) => computeInteriorRoomCost(r, p.tier).total > 0);
+    } catch (e) {
+      return false;
+    }
+  }
+  if (t === 'exterior') {
+    const sides = m.sides || [];
+    const ext = m.ext || {};
+    const anyDetail = Object.entries(ext).some(([k, v]) => k !== 'pre1978' && +v > 0);
+    if (!sides.length && !anyDetail) return false;
+    if (sides.some((sd) => !(+sd.len > 0) || !(+sd.height > 0))) return false;
+    return true;
+  }
+  if (t === 'cabinet') {
+    const areas = m.areas || [];
+    if (!areas.length) return false;
+    try {
+      return areas.every((a) => computeCabinetAreaCost(a, p.tier).total > 0);
+    } catch (e) {
+      return false;
+    }
+  }
+  if (t === 'fence') return m.linearft > 0 && m.height > 0;
+  if (t === 'deck') return m.flat > 0 || m.rail > 0 || m.stairs > 0;
+  if (t === 'pergola') return (m.length > 0 && m.width > 0) || m.sqft > 0;
+  if (t === 'barn') return m.sqft > 0;
+  if (t === 'ceiling') return m.sqft > 0;
+  return false;
+}
+
+function stampProjectType(p, newType) {
+  p.type = newType;
+  const PAINT_PRODUCT_TYPES = { interior: 'interior_paint', exterior: 'exterior_paint', cabinet: 'cabinet_paint' };
+  if (PAINT_PRODUCT_TYPES[newType]) {
+    p.productType = PAINT_PRODUCT_TYPES[newType];
+    p.productConfirmed = true;
+    p.condition = null;
+    p.conditionConfirmed = true;
+  } else if (
+    p.productType === 'interior_paint' ||
+    p.productType === 'exterior_paint' ||
+    p.productType === 'cabinet_paint'
+  ) {
+    p.productType = 'oil';
+    p.productConfirmed = false;
+    p.condition = null;
+    p.conditionConfirmed = false;
+  }
+  if (p._lastSeqType && p._lastSeqType !== newType) delete p._seq;
+  p._lastSeqType = newType;
+  assignProjectSeqIfNeeded(p);
+}
+
+function inheritedDiscountsFromQuote() {
+  const src = state.activeProject.type
+    ? state.activeProject
+    : state.bundledProjects[state.bundledProjects.length - 1];
+  const list = src && Array.isArray(src.selectedDiscounts) ? src.selectedDiscounts : [];
+  return list.slice();
+}
+
+function addBlankProjectOfType(type) {
+  const stub = makeBlankProject();
+  stub.selectedDiscounts = inheritedDiscountsFromQuote();
+  stampProjectType(stub, type);
+  if (!state.activeProject.type) {
+    state.activeProject = stub;
+  } else {
+    state.bundledProjects.push(stub);
+  }
+  return stub;
+}
+
+function removeLastProjectOfType(type) {
+  const matches = quoteProjects().filter((p) => p.type === type);
+  if (!matches.length) return false;
+  const p = matches[matches.length - 1];
+  if (projectHasMeaningfulData(p)) {
+    const label = (PROJECT_META[type] && PROJECT_META[type].name) || type;
+    if (!confirm('Remove this ' + label + ' project? Anything already entered on it will be lost.')) return false;
+  }
+  if (p === state.activeProject) {
+    state.activeProject = state.bundledProjects.length
+      ? state.bundledProjects.pop()
+      : makeBlankProject();
+  } else {
+    const i = state.bundledProjects.indexOf(p);
+    if (i >= 0) state.bundledProjects.splice(i, 1);
+  }
+  return true;
+}
+
+function saveActiveEditorIfNeeded() {
+  if (state.currentStage === 3 && state.activeProject && state.activeProject.type) {
+    try { saveMeasurements(); } catch (e) {}
+  }
+}
+
+function resetTransientEditorState() {
+  try { __extQB = { ft: 10, substrate: 'wood', len: '', wid: '' }; } catch (e) {}
+  try { __intPhotoTargetRoomId = null; } catch (e) {}
+}
+
+function swapFocusTo(target) {
+  if (!target || target === state.activeProject) return false;
+  saveActiveEditorIfNeeded();
+  const bidx = state.bundledProjects.indexOf(target);
+  if (bidx < 0) return false;
+  const prev = state.activeProject;
+  state.bundledProjects.splice(bidx, 1);
+  if (prev && prev.type) {
+    try { prev._cached = computeProjectTotal(); } catch (e) {}
+    state.bundledProjects.push(prev);
+  }
+  state.activeProject = target;
+  delete state.activeProject._cached;
+  resetTransientEditorState();
+  return true;
+}
+
+function rerenderCurrentQuoteStage() {
+  const n = state.currentStage;
+  if (n >= 4 && n <= 7 && state.activeProject && state.activeProject.type && !projectNeedsStage(state.activeProject, n)) {
+    renderStageSkipPanel(n);
+    renderProjectBubbles();
+    updateRunningTotal();
+    return;
+  }
+  if (n === 2) renderProjectTypeCards();
+  else if (n === 3) renderMeasurements();
+  else if (n === 4) renderConditionCards();
+  else if (n === 5) renderProductStage();
+  else if (n === 6) renderTierCards();
+  else if (n === 7) renderColorStage();
+  else if (n === 8) renderAddons();
+  else if (n === 9) renderDiscounts();
+  else if (n === 10) renderFinalBreakdown();
+  renderProjectBubbles();
+  updateRunningTotal();
+}
+
+function focusQuoteProject(target) {
+  if (!target) return;
+  if (target === state.activeProject) {
+    renderProjectBubbles();
+    return;
+  }
+  if (!swapFocusTo(target)) return;
+  const n = state.currentStage;
+  if (n >= 4 && n <= 9 && !projectNeedsStage(state.activeProject, n) && !quoteSkipsConditionProduct()) {
+    renderStageSkipPanel(n);
+    renderProjectBubbles();
+    updateRunningTotal();
+    return;
+  }
+  rerenderCurrentQuoteStage();
+}
+
+function shouldApplyToAllStain() {
+  return stainProjects().length >= 2 && state._applyToAllStain !== false && !isPaintProject();
+}
+
+function applyToStainProjects(mutator) {
+  const targets = shouldApplyToAllStain() ? stainProjects() : [state.activeProject];
+  targets.forEach((p) => {
+    if (p && !isPaintProject(p)) mutator(p);
+  });
+}
+
+function renderApplyAllStainToggle(anchorId) {
+  const anchor = __doc.getElementById(anchorId);
+  if (!anchor) return;
+  const existing = __doc.getElementById('applyAllStainToggle');
+  const show = stainProjects().length >= 2 && !isPaintProject();
+  if (!show) {
+    if (existing) existing.remove();
+    return;
+  }
+  let el = existing;
+  if (!el) {
+    el = __doc.createElement('div');
+    el.id = 'applyAllStainToggle';
+    el.className = 'apply-all-stain';
+    anchor.parentNode.insertBefore(el, anchor);
+  }
+  const n = stainProjects().length;
+  const on = state._applyToAllStain !== false;
+  el.innerHTML =
+    '<label class="apply-all-stain-label">' +
+    '<input type="checkbox" id="applyAllStainCb"' + (on ? ' checked' : '') + '>' +
+    ' Use this choice on all ' + n + ' stain projects on this quote' +
+    '</label>';
+  const cb = el.querySelector('#applyAllStainCb');
+  if (cb) {
+    cb.addEventListener('change', () => {
+      state._applyToAllStain = !!cb.checked;
+    });
+  }
+}
+
+function renderStageSkipPanel(n) {
+  const titles = {
+    4: 'No condition step for this project',
+    5: 'No product-family step for this project',
+    7: 'No color step for this project'
+  };
+  const bodies = {
+    4: 'Paint jobs capture prep in measurements. Switch to a stain project to set wood condition, or continue.',
+    5: 'Paint jobs use Sherwin-Williams paint. Switch to a stain project to pick oil / water / HOA, or continue.',
+    7: 'This stain project does not need a color pick. Switch to another project, or continue.'
+  };
+  const hostIds = { 4: 'conditionCards', 5: 'productChoiceCards', 7: 'colorGrid' };
+  const host = __doc.getElementById(hostIds[n] || '');
+  const html =
+    '<div class="stage-skip-card"><h3>' +
+    (titles[n] || 'This project skips this step') +
+    '</h3><p>' +
+    (bodies[n] || '') +
+    '</p><p class="stage-skip-current">Focused: <strong>' +
+    escapeHtml(projectLabel(state.activeProject)) +
+    '</strong></p></div>';
+  if (host) host.innerHTML = html;
+}
+
+function nextIncompleteProjectForStage(n) {
+  const all = quoteProjects();
+  if (n === 3) return all.find((p) => p !== state.activeProject && !measurementsAreComplete(p)) || null;
+  return null;
 }
 
 // ---- COLOR MEMORY -----------------------------------------------------------
@@ -5326,11 +5636,10 @@ function recommendedProduct() {
 }
 
 function showStage(n) {
-  // Interior projects never visit Condition (4) or Product (5) — any
-  // direct jump (progress bar, resumed draft, legacy code path) gets
-  // routed to the nearest real step instead.
-  if (isPaintProject() && (n === 4 || n === 5)) n = (state.currentStage >= 6 ? 3 : 6);
-  if (n === 7 && shouldSkipColorStage()) state.activeProject.selectedColor = null;
+  // Skip Condition/Product only when EVERY project on the quote is paint.
+  // Mixed stain+paint quotes still visit 4–5 for the stain jobs.
+  if (quoteSkipsConditionProduct() && (n === 4 || n === 5)) n = (state.currentStage >= 6 ? 3 : 6);
+  if (quoteSkipsColor() && n === 7) n = (state.currentStage >= 8 ? 6 : 8);
 
   __doc.querySelectorAll('.stage').forEach(s => s.classList.remove('visible'));
   const target = __doc.getElementById('stage-' + n);
@@ -5351,6 +5660,16 @@ function showStage(n) {
   // ancestor in our fixed-viewport iframe model — body itself doesn't scroll.
   scrollAppToTop();
 
+  if ((!state.activeProject || !state.activeProject.type) && (state.bundledProjects || []).some((p) => p && p.type) && n >= 3 && n <= 10) {
+    const typed = state.bundledProjects.find((p) => p && p.type);
+    if (typed) swapFocusTo(typed);
+  }
+
+  if (n >= 4 && n <= 7 && state.activeProject && state.activeProject.type && !projectNeedsStage(state.activeProject, n)) {
+    const alt = quoteProjects().find((p) => projectNeedsStage(p, n));
+    if (alt) swapFocusTo(alt);
+  }
+
   if (n === 2) renderProjectTypeCards();
   if (n === 3) renderMeasurements();
   if (n === 4) {
@@ -5358,7 +5677,7 @@ function showStage(n) {
     // user has explicitly clicked a card, conditionConfirmed locks it
     // in and we leave their choice alone on re-render.
     let condChanged = false;
-    if (!state.activeProject.conditionConfirmed) {
+    if (state.activeProject.type && !state.activeProject.conditionConfirmed) {
       const reco = typeof recommendCondition === 'function' ? recommendCondition() : null;
       if (reco && state.activeProject.condition !== reco) {
         state.activeProject.condition = reco;
@@ -5374,7 +5693,7 @@ function showStage(n) {
   if (n === 5) {
     // Snap to the recommended product on first arrival.
     let prodChanged = false;
-    if (!state.activeProject.productConfirmed) {
+    if (state.activeProject.type && !state.activeProject.productConfirmed) {
       const reco = typeof recommendedProduct === 'function' ? recommendedProduct() : null;
       // Don't auto-flip into HOA — that's an explicit opt-in flow.
       if (reco && reco !== 'hoa' && state.activeProject.productType !== reco) {
@@ -5414,6 +5733,7 @@ function showStage(n) {
   if (n === 8) renderAddons();
   if (n === 9) renderDiscounts();
   if (n === 10) { state._returnToReviewOnCancel = false; renderFinalBreakdown(); }
+  try { renderProjectBubbles(); } catch (e) {}
 }
 
 // Track the last stage we auto-scrolled to. We only re-center the bar when
@@ -5428,8 +5748,8 @@ function refreshProgressBar() {
     const stage = parseInt(el.dataset.stage);
     el.classList.remove('active', 'done', 'skipped', 'reachable');
     if (stage === n) el.classList.add('active', 'reachable');
-    else if (isPaintProject() && (stage === 4 || stage === 5)) el.classList.add('skipped');
-    else if (stage === 7 && shouldSkipColorStage() && stage < state.maxStageReached) el.classList.add('skipped');
+    else if (quoteSkipsConditionProduct() && (stage === 4 || stage === 5)) el.classList.add('skipped');
+    else if (stage === 7 && quoteSkipsColor()) el.classList.add('skipped');
     else if (stage <= state.maxStageReached) el.classList.add('done', 'reachable');
   });
   // Compact phone pill mirrors the active step.
@@ -5500,11 +5820,9 @@ function nextStage() {
   console.log('[SSS Stage] validateStage(' + state.currentStage + ') =', valid);
   if (!valid) return;
   let target = state.currentStage + 1;
-  // Interior painting: prep lives inside the room walk-through and the
-  // product is always SW interior paint, so Condition (4) and Product
-  // (5) are skipped — measurements go straight to the paint level.
-  if (isPaintProject() && (target === 4 || target === 5)) target = 6;
-  if (target === 7 && shouldSkipColorStage()) target = 8;
+  // Skip Condition/Product only when the whole quote is paint.
+  if (quoteSkipsConditionProduct() && (target === 4 || target === 5)) target = 6;
+  if (target === 7 && quoteSkipsColor()) target = 8;
   if (target > 10) target = 10;
   console.log('[SSS Stage] transitioning to', target);
   showStage(target);
@@ -5512,8 +5830,8 @@ function nextStage() {
 
 function prevStage() {
   let target = state.currentStage - 1;
-  if (target === 7 && shouldSkipColorStage()) target = 6;
-  if (isPaintProject() && (target === 5 || target === 4)) target = 3;
+  if (target === 7 && quoteSkipsColor()) target = 6;
+  if (quoteSkipsConditionProduct() && (target === 5 || target === 4)) target = 3;
   if (target < 1) target = 1;
   showStage(target);
 }
@@ -5558,7 +5876,21 @@ function validateStage(n) {
     return ok;
   }
   if (n === 2) return !!state.activeProject.type;
-  if (n === 3) return validateMeasurements();
+  if (n === 3) {
+    try { saveMeasurements(); } catch (e) {}
+    if (!validateMeasurements()) return false;
+    const nextP = quoteProjects().find((p) => p !== state.activeProject && !measurementsAreComplete(p));
+    if (nextP) {
+      const label = projectLabel(nextP);
+      sssAlert('More measurements', 'Next up: ' + label + '. Fill those measurements, then continue.');
+      swapFocusTo(nextP);
+      renderMeasurements();
+      renderProjectBubbles();
+      updateRunningTotal();
+      return false;
+    }
+    return true;
+  }
   if (n === 5) {
     if (!state.activeProject.productType) return false;
     if (isHoa()) {
@@ -5567,9 +5899,43 @@ function validateStage(n) {
         return false;
       }
     }
+    const missingProd = stainProjects().find((p) => p !== state.activeProject && !p.productType);
+    if (missingProd) {
+      sssAlert('Pick a product', 'Next up: ' + projectLabel(missingProd) + '. Pick a product family for that project, then continue.');
+      swapFocusTo(missingProd);
+      renderProductStage();
+      renderProjectBubbles();
+      updateRunningTotal();
+      return false;
+    }
     return true;
   }
-  if (n === 7) return shouldSkipColorStage() ? true : !!state.activeProject.selectedColor;
+  if (n === 7) {
+    if (quoteSkipsColor()) return true;
+    if (projectNeedsStage(state.activeProject, 7) && !state.activeProject.selectedColor) return false;
+    const missing = quoteProjects().find((p) => p !== state.activeProject && projectNeedsStage(p, 7) && !p.selectedColor);
+    if (missing) {
+      sssAlert('Pick a color', 'Next up: ' + projectLabel(missing) + '. Pick a color for that project, then continue.');
+      swapFocusTo(missing);
+      renderColorStage();
+      renderProjectBubbles();
+      updateRunningTotal();
+      return false;
+    }
+    return true;
+  }
+  if (n === 4) {
+    const missingCond = stainProjects().find((p) => p !== state.activeProject && !p.condition);
+    if (missingCond) {
+      sssAlert('Set condition', 'Next up: ' + projectLabel(missingCond) + '. Set wood condition for that project, then continue.');
+      swapFocusTo(missingCond);
+      renderConditionCards();
+      renderProjectBubbles();
+      updateRunningTotal();
+      return false;
+    }
+    return true;
+  }
   return true;
 }
 
@@ -5641,43 +6007,52 @@ function assignProjectSeqIfNeeded(p) {
 }
 
 function renderProjectTypeCards() {
-  __doc.getElementById('projectTypeCards').innerHTML = Object.entries(PROJECT_META).map(([id, p]) => `
-    <button class="selectable-card ${state.activeProject.type === id ? 'selected' : ''}" data-project="${id}">
+  const counts = {};
+  quoteProjects().forEach((p) => { counts[p.type] = (counts[p.type] || 0) + 1; });
+  __doc.getElementById('projectTypeCards').innerHTML = Object.entries(PROJECT_META).map(([id, p]) => {
+    const count = counts[id] || 0;
+    const selected = count > 0;
+    const countBadge = count > 1 ? `<span class="type-count">${count}</span>` : '';
+    const plus = selected ? `<span class="type-add-another" data-add-type="${id}" title="Add another ${p.name}">+</span>` : '';
+    return `
+    <button class="selectable-card ${selected ? 'selected' : ''}" data-project="${id}">
       <div class="card-image" style="background-image:url('${p.img}')"></div>
       <div class="card-body">
-        <div class="title">${p.icon} ${p.name}</div>
+        <div class="title">${p.icon} ${p.name}${countBadge}${plus}</div>
         <div class="desc">${p.desc}</div>
         ${p.badge ? `<div class="badge">${p.badge}</div>` : ''}
       </div>
-    </button>
-  `).join('');
+    </button>`;
+  }).join('');
+
+  __doc.querySelectorAll('#projectTypeCards .type-add-another').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      addBlankProjectOfType(btn.dataset.addType);
+      renderProjectTypeCards();
+      refreshStage2Selection();
+      renderProjectBubbles();
+      updateRunningTotal();
+    });
+  });
 
   __doc.querySelectorAll('#projectTypeCards .selectable-card').forEach(card => {
     card.addEventListener('click', () => {
       const newType = card.dataset.project;
-      const ap = state.activeProject;
-      const isSwitch = ap.type && ap.type !== newType;
-      // If the rep is switching to a different type AFTER already entering
-      // meaningful data, intercept with a confirmation that defaults the
-      // primary action to "Add as another project" — the safe path.
-      if (isSwitch) {
-        const hasData = (
-          Object.keys(ap.measurements || {}).length > 0 ||
-          ap.tierConfirmed ||
-          (state.maxStageReached || 0) > 2 ||
-          (ap.addons && Object.keys(ap.addons).length > 0)
-        );
-        if (hasData) {
-          openProjectSwitchDialog(newType);
-          return;
-        }
-        // No data — clean switch, fall through to original behavior.
-        ap.measurements = {};
-        ap.addons = {};
-        ap.tierConfirmed = false;
-        if (state.maxStageReached > 2) state.maxStageReached = 2;
+      const matches = quoteProjects().filter((p) => p.type === newType);
+      if (!matches.length) {
+        addBlankProjectOfType(newType);
+      } else if (!state.activeProject.type) {
+        // Adding another from Review: tapping a type already on the quote
+        // does not mint a duplicate. Use + on the card for a second fence.
+      } else {
+        removeLastProjectOfType(newType);
       }
-      applyProjectTypeChoice(newType);
+      renderProjectTypeCards();
+      refreshStage2Selection();
+      renderProjectBubbles();
+      updateRunningTotal();
     });
   });
   refreshStage2Selection();
@@ -5686,35 +6061,16 @@ function renderProjectTypeCards() {
 // Shared apply-type logic — used by direct selection (no data) and by
 // both confirmation paths (Switch & discard, Add another).
 function applyProjectTypeChoice(newType) {
-  state.activeProject.type = newType;
-  // Interior painting has no product-family step (it's all SW interior
-  // paint) and no wood-condition step — stamp the pseudo product type
-  // and confirm both so the recommendation/snap logic on Steps 4–5
-  // never fires. Switching back to a stain project restores the
-  // standard defaults.
-  const PAINT_PRODUCT_TYPES = { interior: 'interior_paint', exterior: 'exterior_paint', cabinet: 'cabinet_paint' };
-  if (PAINT_PRODUCT_TYPES[newType]) {
-    state.activeProject.productType = PAINT_PRODUCT_TYPES[newType];
-    state.activeProject.productConfirmed = true;
-    state.activeProject.condition = null;
-    state.activeProject.conditionConfirmed = true;
-  } else if (state.activeProject.productType === 'interior_paint' ||
-             state.activeProject.productType === 'exterior_paint' ||
-             state.activeProject.productType === 'cabinet_paint') {
-    state.activeProject.productType = 'oil';
-    state.activeProject.productConfirmed = false;
-    state.activeProject.condition = null;
-    state.activeProject.conditionConfirmed = false;
+  if (!state.activeProject.type) {
+    stampProjectType(state.activeProject, newType);
+  } else if (state.activeProject.type !== newType) {
+    addBlankProjectOfType(newType);
+  } else {
+    stampProjectType(state.activeProject, newType);
   }
-  if (state.activeProject._lastSeqType && state.activeProject._lastSeqType !== newType) {
-    delete state.activeProject._seq;
-  }
-  state.activeProject._lastSeqType = newType;
-  assignProjectSeqIfNeeded(state.activeProject);
-  __doc.querySelectorAll('#projectTypeCards .selectable-card').forEach(c =>
-    c.classList.toggle('selected', c.dataset.project === newType));
+  renderProjectTypeCards();
   const next = __doc.getElementById('stage2Next');
-  if (next) next.disabled = false;
+  if (next) next.disabled = !state.activeProject.type;
   updateRunningTotal();
 }
 
@@ -5956,7 +6312,8 @@ function jobberTestConnection() {
 
 // Pill is refreshed on load (below the bootstrap call).
 function refreshStage2Selection() {
-  __doc.getElementById('stage2Next').disabled = !state.activeProject.type;
+  const next = __doc.getElementById('stage2Next');
+  if (next) next.disabled = !state.activeProject.type;
   const banner = __doc.getElementById('editingBanner');
   if (state.editingBundleIdx !== null) {
     banner.style.display = 'block';
@@ -5971,6 +6328,29 @@ function refreshStage2Selection() {
   if (addBanner) {
     const showAdd = !!state._returnToReviewOnCancel && state.bundledProjects.length > 0 && !state.activeProject.type;
     addBanner.style.display = showAdd ? 'flex' : 'none';
+  }
+  let summary = __doc.getElementById('projectTypeSummary');
+  const selected = quoteProjects();
+  if (!summary) {
+    const grid = __doc.getElementById('projectTypeCards');
+    if (grid && grid.parentNode) {
+      summary = __doc.createElement('div');
+      summary.id = 'projectTypeSummary';
+      summary.className = 'project-type-summary';
+      grid.parentNode.insertBefore(summary, grid.nextSibling);
+    }
+  }
+  if (summary) {
+    if (selected.length >= 2) {
+      summary.style.display = 'block';
+      summary.innerHTML = '<strong>' + selected.map(projectLabel).join(' + ') + '</strong> on this quote. 10% bundle off applies once both are priced. Tap a selected card with no measurements to remove it, or + to add another of that type.';
+    } else if (selected.length === 1) {
+      summary.style.display = 'block';
+      summary.innerHTML = 'Tap another surface to add it now and measure both on the next step. You can still add more later from Review.';
+    } else {
+      summary.style.display = 'none';
+      summary.innerHTML = '';
+    }
   }
 }
 
@@ -5988,10 +6368,31 @@ const MEASURE_TIPS = {
   cabinet: { ico: '🚪', title: 'Count every paintable face', body: 'A "30-door kitchen" is really 45+ pieces. Add each cabinet area and count doors, drawer fronts, glass doors, and exposed end panels — plus crown and box interiors if wanted. Stained/lacquered finishes get extra adhesion prep automatically. No separate prep step.' }
 };
 
+function updateStage3NextLabel() {
+  const btn = __doc.getElementById('stage3Next');
+  if (!btn) return;
+  const remaining = quoteProjects().filter((p) => p !== state.activeProject && !measurementsAreComplete(p));
+  if (remaining.length) {
+    btn.innerHTML = 'Next: ' + projectLabel(remaining[0]) + ' measurements <span class="arr-r">→</span>';
+    return;
+  }
+  if (quoteSkipsConditionProduct()) {
+    btn.innerHTML = 'Next: Paint Level <span class="arr-r">→</span>';
+  } else {
+    btn.innerHTML = 'Next: Condition <span class="arr-r">→</span>';
+  }
+}
+
 function renderMeasurements() {
   const proj = state.activeProject.type;
   const meta = PROJECT_META[proj];
-  __doc.getElementById('measureTitle').textContent = `${meta.icon} ${meta.name} Measurements`;
+  if (!proj || !meta) {
+    showStage(2);
+    return;
+  }
+  __doc.getElementById('measureTitle').textContent = quoteProjects().length >= 2
+    ? `${projectLabel(state.activeProject)} measurements`
+    : `${meta.icon} ${meta.name} Measurements`;
   const tip = MEASURE_TIPS[proj];
   __doc.getElementById('measureTip').innerHTML = `<div class="tip-box"><span class="tip-ico">${tip.ico}</span><div class="tip-body"><strong>${tip.title}</strong>${tip.body}</div></div>`;
 
@@ -6004,8 +6405,10 @@ function renderMeasurements() {
   if (isInterior()) {
     if (woodAgeSec) woodAgeSec.style.display = 'none';
     if (prevStainSec) prevStainSec.style.display = 'none';
-    if (stage3Next) stage3Next.innerHTML = 'Next: Paint Level <span class="arr-r">→</span>';
-    __doc.getElementById('measureTitle').textContent = `🎨 Room-by-Room Walk-Through`;
+    updateStage3NextLabel();
+    __doc.getElementById('measureTitle').textContent = quoteProjects().length >= 2
+      ? `${projectLabel(state.activeProject)} — room-by-room`
+      : `🎨 Room-by-Room Walk-Through`;
     renderInteriorMeasurements();
     renderReferencePhotos();
     attachPhotoListeners();
@@ -6014,8 +6417,10 @@ function renderMeasurements() {
   if (isExterior()) {
     if (woodAgeSec) woodAgeSec.style.display = 'none';
     if (prevStainSec) prevStainSec.style.display = 'none';
-    if (stage3Next) stage3Next.innerHTML = 'Next: Paint Level <span class="arr-r">→</span>';
-    __doc.getElementById('measureTitle').textContent = `🏡 Side-by-Side Walk-Around`;
+    updateStage3NextLabel();
+    __doc.getElementById('measureTitle').textContent = quoteProjects().length >= 2
+      ? `${projectLabel(state.activeProject)} — walk-around`
+      : `🏡 Side-by-Side Walk-Around`;
     renderExteriorMeasurements();
     renderReferencePhotos();
     attachPhotoListeners();
@@ -6024,8 +6429,10 @@ function renderMeasurements() {
   if (isCabinet()) {
     if (woodAgeSec) woodAgeSec.style.display = 'none';
     if (prevStainSec) prevStainSec.style.display = 'none';
-    if (stage3Next) stage3Next.innerHTML = 'Next: Paint Level <span class="arr-r">→</span>';
-    __doc.getElementById('measureTitle').textContent = `🚪 Piece-by-Piece Count`;
+    updateStage3NextLabel();
+    __doc.getElementById('measureTitle').textContent = quoteProjects().length >= 2
+      ? `${projectLabel(state.activeProject)} — piece count`
+      : `🚪 Piece-by-Piece Count`;
     renderCabinetMeasurements();
     renderReferencePhotos();
     attachPhotoListeners();
@@ -6033,7 +6440,7 @@ function renderMeasurements() {
   }
   if (woodAgeSec) woodAgeSec.style.display = '';
   if (prevStainSec) prevStainSec.style.display = '';
-  if (stage3Next) stage3Next.innerHTML = 'Next: Condition <span class="arr-r">→</span>';
+  updateStage3NextLabel();
 
   const container = __doc.getElementById('measureContainer');
 
@@ -6153,6 +6560,7 @@ function renderMeasurements() {
   // state.activeProject.referencePhotos so it travels with the project.
   renderReferencePhotos();
   attachPhotoListeners();
+  updateStage3NextLabel();
 }
 
 // Fence height picker — 6 ft (default) / 8 ft / Other. The hidden
@@ -6708,11 +7116,14 @@ function saveMeasurements() {
   const proj = state.activeProject.type;
   // Interior: the room builder writes to state directly on every
   // interaction — nothing to harvest from static inputs here.
-  if (proj === 'interior') { syncInteriorDerived(); updateRunningTotal(); return; }
+  if (proj === 'interior') { try { syncInteriorDerived(); } catch (e) {} updateRunningTotal(); return; }
+  if (proj === 'exterior') { try { syncExteriorDerived(); } catch (e) {} updateRunningTotal(); return; }
+  if (proj === 'cabinet')  { try { syncCabinetDerived(); } catch (e) {} updateRunningTotal(); return; }
   const get = (id) => +__doc.getElementById(id)?.value || 0;
   const getStr = (id) => __doc.getElementById(id)?.value || '';
   const isOn = (key) => __doc.querySelector(`[data-toggle="${key}"]`)?.classList.contains('checked') || false;
   if (proj === 'fence') {
+    if (!__doc.getElementById('m_linearft')) { updateRunningTotal(); return; }
     m.linearft = get('m_linearft'); m.height = get('m_height'); m.style = getStr('m_style') || 'privacy';
     m.oneSided = isOn('m_oneSided');
     m.oneSidedLnFt = get('m_oneSidedLnFt');
@@ -6765,11 +7176,41 @@ function validateMeasurements() {
   }
   if (proj === 'exterior') return validateExteriorMeasurements();
   if (proj === 'cabinet')  return validateCabinetMeasurements();
-  if (proj === 'fence') return m.linearft > 0 && m.height > 0;
-  if (proj === 'deck') return m.flat > 0 || m.rail > 0 || m.stairs > 0;
-  if (proj === 'pergola') return (m.length > 0 && m.width > 0) || m.sqft > 0;
-  if (proj === 'barn') return m.sqft > 0;
-  if (proj === 'ceiling') return m.sqft > 0;
+  if (proj === 'fence') {
+    if (!(m.linearft > 0 && m.height > 0)) {
+      sssAlert('Fence measurements needed', 'Enter linear feet and height before continuing.');
+      return false;
+    }
+    return true;
+  }
+  if (proj === 'deck') {
+    if (!(m.flat > 0 || m.rail > 0 || m.stairs > 0)) {
+      sssAlert('Deck measurements needed', 'Enter flat sq ft, railing, or stairs before continuing.');
+      return false;
+    }
+    return true;
+  }
+  if (proj === 'pergola') {
+    if (!((m.length > 0 && m.width > 0) || m.sqft > 0)) {
+      sssAlert('Pergola measurements needed', 'Enter length × width (or stainable sq ft) before continuing.');
+      return false;
+    }
+    return true;
+  }
+  if (proj === 'barn') {
+    if (!(m.sqft > 0)) {
+      sssAlert('Barn measurements needed', 'Enter siding sq ft before continuing.');
+      return false;
+    }
+    return true;
+  }
+  if (proj === 'ceiling') {
+    if (!(m.sqft > 0)) {
+      sssAlert('Ceiling measurements needed', 'Enter ceiling sq ft before continuing.');
+      return false;
+    }
+    return true;
+  }
   return false;
 }
 
@@ -6882,7 +7323,9 @@ const CONDITION_BULLETS = {
 };
 
 function renderConditionCards() {
+  if (isPaintProject()) { renderStageSkipPanel(4); return; }
   const proj = state.activeProject.type;
+  if (!proj || !PRICING[proj] || !PRICING[proj].prep) { renderStageSkipPanel(4); return; }
   const prep = PRICING[proj].prep;
   const unit = PRICING[proj].unit;
   const prepBase = computePrepBase();
@@ -6967,9 +7410,11 @@ function renderConditionCards() {
       if (e.target.classList.contains('info-btn')) return;
       const newCond = card.dataset.cond;
       state.activeProject.condition = newCond;
-      // Lock in the user's explicit pick so we don't snap back to
-      // the recommendation on re-render.
       state.activeProject.conditionConfirmed = true;
+      applyToStainProjects((p) => {
+        p.condition = newCond;
+        p.conditionConfirmed = true;
+      });
       __doc.querySelectorAll('#conditionCards .condition-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
       __doc.getElementById('stage4Next').disabled = false;
@@ -7007,6 +7452,8 @@ function computePrepBase() {
    STAGE 5: PRODUCT + HOA + PREVIOUS STAIN
    ============================================================ */
 function renderProductStage() {
+  if (isPaintProject()) { renderStageSkipPanel(5); return; }
+  renderApplyAllStainToggle('productChoiceCards');
   const condition = state.activeProject.condition;
   const ps = state.activeProject.previousStain;
   const recommended = recommendedProduct();
@@ -7058,18 +7505,14 @@ function renderProductStage() {
       // Save current color BEFORE switching, then restore the one previously
       // chosen for the new product (if any).
       rememberCurrentColor();
-      state.activeProject.productType = prod;
-      // Lock in the user's explicit pick so we don't snap back to
-      // the recommendation on re-render.
-      state.activeProject.productConfirmed = true;
+      applyToStainProjects((p) => {
+        p.productType = prod;
+        p.productConfirmed = true;
+        delete p.addons.citronella;
+        if (prod === 'hoa') { p.tier = 'performance'; p.tierConfirmed = true; }
+        else if (p.tierConfirmed && prev === 'hoa') p.tierConfirmed = false;
+      });
       if (prev !== prod) restoreColorForCurrentLib();
-      // When switching product family, drop incompatible addons
-      delete state.activeProject.addons.citronella;
-      // When switching to HOA, force tier to performance and auto-confirm
-      // (HOA has no real tier choice, so we treat it as confirmed immediately)
-      if (prod === 'hoa') { state.activeProject.tier = 'performance'; state.activeProject.tierConfirmed = true; }
-      // Switching FROM HOA back to water/oil: require explicit tier re-confirmation
-      else if (state.activeProject.tierConfirmed && prev === 'hoa') state.activeProject.tierConfirmed = false;
       __doc.querySelectorAll('#productChoiceCards .product-choice-card').forEach(c => c.classList.toggle('selected', c.dataset.product === prod));
       // Show/hide HOA panel based on selection
       __doc.getElementById('hoaPanel').style.display = (prod === 'hoa') ? 'block' : 'none';
@@ -7122,6 +7565,7 @@ function renderTierCards() {
   if (isInterior()) { renderInteriorTierCards(); return; }
   if (isExterior()) { renderExteriorTierCards(); return; }
   if (isCabinet())  { renderCabinetTierCards(); return; }
+  renderApplyAllStainToggle('tierCards');
   const product = state.activeProject.productType;
   const locked = product === 'water' ? '💧 Water-Based' : (product === 'oil' ? '🛢️ Oil-Based' : '🏘️ HOA-Required');
   __doc.getElementById('productLockText').innerHTML = `<strong>${locked}</strong> selected — change on <a href="javascript:void(0)" onclick="showStage(5)" style="color:var(--green);font-weight:700;text-decoration:underline;">Step 5</a>.`;
@@ -7341,21 +7785,20 @@ function renderTierCards() {
       const tierChanged = state.activeProject.tier !== newTier;
       if (tierChanged) {
         rememberCurrentColor();
-        state.activeProject.tier = newTier;
+        applyToStainProjects((p) => { p.tier = newTier; p.tierConfirmed = true; });
         restoreColorForCurrentLib();
       } else {
-        state.activeProject.tier = newTier;
+        applyToStainProjects((p) => { p.tier = newTier; p.tierConfirmed = true; });
       }
-      state.activeProject.tierConfirmed = true;
       __doc.querySelectorAll('#tierCards .tier-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
       __doc.getElementById('stage6Next').disabled = false;
-      __doc.getElementById('stage6Next').innerHTML = shouldSkipColorStage() ? 'Next: Add-ons <span class="arr-r">→</span>' : 'Next: Color <span class="arr-r">→</span>';
+      __doc.getElementById('stage6Next').innerHTML = quoteSkipsColor() ? 'Next: Add-ons <span class="arr-r">→</span>' : 'Next: Color <span class="arr-r">→</span>';
       updateRunningTotal();
     });
   });
   __doc.getElementById('stage6Next').disabled = !state.activeProject.tierConfirmed;
-  __doc.getElementById('stage6Next').innerHTML = shouldSkipColorStage() ? 'Next: Add-ons <span class="arr-r">→</span>' : 'Next: Color <span class="arr-r">→</span>';
+  __doc.getElementById('stage6Next').innerHTML = quoteSkipsColor() ? 'Next: Add-ons <span class="arr-r">→</span>' : 'Next: Color <span class="arr-r">→</span>';
 }
 
 function renderHoaTierCards() {
@@ -7388,7 +7831,7 @@ function renderHoaTierCards() {
   // HOA flow is locked to performance, button always enabled
   state.activeProject.tier = 'performance';
   __doc.getElementById('stage6Next').disabled = false;
-  __doc.getElementById('stage6Next').innerHTML = 'Next: Add-ons <span class="arr-r">→</span>';
+  __doc.getElementById('stage6Next').innerHTML = quoteSkipsColor() ? 'Next: Add-ons <span class="arr-r">→</span>' : 'Next: Color <span class="arr-r">→</span>';
 }
 
 function renderPrevStainContext() {
@@ -7499,12 +7942,18 @@ function renderColorStage() {
   if (isInterior()) { renderInteriorColorStage(); return; }
   if (isExterior()) { renderExteriorColorStage(); return; }
   if (isCabinet())  { renderCabinetColorStage(); return; }
-  if (shouldSkipColorStage()) { showStage(8); return; }
+  if (quoteSkipsColor()) { showStage(8); return; }
+  if (shouldSkipColorStage()) {
+    renderStageSkipPanel(7);
+    return;
+  }
+  renderApplyAllStainToggle('colorGrid');
   // Restore the stain tip-box copy if an interior project replaced it.
   const tipBodyStain = __doc.querySelector('#stage-7 .tip-box .tip-body');
   if (tipBodyStain && tipBodyStain.dataset.stainHtml) tipBodyStain.innerHTML = tipBodyStain.dataset.stainHtml;
   const libKey = getColorLibrary(state.activeProject.productType, state.activeProject.tier);
   const lib = COLORS[libKey];
+  if (!lib) { renderStageSkipPanel(7); return; }
   // Water-based decks apply SuperDeck, so the color step must say so —
   // the swatch palette is the same SW solid-color range (SW tints the
   // SuperDeck base to it), only the product name differs.
@@ -7564,6 +8013,11 @@ function renderColorStage() {
       const name = sw.dataset.color;
       const c = allColors.find(x => x.name === name);
       state.activeProject.selectedColor = { ...c, line: lib.line };
+      applyToStainProjects((p) => {
+        if (p.productType !== state.activeProject.productType) return;
+        if (p.tier !== state.activeProject.tier) return;
+        p.selectedColor = JSON.parse(JSON.stringify(state.activeProject.selectedColor));
+      });
       __doc.querySelectorAll('#colorGrid .color-swatch').forEach(s => s.classList.remove('selected'));
       sw.classList.add('selected');
       // Show custom entry if Custom swatch was picked
@@ -7583,10 +8037,17 @@ function applyCustomColor() {
   const code = __doc.getElementById('customColorInput').value.trim();
   if (!code) { alert('Enter a color code or description.'); return; }
   state.activeProject.customColorCode = code;
-  // Update the stored selectedColor to include the user's entered code
   if (state.activeProject.selectedColor) {
     state.activeProject.selectedColor = { ...state.activeProject.selectedColor, code: code, name: 'Custom: ' + code };
   }
+  applyToStainProjects((p) => {
+    if (p.productType !== state.activeProject.productType) return;
+    if (p.tier !== state.activeProject.tier) return;
+    p.customColorCode = code;
+    if (state.activeProject.selectedColor) {
+      p.selectedColor = JSON.parse(JSON.stringify(state.activeProject.selectedColor));
+    }
+  });
   __doc.getElementById('stage7Next').disabled = false;
   fireConfetti();
 }
@@ -7596,6 +8057,7 @@ function applyCustomColor() {
    ============================================================ */
 function renderAddons() {
   const proj = state.activeProject.type;
+  if (!proj || !PROJECT_META[proj]) { showStage(2); return; }
   const product = state.activeProject.productType;
   // The EXPERT Natural Defense citronella additive is hidden on the
   // Timber Oil (oil-essential) tier — you don't mix an EXPERT additive
@@ -8178,7 +8640,8 @@ function computeAllTotals() {
     try { refreshAllProjectCaches(); } catch (e) {}
   }
   const bundled = state.bundledProjects.map(p => p._cached || { tierBase:0, prep:0, addonsFlat:0, percentMod:0, subtotal: 0, discountAmount: 0 });
-  const projectsCount = (active.subtotal > 0 ? 1 : 0) + bundled.length;
+  const pricedBundled = bundled.filter(b => (b.subtotal || 0) > 0);
+  const projectsCount = (active.subtotal > 0 ? 1 : 0) + pricedBundled.length;
   const sumBeforeBundle = active.subtotal + bundled.reduce((s, b) => s + b.subtotal, 0);
 
   // Total per-project discount savings across active + all bundled (stackable discounts)
@@ -8304,13 +8767,15 @@ function renderProjectBubbles() {
       const price = item.kind === 'bundled'
         ? (item.project._cached && item.project._cached.subtotal) || 0
         : (computeProjectTotal().subtotal || 0);
+      const needs = !measurementsAreComplete(item.project);
       return `
-        <button type="button" class="project-bubble ${isActive ? 'active' : ''}" data-bubble-kind="${item.kind}" data-bubble-idx="${item.idx}">
+        <button type="button" class="project-bubble ${isActive ? 'active' : ''} ${needs ? 'needs-input' : ''}" data-bubble-kind="${item.kind}" data-bubble-idx="${item.idx}">
           <span class="pb-ico">${PROJECT_META[item.project.type].icon}</span>
           <span>${labels[i].replace(PROJECT_META[item.project.type].icon + ' ', '')}</span>
-          ${price > 0 ? `<span class="pb-price">$${Math.round(price).toLocaleString()}</span>` : ''}
+          ${price > 0 ? `<span class="pb-price">$${Math.round(price).toLocaleString()}</span>` : (needs ? '<span class="pb-price">needs info</span>' : '')}
         </button>`;
     }).join('')}
+    <button type="button" class="project-bubble add-new" data-bubble-kind="add" data-bubble-idx="-1">＋ Add</button>
   `;
   bar.innerHTML = html;
   bar.style.display = 'flex';
@@ -8319,23 +8784,15 @@ function renderProjectBubbles() {
     b.addEventListener('click', () => {
       const kind = b.dataset.bubbleKind;
       const idx = parseInt(b.dataset.bubbleIdx, 10);
-      if (kind === 'bundled') {
-        // Switch active project to this bundled one (mirror editBundledProject without confirm)
-        if (state.activeProject.type) {
-          const totals = computeProjectTotal();
-          const cached = JSON.parse(JSON.stringify(state.activeProject));
-          cached._cached = totals;
-          state.bundledProjects.push(cached);
-        }
-        const editing = state.bundledProjects[idx];
-        delete editing._cached;
-        state.activeProject = editing;
-        state.activeProject.tierConfirmed = true;
-        state.bundledProjects.splice(idx, 1);
-        state.maxStageReached = 10;
-        showStage(10);
-        updateRunningTotal();
+      if (kind === 'add') {
+        addAnotherProject();
+        return;
       }
+      if (kind === 'active') return;
+      const target = state.bundledProjects[idx];
+      if (!target) return;
+      swapFocusTo(target);
+      rerenderCurrentQuoteStage();
     });
   });
 }
@@ -8376,7 +8833,7 @@ function renderFinalBreakdown() {
               <div class="nm">${PROJECT_META[p.type].name} — ${p.tier} (${p.productType})${p.selectedColor ? ` · ${p.selectedColor.name}` : ''}${p.productType === 'hoa' ? ' · HOA product' : ''}</div>
               <div class="det">${describeBundledRow(p)}</div>
             </div>
-            <div class="amt">$${Math.round(p._cached.subtotal).toLocaleString()}</div>
+            <div class="amt">$${Math.round((p._cached && p._cached.subtotal) || 0).toLocaleString()}</div>
             <div class="row-actions">
               <button type="button" class="edit-btn" data-edit-bundle="${i}">Edit</button>
               <button type="button" class="remove-btn" data-remove-bundle="${i}">Remove</button>
@@ -9404,24 +9861,29 @@ function setTier(t) {
   const old = state.activeProject.tier;
   if (old !== t) {
     rememberCurrentColor();
-    state.activeProject.tier = t;
+    applyToStainProjects((p) => { p.tier = t; p.tierConfirmed = true; });
     restoreColorForCurrentLib();
   } else {
-    state.activeProject.tier = t;
+    applyToStainProjects((p) => { p.tier = t; p.tierConfirmed = true; });
   }
-  state.activeProject.tierConfirmed = true;
   renderFinalBreakdown(); updateRunningTotal();
 }
 function setProduct(p) {
   const old = state.activeProject.productType;
   if (old !== p) {
     rememberCurrentColor();
-    state.activeProject.productType = p;
+    applyToStainProjects((proj) => {
+      proj.productType = p;
+      proj.productConfirmed = true;
+      delete proj.addons.citronella;
+    });
     restoreColorForCurrentLib();
   } else {
-    state.activeProject.productType = p;
+    applyToStainProjects((proj) => {
+      proj.productType = p;
+      proj.productConfirmed = true;
+    });
   }
-  delete state.activeProject.addons.citronella;
   renderFinalBreakdown(); updateRunningTotal();
 }
 function setAddonInlineQty(id, group, val) {
@@ -9443,6 +9905,7 @@ function toggleAddonInline(id, group) {
    BUNDLE
    ============================================================ */
 function addAnotherProject() {
+  saveActiveEditorIfNeeded();
   // If we have a partially-built active project, push it into the bundle first
   // so it isn't lost. If active is empty (e.g. just collapsed or just removed
   // the last one and clicked "Add"), skip the push and just start a fresh
@@ -9473,7 +9936,6 @@ function addAnotherProject() {
   state.activeProject = makeBlankProject();
   state.activeProject.selectedDiscounts = inheritedDiscounts;
   state.editingBundleIdx = null;
-  state.maxStageReached = 2;
   const next = __doc.getElementById('stage2Next'); if (next) next.disabled = true;
   refreshStage2Selection();
   showStage(2);
@@ -11044,6 +11506,10 @@ function buildCloudPayload() {
       return {
         type: p.type, productType: p.productType, tier: p.tier,
         condition: p.condition, woodAge: p.woodAge,
+        conditionConfirmed: !!p.conditionConfirmed,
+        productConfirmed: !!p.productConfirmed,
+        tierConfirmed: !!p.tierConfirmed,
+        _seq: p._seq,
         selectedColor: p.selectedColor,
         hoa: p.hoa, previousStain: p.previousStain,
         measurements: p.measurements,
@@ -11086,6 +11552,7 @@ function buildCloudPayload() {
       // were last on, not jumped to Step 10 with an incomplete project.
       _currentStage:        state.currentStage,
       _maxStageReached:     state.maxStageReached,
+      _applyToAllStain:     state._applyToAllStain !== false,
       // SW-referred flag — survives cloud round-trips so a resumed quote
       // keeps the SuperDeck lineup + auto SW Referral discount.
       _swReferral:          !!state.swReferral
@@ -15955,6 +16422,7 @@ function hydrateStateFromCloud(q) {
   // Restore the SW-referred flag BEFORE any render so the tier/product/
   // color steps show the right lineup immediately.
   state.swReferral = !!savedTotals._swReferral;
+  state._applyToAllStain = savedTotals._applyToAllStain !== false;
   if (typeof applySwMode === 'function') applySwMode();
   const savedMax = Number(savedTotals._maxStageReached) || 0;
   const savedCur = Number(savedTotals._currentStage) || 0;
@@ -16114,6 +16582,7 @@ function startNewQuote() {
   state.maxStageReached = 1;
   state.jobberRequestId = '';  // drop any Jobber-request linkage
   state.swReferral = false;    // fresh quotes start as standard (non-SW) lineup
+  state._applyToAllStain = true;
   if (typeof applySwMode === 'function') applySwMode();
 
   __doc.getElementById('quoteNum').textContent = state.quoteId;
@@ -16222,7 +16691,7 @@ renderDashboard();
   }, { capture: true });
 })();
   // Expose for inline onclick=/onchange= handlers in markup.
-  Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, returnToDashboard, cancelNewQuote, refreshDashboardHard, pickCustSearchResult, clearPickedCustomer, convertJobberRequestToQuote, copyJobberErrorToClipboard, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, onFolderToggle, onDashSearchInput, openRowMenu, closeRowMenu, resumeCloudQuote, resumeLocalDraft, deleteLocalDraft, moveCloudQuote, duplicateCloudQuote, permanentlyDeleteCloud, duplicateCurrentForEdit, toggleBulkMode, toggleBulkRow, bulkClearSelection, bulkSetStatus, bulkPermanentlyDelete, openPricingAdmin, closePricingAdmin, switchPricingAdminTab, savePricingAdmin, resetPricingAdmin, removeReferencePhoto, signOutAndReload, openChangePinPrompt, closeRepMenu, adminCreateRep, adminResetRepPin, adminDeleteRep, adminRevokeDevice, adminRevokeAllDevices, toggleAdminDevicesShowAll, resetSwDeviceTag, resetSwAllDevices, toggleSwReferral, setSwReferral, openTechIssueDialog, closeTechIssueDialog, techNoteSave, techNoteResolve, toggleDashDateFilter, switchPaGroup, openProjectSwitchDialog, closeProjectSwitchDialog, confirmAddAnotherProject, confirmSwitchProject, openJobberPanel, closeJobberPanel, jobberConnect, jobberManualRefresh, jobberDisconnectConfirm, jobberTestConnection, pushFinishedQuoteToJobber, resendFinishedToJobber, sendQuoteToCustomer, resendViewedQuoteToJobber, resendCurrentQuoteFromSuccess, resendCurrentViewedToJobber, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, toggleEditPanel, applyCustomColor, removeCustomAddon, renderFinalBreakdown, openInteriorPricingSheet, state });
+  Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, returnToDashboard, cancelNewQuote, refreshDashboardHard, pickCustSearchResult, clearPickedCustomer, convertJobberRequestToQuote, copyJobberErrorToClipboard, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, onFolderToggle, onDashSearchInput, openRowMenu, closeRowMenu, resumeCloudQuote, resumeLocalDraft, deleteLocalDraft, moveCloudQuote, duplicateCloudQuote, permanentlyDeleteCloud, duplicateCurrentForEdit, toggleBulkMode, toggleBulkRow, bulkClearSelection, bulkSetStatus, bulkPermanentlyDelete, openPricingAdmin, closePricingAdmin, switchPricingAdminTab, savePricingAdmin, resetPricingAdmin, removeReferencePhoto, signOutAndReload, openChangePinPrompt, closeRepMenu, adminCreateRep, adminResetRepPin, adminDeleteRep, adminRevokeDevice, adminRevokeAllDevices, toggleAdminDevicesShowAll, resetSwDeviceTag, resetSwAllDevices, toggleSwReferral, setSwReferral, openTechIssueDialog, closeTechIssueDialog, techNoteSave, techNoteResolve, toggleDashDateFilter, switchPaGroup, openProjectSwitchDialog, closeProjectSwitchDialog, confirmAddAnotherProject, confirmSwitchProject, openJobberPanel, closeJobberPanel, jobberConnect, jobberManualRefresh, jobberDisconnectConfirm, jobberTestConnection, pushFinishedQuoteToJobber, resendFinishedToJobber, sendQuoteToCustomer, resendViewedQuoteToJobber, resendCurrentQuoteFromSuccess, resendCurrentViewedToJobber, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, toggleEditPanel, applyCustomColor, removeCustomAddon, renderFinalBreakdown, openInteriorPricingSheet, focusQuoteProject, quoteProjects, state });
 
   }
 
