@@ -9687,6 +9687,21 @@ function generatePDF() {
 /* ============================================================
    FINALIZE
    ============================================================ */
+function hasPendingPhotoUploads() {
+  const all = [state.activeProject, ...(state.bundledProjects || [])];
+  return all.some((p) => (p.referencePhotos || []).some((ph) => ph && ph.uploading));
+}
+
+async function awaitPhotoUploads(timeoutMs) {
+  const start = Date.now();
+  while (hasPendingPhotoUploads() && Date.now() - start < (timeoutMs || 20000)) {
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  if (hasPendingPhotoUploads()) {
+    console.warn('[SSS Photos] finalize proceeded with uploads still in flight');
+  }
+}
+
 function finalizeQuote(sendMethod) {
   // sendMethod: 'upload' (default) — save the quote to Jobber as a
   // Draft. The rep opens it in Jobber from the success screen via a
@@ -9734,6 +9749,7 @@ function finalizeQuote(sendMethod) {
   // make it into both EmployeeQuotes AND the Jobber line items.
   (async () => {
     try {
+      await awaitPhotoUploads(20000);
       flushPendingSaves();
       await awaitSaveSettled();
       const finalPayload = buildCloudPayload();

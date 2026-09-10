@@ -176,18 +176,122 @@ async function resolveChalkOfficeQuoteUrl(env: CalcEnv, chalkId: string): Promis
   return fallback;
 }
 
-function buildQuoteScopeText(payload: any): string {
-  const typed = String(payload?.notes || '').trim();
-  const parts: string[] = [];
-  for (const p of Array.isArray(payload?.projects) ? payload.projects : []) {
-    const name = String(p?._jobberName || p?.type || '').trim();
-    const desc = String(p?._jobberDescription || '').trim();
-    if (!name && !desc) continue;
-    parts.push([name, desc].filter(Boolean).join('\n'));
+function fmtUsd(n: unknown): string {
+  const v = Math.round(Number(n) || 0);
+  return '$' + v.toLocaleString('en-US');
+}
+
+function customerFirstName(payload: any): string {
+  const c = payload?.customer || {};
+  const first = String(c.firstName || '').trim();
+  if (first) return first;
+  const split = splitName(String(c.name || ''));
+  return split.first && split.first !== 'Customer' ? split.first : 'there';
+}
+
+function projectDisplayName(p: any): string {
+  return String(p?._jobberName || p?.type || 'Work').trim() || 'Work';
+}
+
+/** Customer-facing quote letter. Not the line-item spec (that stays on each line). */
+function buildChalkCustomerMessage(payload: any): string {
+  const projects = Array.isArray(payload?.projects) ? payload.projects : [];
+  const names = projects.map(projectDisplayName).filter(Boolean);
+  const unique = [...new Set(names.map((n) => n.replace(/\s+\(#\d+\)$/, '')))];
+  const list =
+    unique.length === 0
+      ? 'this work'
+      : unique.length === 1
+        ? unique[0].toLowerCase()
+        : unique.slice(0, -1).join(', ') + ' and ' + unique[unique.length - 1];
+  const final = Number(payload?.totals?.final || payload?.finalTotal || 0);
+  const deposit = Math.round(final * 0.25);
+  const balance = Math.round(final * 0.75);
+  const wisetack = String(payload?.paymentMethod || '') === 'wisetack';
+  const lines: string[] = [];
+  lines.push('Hi ' + customerFirstName(payload) + ',');
+  lines.push('');
+  lines.push('Thank you for the chance to quote your ' + list + '.');
+  if (unique.length) {
+    lines.push('');
+    lines.push('This estimate covers:');
+    for (const n of unique) lines.push('- ' + n);
   }
-  const scope = parts.join('\n\n').trim();
-  if (typed && scope && typed !== scope) return typed + '\n\n' + scope;
-  return typed || scope;
+  lines.push('');
+  if (wisetack) {
+    lines.push(
+      'Payment: 25% deposit (' +
+        fmtUsd(deposit) +
+        ') due at scheduling. Wisetack financing is available for the remaining ' +
+        fmtUsd(balance) +
+        '.',
+    );
+  } else {
+    lines.push(
+      'Payment: 25% deposit (' +
+        fmtUsd(deposit) +
+        ') due at scheduling. Remaining 75% (' +
+        fmtUsd(balance) +
+        ') due when the job is done. Wisetack financing is available if you want to spread the balance out.',
+    );
+  }
+  lines.push('');
+  lines.push(
+    'You are covered by our 12-month workmanship warranty. Manufacturer stain warranties are listed on each line of this quote.',
+  );
+  lines.push('');
+  lines.push('This quote is good for 30 days. Final price may vary if on-site measurements differ.');
+  const typed = String(payload?.notes || '').trim();
+  if (typed) {
+    lines.push('');
+    lines.push(typed);
+  }
+  return lines.join('\n').trim();
+}
+
+/** Office / crew notes. Photos and rep notes live here, not on the customer letter. */
+function buildChalkOfficeNotes(payload: any): string {
+  const lines: string[] = [];
+  lines.push('INTERNAL - crew / office');
+  const employee = String(payload?.repName || payload?.employee || '').trim();
+  if (employee) lines.push('Quoted by: ' + employee);
+  const pay = String(payload?.paymentMethod || '');
+  lines.push('Payment: ' + (pay === 'wisetack' ? 'Wisetack financing' : '25% deposit + balance'));
+  const quoteId = String(payload?.quoteId || '').trim();
+  if (quoteId) lines.push('Calc quote ID: ' + quoteId);
+  const jobNum = String(payload?.jobberJobNum || '').trim();
+  if (jobNum) lines.push('Chalk job #: ' + jobNum);
+  const typed = String(payload?.notes || '').trim();
+  if (typed) {
+    lines.push('');
+    lines.push('Rep notes:');
+    lines.push(typed);
+  }
+  const photos = collectPhotoRefs(payload);
+  if (photos.length) {
+    lines.push('');
+    lines.push('Reference photos (' + photos.length + '):');
+    for (const ph of photos) {
+      lines.push('- ' + (ph.name || 'photo') + (ph.url ? '\n  ' + ph.url : ''));
+    }
+  }
+  const projects = Array.isArray(payload?.projects) ? payload.projects : [];
+  if (projects.length) {
+    lines.push('');
+    lines.push('Projects on this quote:');
+    for (const p of projects) {
+      const bits = [projectDisplayName(p)];
+      const m = p?.measurements || {};
+      if (p?.type === 'fence' && m.linearft) bits.push(m.linearft + ' ln ft x ' + (m.height || '') + ' ft');
+      if (p?.type === 'deck' && m.flat) bits.push(m.flat + ' sq ft');
+      if (p?.selectedColor) {
+        const sc = p.selectedColor;
+        bits.push(typeof sc === 'string' ? sc : sc.name || sc.label || '');
+      }
+      lines.push('- ' + bits.filter(Boolean).join(' · '));
+    }
+  }
+  return lines.join('\n').trim();
 }
 
 function collectPhotoRefs(payload: any): { url: string; name: string }[] {
@@ -934,6 +1038,13 @@ async function handleChalk(
     const row = await env.CALC_DB.prepare('SELECT * FROM quotes WHERE id = ?').bind(quoteRowId).first<any>();
     if (!row) return json({ ok: false, error: 'quote_not_found' });
     if (row.chalk_quote_id && !body.force) {
+      let existingPayload: any = {};
+      try {
+        existingPayload = JSON.parse(row.payload);
+      } catch {
+        existingPayload = {};
+      }
+      const attachments = await attachQuotePhotos(env, _request, String(row.chalk_quote_id), existingPayload);
       const adminUrl = await resolveChalkOfficeQuoteUrl(env, String(row.chalk_quote_id));
       return json({
         ok: true,
@@ -941,6 +1052,8 @@ async function handleChalk(
         jobberQuoteId: row.chalk_quote_id,
         jobberQuoteNumber: row.chalk_quote_number,
         jobberWebUri: adminUrl,
+        referencePhotoCount: attachments.attached,
+        attachments,
       });
     }
     let payload: any = {};
@@ -1009,14 +1122,15 @@ async function handleChalk(
       (projects[0] && (projects[0]._jobberName || projects[0].type)) ||
       customer.name ||
       'Estimate';
-    const scopeText = buildQuoteScopeText(payload);
+    const customerMessage = buildChalkCustomerMessage(payload);
+    const officeNotes = buildChalkOfficeNotes(payload);
     const createdQuote = await chalkJson(env, '/api/quotes', {
       method: 'POST',
       body: JSON.stringify({
         client_id: clientId,
         property_id: propertyId,
         title,
-        message: scopeText || payload.notes || '',
+        message: customerMessage,
         line_items,
       }),
     });
@@ -1029,7 +1143,7 @@ async function handleChalk(
     }
     const chalkId = String(createdQ.id);
     const chalkNumber = createdQ.number;
-    await postQuoteNote(env, chalkId, scopeText);
+    await postQuoteNote(env, chalkId, officeNotes);
     const attachments = await attachQuotePhotos(env, _request, chalkId, payload);
     const web = await resolveChalkOfficeQuoteUrl(env, chalkId);
     await env.CALC_DB.prepare(
@@ -1061,6 +1175,13 @@ async function handleChalk(
     if (!row) return json({ ok: false, error: 'quote_not_found' });
     const chalkId = String(row.chalk_quote_id || '').trim();
     if (!chalkId) return json({ ok: false, error: 'not_pushed', detail: 'Push the quote to Chalk first.' });
+    let sendPayload: any = {};
+    try {
+      sendPayload = JSON.parse(row.payload);
+    } catch {
+      sendPayload = {};
+    }
+    await attachQuotePhotos(env, _request, chalkId, sendPayload);
     const sent = await chalkJson(env, '/api/quotes/' + encodeURIComponent(chalkId) + '/send', {
       method: 'POST',
       body: JSON.stringify({ email: true, sms: true }),
