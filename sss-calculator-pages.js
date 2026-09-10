@@ -10615,6 +10615,77 @@ function autoSaveDraft() {
 let __cloudSaveInFlight = false;
 let __cloudSavePending  = false;
 
+// Stain gallons + pails. Same math as computeDIYComparison so the
+// quote notes and line items show what the crew will actually order.
+function estimateStainOrder(p, productName) {
+  if (!p || p.type === 'interior' || p.type === 'exterior' || p.type === 'cabinet') return null;
+  const m = p.measurements || {};
+  const isOneCoat = (p.productType === 'water' && p.tier === 'essential');
+  const FENCE_GAL_PER_10FT = { privacy: 1.0, charleston: 1.0, farm: 0.6, shadowbox: 1.3, bob: 1.3, charleston_bob: 1.3 };
+  const STYLE_LABELS = {
+    privacy: 'Privacy', shadowbox: 'Shadowbox', charleston: 'Charleston',
+    bob: 'Board-on-board', charleston_bob: 'Charleston board-on-board', farm: 'Farm-style'
+  };
+  let gallons = 0;
+  let pails = 0;
+  let basedOn = '';
+  if (p.type === 'fence') {
+    const linearft = Number(m.linearft) || 0;
+    if (!linearft) return null;
+    const per10 = (FENCE_GAL_PER_10FT[m.style] != null) ? FENCE_GAL_PER_10FT[m.style] : 1.0;
+    gallons = Math.max(1, Math.ceil(linearft * per10 / 10));
+    pails = Math.max(1, Math.ceil(gallons / 5));
+    const styleLabel = STYLE_LABELS[m.style] || m.style || 'privacy';
+    basedOn = `${Number(linearft).toLocaleString()} ln ft of ${styleLabel} fence`;
+  } else if (p.type === 'deck') {
+    const flatSq = (Number(m.flat) || 0) * (m.underneath ? 2 : 1) + (Number(m.lattice) || 0);
+    if (!flatSq) return null;
+    pails = Math.max(1, isOneCoat ? Math.ceil(flatSq / 750) : Math.ceil(flatSq / 375));
+    gallons = pails * 5;
+    basedOn = `${Number(flatSq).toLocaleString()} sq ft decking${m.underneath ? ' (underside included)' : ''}`;
+  } else {
+    const sq = Number(m.sqft) || 0;
+    if (!sq) return null;
+    pails = Math.max(1, isOneCoat ? Math.ceil(sq / 750) : Math.ceil(sq / 375));
+    gallons = pails * 5;
+    basedOn = `${Number(sq).toLocaleString()} sq ft`;
+  }
+  let extraPails = 0;
+  if (p.addons && p.addons.two_tone) {
+    extraPails = Math.max(1, Math.ceil(pails * 0.5));
+    pails += extraPails;
+    gallons += extraPails * 5;
+  }
+  const sc = p.selectedColor;
+  const colorName = (typeof sc === 'string') ? sc : (sc && (sc.name || sc.label)) || '';
+  let product = productName || '';
+  if (!product && p.productType === 'hoa' && p.hoa) {
+    product = [p.hoa.brand, p.hoa.productName].filter(Boolean).join(' ') || 'HOA-specified product';
+  }
+  return {
+    product: product || 'Stain',
+    color: colorName,
+    gallons,
+    pails,
+    basedOn,
+    extraPails,
+    citronella: !!(p.productType === 'oil' && p.addons && p.addons.citronella)
+  };
+}
+
+function formatStainOrderLines(order) {
+  if (!order) return [];
+  const pailWord = order.pails === 1 ? 'pail' : 'pails';
+  const lines = [];
+  const colorBit = order.color ? ` - ${order.color}` : '';
+  lines.push(`  - ${order.product}${colorBit}: ~${order.gallons} gal (${order.pails} five-gallon ${pailWord})`);
+  if (order.basedOn) lines.push(`    Based on ${order.basedOn}`);
+  if (order.citronella) {
+    lines.push(`  - EXPERT Natural Defense (citronella): ${order.pails} pail additive`);
+  }
+  return lines;
+}
+
 // Build a Jobber line item ({name, description}) from a project state.
 // The description is a multi-line plain-text block listing every
 // meaningful selection — tier/product/color, measurements/scope,
@@ -10747,6 +10818,20 @@ function buildJobberLineItem(p, idx, total) {
     if (hp.length) lines.push(kv('HOA-required product', hp.join(' / ')));
     if (p.hoa.notes) lines.push(kv('HOA notes', p.hoa.notes));
   }
+
+  // Gallons + product, same block paint quotes already print as
+  // PAINT (ESTIMATED ORDER). Lives on the line so Jobber/Chalk show
+  // what we will buy without burying it only in office notes.
+  try {
+    const hoaName = (p.productType === 'hoa' && p.hoa)
+      ? [p.hoa.brand, p.hoa.productName].filter(Boolean).join(' ')
+      : '';
+    const order = estimateStainOrder(p, hoaName || STAIN_PRODUCT_BY_TIER[wKey]);
+    if (order) {
+      pushSection('STAIN (ESTIMATED ORDER)');
+      formatStainOrderLines(order).forEach(l => lines.push(l));
+    }
+  } catch (e) { /* order estimate is informational */ }
 
   // Scope / measurements — collect human-readable bits, then render
   // either as a single inline line (if one item) or as a bulleted

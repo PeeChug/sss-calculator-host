@@ -193,6 +193,157 @@ function projectDisplayName(p: any): string {
   return String(p?._jobberName || p?.type || 'Work').trim() || 'Work';
 }
 
+const FENCE_GAL_PER_10FT: Record<string, number> = {
+  privacy: 1.0,
+  charleston: 1.0,
+  farm: 0.6,
+  shadowbox: 1.3,
+  bob: 1.3,
+  charleston_bob: 1.3,
+};
+
+const FENCE_STYLE_LABELS: Record<string, string> = {
+  privacy: 'Privacy',
+  shadowbox: 'Shadowbox',
+  charleston: 'Charleston',
+  bob: 'Board-on-board',
+  charleston_bob: 'Charleston board-on-board',
+  farm: 'Farm-style',
+};
+
+function stainProductName(p: any, swReferral: boolean): string {
+  if (String(p?.productType) === 'hoa') {
+    const h = p?.hoa || {};
+    return [h.brand, h.productName].filter(Boolean).join(' ') || 'HOA-specified product';
+  }
+  const map: Record<string, string> = {
+    'essential-oil': 'Exotic Timber Oil (tri-oil)',
+    'essential-water': 'SW Woodscapes Solid Color Exterior Stain',
+    'performance-oil': 'EXPERT Stain & Seal (semi-transparent)',
+    'performance-water': 'SW Woodscapes Rain Refresh',
+    'showcase-oil': 'EXPERT Log & Timber Oil (semi-transparent)',
+    'showcase-water': 'SW Acrylic Alkyd Stain',
+  };
+  if (p?.type === 'deck' && p?.productType === 'water') {
+    Object.assign(map, {
+      'essential-water': 'SW SuperDeck Exterior Waterborne Semi-Transparent Stain',
+      'performance-water': 'SW SuperDeck Exterior Waterborne Semi-Solid Color Stain',
+      'showcase-water': 'SW SuperDeck Exterior Waterborne Solid Color Deck Stain',
+    });
+  }
+  if (swReferral) {
+    Object.assign(map, {
+      'essential-oil': 'SuperDeck Exotic Timber Oil',
+      'performance-oil': 'SuperDeck Oil-Based Semi-Solid Wood Stain',
+      'showcase-oil': 'SuperDeck Solid Color Stain (Acrylic-Alkyd)',
+    });
+  }
+  return map[`${p?.tier || 'performance'}-${p?.productType || 'oil'}`] || 'Stain';
+}
+
+function colorLabel(p: any): string {
+  const sc = p?.selectedColor;
+  if (!sc) return '';
+  if (typeof sc === 'string') return sc.trim();
+  const name = String(sc.name || sc.label || '').trim();
+  const brand = sc.brand ? ` (${sc.brand})` : '';
+  return name ? name + brand : '';
+}
+
+function pailPhrase(pails: number): string {
+  return pails === 1 ? '1 five-gallon pail' : pails + ' five-gallon pails';
+}
+
+function stainGallonsFor(p: any): { gallons: number; pails: number; basedOn: string } | null {
+  const type = String(p?.type || '');
+  if (type === 'interior' || type === 'exterior' || type === 'cabinet') return null;
+  const m = p?.measurements || {};
+  const isOneCoat = p?.productType === 'water' && p?.tier === 'essential';
+  if (type === 'fence') {
+    const linearft = Number(m.linearft) || 0;
+    if (!linearft) return null;
+    const style = String(m.style || 'privacy');
+    const per10 = FENCE_GAL_PER_10FT[style] ?? 1;
+    const gallons = Math.max(1, Math.ceil((linearft * per10) / 10));
+    let pails = Math.max(1, Math.ceil(gallons / 5));
+    let extra = 0;
+    if (p?.addons && p.addons.two_tone) {
+      extra = Math.max(1, Math.ceil(pails * 0.5));
+      pails += extra;
+    }
+    const styleLabel = FENCE_STYLE_LABELS[style] || style;
+    return {
+      gallons: gallons + extra * 5,
+      pails,
+      basedOn: linearft + ' ln ft of ' + styleLabel + ' fence',
+    };
+  }
+  if (type === 'deck') {
+    const flatSq = (Number(m.flat) || 0) * (m.underneath ? 2 : 1) + (Number(m.lattice) || 0);
+    if (!flatSq) return null;
+    const pails = Math.max(1, isOneCoat ? Math.ceil(flatSq / 750) : Math.ceil(flatSq / 375));
+    return {
+      gallons: pails * 5,
+      pails,
+      basedOn: flatSq + ' sq ft decking' + (m.underneath ? ' (underside included)' : ''),
+    };
+  }
+  const sq = Number(m.sqft) || 0;
+  if (!sq) return null;
+  const pails = Math.max(1, isOneCoat ? Math.ceil(sq / 750) : Math.ceil(sq / 375));
+  return { gallons: pails * 5, pails, basedOn: sq + ' sq ft' };
+}
+
+function paintOrderFromDescription(desc: unknown): string[] {
+  const text = String(desc || '');
+  const idx = text.indexOf('PAINT (ESTIMATED ORDER)');
+  if (idx < 0) return [];
+  const stop = /^(ROOM-BY-ROOM SCOPE|EXTERIOR SCOPE|AREA-BY-AREA SCOPE|ADD-ONS|CUSTOM ITEMS|DISCOUNTS APPLIED|Warranty:)/;
+  const out: string[] = [];
+  for (const line of text.slice(idx).split('\n')) {
+    if (out.length && stop.test(line)) break;
+    out.push(line);
+  }
+  while (out.length && !out[out.length - 1].trim()) out.pop();
+  return out;
+}
+
+/** Product + gallons, matching live Jobber notes / DIY math. */
+function buildMaterialsLines(payload: any): string[] {
+  const sw = !!payload?.totals?._swReferral;
+  const lines: string[] = [];
+  for (const p of Array.isArray(payload?.projects) ? payload.projects : []) {
+    const name = projectDisplayName(p);
+    const type = String(p?.type || '');
+    if (type === 'interior' || type === 'exterior' || type === 'cabinet') {
+      const extracted = paintOrderFromDescription(p?._jobberDescription);
+      if (extracted.length) {
+        if (lines.length) lines.push('');
+        lines.push(name);
+        for (const l of extracted) lines.push(l);
+      }
+      continue;
+    }
+    const stain = stainGallonsFor(p);
+    if (!stain) continue;
+    if (lines.length) lines.push('');
+    lines.push(name);
+    lines.push('Stain: ' + stainProductName(p, sw));
+    const color = colorLabel(p);
+    if (color) lines.push('Color: ' + color);
+    lines.push('Estimated stain needed: ' + stain.gallons + ' gallons (' + pailPhrase(stain.pails) + ')');
+    if (stain.basedOn) lines.push('Based on ' + stain.basedOn);
+    if (p?.productType === 'oil' && p?.addons && p.addons.citronella) {
+      lines.push(
+        'Additive: EXPERT Natural Defense (citronella) x ' +
+          stain.pails +
+          (stain.pails === 1 ? ' pail' : ' pails'),
+      );
+    }
+  }
+  return lines;
+}
+
 /** Customer-facing quote letter. Not the line-item spec (that stays on each line). */
 function buildChalkCustomerMessage(payload: any): string {
   const projects = Array.isArray(payload?.projects) ? payload.projects : [];
@@ -216,6 +367,12 @@ function buildChalkCustomerMessage(payload: any): string {
     lines.push('');
     lines.push('This estimate covers:');
     for (const n of unique) lines.push('- ' + n);
+  }
+  const materials = buildMaterialsLines(payload);
+  if (materials.length) {
+    lines.push('');
+    lines.push("What we'll use");
+    for (const l of materials) lines.push(l);
   }
   lines.push('');
   if (wisetack) {
@@ -249,7 +406,7 @@ function buildChalkCustomerMessage(payload: any): string {
   return lines.join('\n').trim();
 }
 
-/** Office / crew notes. Photos and rep notes live here, not on the customer letter. */
+/** Office / crew notes. Photos, materials, and rep notes live here. */
 function buildChalkOfficeNotes(payload: any): string {
   const lines: string[] = [];
   lines.push('INTERNAL - crew / office');
@@ -266,6 +423,12 @@ function buildChalkOfficeNotes(payload: any): string {
     lines.push('');
     lines.push('Rep notes:');
     lines.push(typed);
+  }
+  const materials = buildMaterialsLines(payload);
+  if (materials.length) {
+    lines.push('');
+    lines.push('MATERIALS');
+    for (const l of materials) lines.push(l);
   }
   const photos = collectPhotoRefs(payload);
   if (photos.length) {
@@ -890,20 +1053,43 @@ async function attachQuotePhotos(
   return { ok: errors.length === 0, attempted: refs.length, attached, errors };
 }
 
-async function postQuoteNote(env: CalcEnv, chalkId: string, body: string): Promise<void> {
-  // Line-item description is the printed quote line, not an office note.
-  // Office notes are POST /api/notes with `body` (or `message`).
+async function upsertQuoteNote(env: CalcEnv, chalkId: string, body: string): Promise<void> {
   const text = String(body || '').trim();
   if (!text) return;
+  const sliced = text.slice(0, 8000);
+  const existing = await chalkJson(env, '/api/quotes/' + encodeURIComponent(chalkId));
+  const notes = Array.isArray(existing.data?.notes) ? existing.data.notes : [];
+  const pinned = notes.find((n: any) => Number(n?.pinned) === 1) || notes[0];
+  if (pinned?.id) {
+    await chalkJson(env, '/api/notes/' + encodeURIComponent(String(pinned.id)), {
+      method: 'PATCH',
+      body: JSON.stringify({ body: sliced, pinned: 1 }),
+    });
+    return;
+  }
   await chalkJson(env, '/api/notes', {
     method: 'POST',
     body: JSON.stringify({
       entity_type: 'quote',
       entity_id: chalkId,
-      body: text.slice(0, 8000),
+      body: sliced,
       pinned: 1,
     }),
   });
+}
+
+async function syncChalkQuoteCopy(env: CalcEnv, chalkId: string, payload: any): Promise<void> {
+  const customerMessage = buildChalkCustomerMessage(payload);
+  const officeNotes = buildChalkOfficeNotes(payload);
+  await chalkJson(env, '/api/quotes/' + encodeURIComponent(chalkId), {
+    method: 'PATCH',
+    body: JSON.stringify({ message: customerMessage }),
+  });
+  await upsertQuoteNote(env, chalkId, officeNotes);
+}
+
+async function postQuoteNote(env: CalcEnv, chalkId: string, body: string): Promise<void> {
+  await upsertQuoteNote(env, chalkId, body);
 }
 
 export function buildQuoteLineItems(payload: any): { line_items: Json[]; sentLineItems: Json[]; bundle: number } {
@@ -1044,6 +1230,7 @@ async function handleChalk(
       } catch {
         existingPayload = {};
       }
+      await syncChalkQuoteCopy(env, String(row.chalk_quote_id), existingPayload);
       const attachments = await attachQuotePhotos(env, _request, String(row.chalk_quote_id), existingPayload);
       const adminUrl = await resolveChalkOfficeQuoteUrl(env, String(row.chalk_quote_id));
       return json({
