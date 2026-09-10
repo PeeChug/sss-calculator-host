@@ -405,33 +405,37 @@ function collectPhotoRefs(payload: any): { url: string; name: string }[] {
 function mapChalkClientNode(raw: any, fallback?: any): Json {
   const data = raw && typeof raw === 'object' ? raw : {};
   const nested = data.client && typeof data.client === 'object' ? data.client : {};
-  const client = { ...(fallback && typeof fallback === 'object' ? fallback : {}), ...data, ...nested };
-  const emails = Array.isArray(data.emails) ? data.emails : Array.isArray(client.emails) ? client.emails : [];
-  const phones = Array.isArray(data.phones) ? data.phones : Array.isArray(client.phones) ? client.phones : [];
-  const properties = Array.isArray(data.properties)
-    ? data.properties
-    : Array.isArray(client.properties)
-      ? client.properties
-      : [];
+  const fb = fallback && typeof fallback === 'object' ? fallback : {};
+  const client = { ...fb, ...data, ...nested };
+  const pickArr = (...cands: unknown[]): any[] => {
+    for (const c of cands) if (Array.isArray(c) && c.length) return c as any[];
+    for (const c of cands) if (Array.isArray(c)) return c as any[];
+    return [];
+  };
+  const emails = pickArr(data.emails, nested.emails, fb.emails);
+  const phones = pickArr(data.phones, nested.phones, fb.phones);
+  const properties = pickArr(data.properties, data.archived_properties, nested.properties, fb.properties);
   const primaryEmail =
     client.primary_email ||
+    fb.primary_email ||
     client.email ||
     emails.find((e: any) => e && (e.is_primary || e.primary))?.address ||
     emails[0]?.address ||
     '';
   const primaryPhone =
     client.primary_phone ||
+    fb.primary_phone ||
     client.phone ||
     phones.find((p: any) => p && (p.is_primary || p.primary))?.number ||
     phones[0]?.number ||
     '';
   const prop =
     properties.find((p: any) => p && (p.is_billing || p.is_primary)) || properties[0] || {};
-  const id = String(client.id || fallback?.id || '').trim();
+  const id = String(client.id || fb.id || '').trim();
   let firstName = String(client.first_name || client.firstName || '').trim();
   let lastName = String(client.last_name || client.lastName || '').trim();
   if (!firstName && !lastName) {
-    const split = splitName(String(client.name || client.display_name || fallback?.name || ''));
+    const split = splitName(String(client.name || client.display_name || fb.title || fb.name || ''));
     firstName = split.first === 'Customer' && !client.name ? '' : split.first;
     lastName = split.last;
   }
@@ -441,9 +445,10 @@ function mapChalkClientNode(raw: any, fallback?: any): Json {
     companyName: client.company_name || client.companyName || '',
     firstName,
     lastName,
-    displayName: client.display_name || client.name || fallback?.title || fallback?.name || '',
+    displayName: client.display_name || client.name || fb.title || fb.name || '',
     email: primaryEmail,
     phone: primaryPhone,
+    archived: Boolean(client.archived_at || client.archived || fb.archived || fb.archived_at),
     street1: prop.street1 || client.street1 || client.street || '',
     street2: prop.street2 || client.street2 || '',
     city: prop.city || client.city || '',
@@ -528,6 +533,7 @@ async function chalkFetch(env: CalcEnv, path: string, init: RequestInit = {}): P
   const headers = new Headers(init.headers);
   headers.set('Authorization', 'Bearer ' + (env.CHALK_API_KEY || ''));
   headers.set('Accept', 'application/json');
+  if (!headers.has('user-agent')) headers.set('User-Agent', 'SSS-employee-calc/1.0');
   if (init.body && !headers.has('content-type')) headers.set('content-type', 'application/json');
   return fetch(base + path, { ...init, headers });
 }
@@ -900,24 +906,29 @@ async function lookupChalkClients(env: CalcEnv, q: string): Promise<Json[]> {
   const take = (node: Json | null) => {
     if (!node || !node.id) return;
     const id = String(node.id);
-    if (!found.has(id)) found.set(id, node);
+    const prev = found.get(id);
+    if (!prev) found.set(id, node);
+    else if (prev.archived && !node.archived) found.set(id, node);
   };
 
-  // Documented find: name, company, email, digit-stripped phone (4+), street/city/zip.
-  const lookup = await chalkJson(env, '/api/clients/lookup?q=' + encoded);
-  if (lookup.status < 400) await ingestClientHits(env, lookup.data, take);
-
-  if (!found.size) {
-    const list = await chalkJson(env, '/api/clients?q=' + encoded);
-    if (list.status < 400) await ingestClientHits(env, list.data, take);
+  // lookup?q= is documented but currently returns {matches:[]} even when
+  // /api/clients?q= hits. Search live + archived in parallel so archived
+  // customers (the whole book right now) still show in the typeahead.
+  const paths = [
+    '/api/clients/lookup?q=' + encoded,
+    '/api/clients?q=' + encoded,
+    '/api/search?q=' + encoded + '&kind=client',
+    '/api/clients?q=' + encoded + '&archived=1',
+    '/api/search?q=' + encoded + '&kind=client&archived=1',
+  ];
+  const results = await Promise.all(paths.map((p) => chalkJson(env, p)));
+  for (const res of results) {
+    if (res.status < 400) await ingestClientHits(env, res.data, take);
   }
 
-  if (!found.size) {
-    const search = await chalkJson(env, '/api/search?q=' + encoded + '&kind=client');
-    if (search.status < 400) await ingestClientHits(env, search.data, take);
-  }
-
-  return Array.from(found.values()).slice(0, 8);
+  return Array.from(found.values())
+    .sort((a, b) => Number(!!a.archived) - Number(!!b.archived))
+    .slice(0, 8);
 }
 
 async function attachQuotePhotos(

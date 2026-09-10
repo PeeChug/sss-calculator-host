@@ -5084,9 +5084,8 @@ async function runCustSearch(q) {
   const seq = ++__custSearchAbort;
   showCustSearchLoading();
   try {
-    const r = await fetch('/_functions/searchJobberClients', {
+    const r = await authFetch('/_functions/searchJobberClients', {
       method: 'POST',
-      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ q, limit: 8 })
     });
@@ -5094,6 +5093,10 @@ async function runCustSearch(q) {
     const data = await r.json();
     if (!data || !data.ok) {
       renderCustSearchResults([], data && data.error);
+      return;
+    }
+    if (data.error && !(data.nodes || []).length) {
+      renderCustSearchResults([], data.error);
       return;
     }
     renderCustSearchResults(data.nodes || [], null);
@@ -5128,6 +5131,7 @@ function renderCustSearchResults(nodes, errMsg) {
       ? `${escapeHtml(c.companyName)}${c.firstName || c.lastName ? ` (${escapeHtml((c.firstName + ' ' + c.lastName).trim())})` : ''}`
       : escapeHtml((c.firstName + ' ' + c.lastName).trim() || 'Unnamed client');
     const metaBits = [
+      c.archived ? 'Archived' : null,
       c.email   ? escapeHtml(c.email)   : null,
       c.phone   ? escapeHtml(c.phone)   : null,
       c.street1 ? escapeHtml([c.street1, c.city].filter(Boolean).join(', ')) : null
