@@ -1,0 +1,28 @@
+# Pages Functions for superior-stain-solutions.
+# Keep existing public-site bindings so /api/lead is not dropped.
+name = "superior-stain-solutions"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-09-05"
+
+[vars]
+CF_ACCOUNT_ID = "8c8c24bf10b7b69a2ceba7dd63f35019"
+PUBLIC_SITE_NAME = "Superior Stain Solutions"
+CHALK_API_BASE = "https://app.chalkcrm.com"
+
+[[d1_databases]]
+binding = "LEADS_DB"
+database_name = "sss-website-leads"
+database_id = "6e8da07d-e793-4754-9b44-7c0c78d07322"
+
+[[d1_databases]]
+binding = "CALC_DB"
+database_name = "sss-employee-calc-draft"
+database_id = "5f7d1d6d-b9a9-44f5-ad7f-ef4dc232d05b"
+
+[[r2_buckets]]
+binding = "LEAD_PHOTOS"
+bucket_name = "sss-website-lead-photos"
+
+[[r2_buckets]]
+binding = "CALC_PHOTOS"
+bucket_name = "sss-employee-calc-draft-photos"
