@@ -5771,7 +5771,7 @@ function renderStackedMeasurements(projects) {
     return `
       <section class="measure-block" data-uid="${uid}">
         <header class="measure-block-head">
-          <h2>${meta.icon} ${escapeHtml(projectLabel(p))}</h2>
+          <h2>${escapeHtml(projectLabel(p))}</h2>
           <span class="mb-status ${done ? '' : 'needs'}">${done ? 'Measured' : 'Needs measurements'}</span>
         </header>
         <div class="measure-block-body" data-uid="${uid}"></div>
