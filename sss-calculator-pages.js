@@ -5819,7 +5819,7 @@ function ensureEditingBanners() {
     if (!stage) return;
     if (stage.querySelector('.editing-project-banner')) return;
     const h1 = stage.querySelector('h1');
-    const el = __doc.createElement('div');
+    const el = document.createElement('div');
     el.className = 'editing-project-banner';
     el.setAttribute('data-banner-stage', String(n));
     if (h1) h1.insertAdjacentElement('afterend', el);
@@ -5927,7 +5927,7 @@ function renderApplyAllStainToggle(anchorId) {
   }
   let el = existing;
   if (!el) {
-    el = __doc.createElement('div');
+    el = document.createElement('div');
     el.id = 'applyAllStainToggle';
     el.className = 'apply-all-stain';
     anchor.parentNode.insertBefore(el, anchor);
@@ -6718,7 +6718,7 @@ function refreshStage2Selection() {
   if (!summary) {
     const grid = __doc.getElementById('projectTypeCards');
     if (grid && grid.parentNode) {
-      summary = __doc.createElement('div');
+      summary = document.createElement('div');
       summary.id = 'projectTypeSummary';
       summary.className = 'project-type-summary';
       grid.parentNode.insertBefore(summary, grid.nextSibling);
