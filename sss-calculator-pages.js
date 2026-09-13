@@ -547,18 +547,27 @@ const STAIN_TRANSPARENCIES = [
    COLOR LIBRARIES — REAL IMAGES FROM EXPERT'S WEBSITE
    ============================================================ */
 const COLORS = {
-  // Exotic Timber Oil — Essential oil tier. Four shop colors only
-  // (Natural → Red Mahogany, lightest to darkest). Photos live at
-  // /colors/ on www; do not add extra custom-blend chips.
+  // Exotic Timber Oil — Essential oil tier. 4 SW stock + 4 SSS shop mixes.
   exotic_timber_oil: {
     line: 'Exotic Timber Oil',
-    note: 'Tri-oil blend (tung + linseed + alkyd) with UV-resistant pigments. Final look varies with your wood species, age, and lighting. Four shop colors — we confirm the final tone with a test patch on your wood.',
-    grouped: false,
-    colors: [
-      { name: 'Natural',      img: '/colors/exotic-timber-oil-natural.jpg' },
-      { name: 'Cedar',        img: '/colors/exotic-timber-oil-cedar.jpg' },
-      { name: 'Redwood',      img: '/colors/exotic-timber-oil-redwood.jpg' },
-      { name: 'Red Mahogany', img: '/colors/exotic-timber-oil-red-mahogany.jpg' }
+    note: 'Tri-oil blend (tung + linseed + alkyd) with UV-resistant pigments. Final look varies with your wood species, age, and lighting. Stock colors are Sherwin-Williams. Shop mixes are SSS blends. We confirm the final tone with a test patch on your wood.',
+    grouped: true,
+    groups: [
+      { label: 'Stock (Sherwin-Williams)', colors: [
+        { name: 'Natural',      img: '/colors/timber-natural.jpg' },
+        { name: 'Cedar',        img: '/colors/timber-cedar.jpg' },
+        { name: 'Redwood',      img: '/colors/timber-redwood.jpg' },
+        { name: 'Red Mahogany', img: '/colors/timber-red-mahogany.jpg' }
+      ]},
+      // First four git shop names (not Redwood / Red Mahogany). Photos
+      // 01.jpg → 04.jpg, lightest to darkest. Dropped Lowcountry Driftwood
+      // and Palmetto Ember so the picker stays 4 stock + 4 shop.
+      { label: 'Shop mix (SSS)', colors: [
+        { name: 'Carolina Honey',      img: '/colors/exotic-timber-oil-carolina-honey.jpg' },
+        { name: 'Saluda Amber',         img: '/colors/exotic-timber-oil-saluda-amber.jpg' },
+        { name: 'Blue Ridge Chestnut',  img: '/colors/exotic-timber-oil-blue-ridge-chestnut.jpg' },
+        { name: 'Foothills Walnut',     img: '/colors/exotic-timber-oil-foothills-walnut.jpg' }
+      ]}
     ]
   },
   // EXPERT Stain & Seal — Performance oil tier
