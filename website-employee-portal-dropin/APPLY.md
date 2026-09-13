@@ -28,7 +28,9 @@ Apply these files on **`akg696/websites`** inside `superior-stain-solutions/`. T
 | `functions/_functions/[name].ts` | `functions/_functions/[name].ts` (keep the brackets) |
 | `calc-backend/` | `calc-backend/` |
 | `functions/calc-photos/[id].ts` | `functions/calc-photos/[id].ts` |
-| `functions/api/[[path]].ts` | Only if you must deploy Functions without the original `lead.ts` / `google-rating.ts`. **Do not** add this if those files are already in the websites repo. |
+| `functions/api/lead.ts` | `functions/api/lead.ts` (Chalk website form. Never a Jobber/`LEAD_WEBHOOK` proxy.) |
+| `functions/api/google-rating.ts` | `functions/api/google-rating.ts` |
+| `functions/api/lead-photo/[key].ts` | `functions/api/lead-photo/[key].ts` (keep the brackets) |
 
 Edit `sss-calculator-pages.js` to improve the new site. Never edit `sss-calculator.js` (Wix /employee-estimator-v2). PIN and quotes on the draft hit the native Pages backend (draft D1), not live Velo. Do not test against production Jobber or live EmployeeQuotes.
 
@@ -36,7 +38,12 @@ Do not overwrite `functions/api/lead.ts` or `functions/api/google-rating.ts` whe
 
 ## Pages direct-upload fallback (no Origin repo)
 
-The websites repo is on Cursor Origin, not GitHub. If you cannot clone it, do **not** deploy a static-only upload (that would wipe `/api/lead`). Mirror the current hashed production files, replace `dist/employee-portal/index.html` with the full-bleed page, keep the footer Company link on other pages, attach the native `_functions` handler + calc D1/R2, and keep `/api/*` working by proxying public lead/rating to the mirrored hash (`functions/api/[[path]].ts` in this drop-in). Pin the upstream hash in that file before deploy. Rollback target: the hashed deployment you mirrored.
+The websites repo is on Cursor Origin, not GitHub. If you cannot clone it, do **not** deploy a static-only upload (that would wipe `/api/lead`). Mirror the current hashed production files, replace `dist/employee-portal/index.html` with the full-bleed page, keep the footer Company link on other pages, and deploy `functions/` beside `dist/`:
+
+- Chalk `functions/api/lead.ts`, `google-rating.ts`, `lead-photo/[key].ts` (this drop-in; same behavior as Origin hashes `4906e9f4` / `ebafb7d4`)
+- Native `_functions` handler + `calc-photos` + calc D1/R2
+
+**Never** ship `functions/api/[[path]].ts` that proxies `/api/*` to `39d00fb0` (that hash still writes Jobber). Do not POST `/api/lead` as a test. Rollback target: hashed deployment `ebafb7d4` (marketing) plus this calc overlay.
 
 ## Footer (other pages only)
 
