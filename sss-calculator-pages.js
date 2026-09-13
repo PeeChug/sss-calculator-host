@@ -559,13 +559,13 @@ const COLORS = {
         { name: 'Redwood',      img: '/colors/timber-redwood.jpg' },
         { name: 'Red Mahogany', img: '/colors/timber-red-mahogany.jpg' }
       ]},
-      // Shop photos 01.jpg → 04.jpg (lightest → darkest). Names from Adrian:
-      // Driftwood, Ember, Espresso, Walnut. No Shop prefix. No invented SC names.
+      // Shop photos. Display order: Driftwood, Ember, Walnut, Espresso last.
+      // No Shop prefix. No invented SC names.
       { colors: [
         { name: 'Driftwood', img: '/colors/exotic-timber-oil-driftwood.jpg' },
         { name: 'Ember',     img: '/colors/exotic-timber-oil-ember.jpg' },
-        { name: 'Espresso',  img: '/colors/exotic-timber-oil-espresso.jpg' },
-        { name: 'Walnut',    img: '/colors/exotic-timber-oil-walnut.jpg' }
+        { name: 'Walnut',    img: '/colors/exotic-timber-oil-walnut.jpg' },
+        { name: 'Espresso',  img: '/colors/exotic-timber-oil-espresso.jpg' }
       ]}
     ]
   },
