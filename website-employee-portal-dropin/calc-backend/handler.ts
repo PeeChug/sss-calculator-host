@@ -177,7 +177,52 @@ async function resolveChalkOfficeQuoteUrl(env: CalcEnv, chalkId: string): Promis
 }
 
 function projectDisplayName(p: any): string {
-  return String(p?._jobberName || p?.type || 'Work').trim() || 'Work';
+  return stripHashSuffix(String(p?._jobberName || p?.type || 'Work').trim() || 'Work');
+}
+
+function stripHashSuffix(s: string): string {
+  return String(s || '').replace(/\s*\(#\d+\)/g, '').trim();
+}
+
+const QUOTE_TITLE_STAIN: Record<string, string> = {
+  fence: 'Fence',
+  deck: 'Deck',
+  pergola: 'Pergola',
+  barn: 'Barn',
+  ceiling: 'Wooden Ceiling',
+};
+const QUOTE_TITLE_PAINT: Record<string, string> = {
+  interior: 'Interior Painting',
+  exterior: 'Exterior Painting',
+  cabinet: 'Cabinet Painting',
+};
+
+export function oxfordAnd(items: string[]): string {
+  const list = (items || []).filter(Boolean);
+  if (!list.length) return '';
+  if (list.length === 1) return list[0];
+  if (list.length === 2) return list[0] + ' and ' + list[1];
+  return list.slice(0, -1).join(', ') + ', and ' + list[list.length - 1];
+}
+
+/** One Chalk quote title for the whole job. No #1 / #2. Stain group first, then paint. */
+export function buildChalkQuoteTitle(projects: any[]): string {
+  const src = Array.isArray(projects) ? projects : [];
+  const seen = new Set<string>();
+  const stainNouns: string[] = [];
+  const paintPhrases: string[] = [];
+  for (const p of src) {
+    const type = String(p?.type || '').trim();
+    if (!type || seen.has(type)) continue;
+    seen.add(type);
+    if (QUOTE_TITLE_PAINT[type]) paintPhrases.push(QUOTE_TITLE_PAINT[type]);
+    else stainNouns.push(QUOTE_TITLE_STAIN[type] || type.replace(/^./, (c) => c.toUpperCase()));
+  }
+  const stainPart = stainNouns.length ? oxfordAnd(stainNouns) + ' Staining' : '';
+  const parts: string[] = [];
+  if (stainPart) parts.push(stainPart);
+  paintPhrases.forEach((x) => parts.push(x));
+  return oxfordAnd(parts);
 }
 
 const FENCE_GAL_PER_10FT: Record<string, number> = {
@@ -1076,7 +1121,7 @@ export function buildQuoteLineItems(payload: any): {
   if (hasProjectLines) {
     for (const p of projects) {
       const dollars = Number(p.preDiscountSubtotal ?? p.subtotal ?? 0);
-      const name = String(p._jobberName || p.type || 'Work');
+      const name = stripHashSuffix(String(p._jobberName || p.type || 'Work'));
       const description = String(p._jobberDescription || '');
       line_items.push({
         name,
@@ -1267,7 +1312,9 @@ async function handleChalk(
     const { line_items, sentLineItems, discountCents, discountReason } = buildQuoteLineItems(payload);
 
     const title =
-      (projects[0] && (projects[0]._jobberName || projects[0].type)) ||
+      stripHashSuffix(String(payload.quoteTitle || '').trim()) ||
+      buildChalkQuoteTitle(projects) ||
+      stripHashSuffix(String(projects[0] && (projects[0]._jobberName || projects[0].type) || '')) ||
       customer.name ||
       'Estimate';
     const officeNotes = buildChalkOfficeNotes(payload);

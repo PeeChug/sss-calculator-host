@@ -547,29 +547,18 @@ const STAIN_TRANSPARENCIES = [
    COLOR LIBRARIES — REAL IMAGES FROM EXPERT'S WEBSITE
    ============================================================ */
 const COLORS = {
-  // Exotic Timber Oil — Essential oil tier (4 stock tri-oil colors).
+  // Exotic Timber Oil — Essential oil tier. Four shop colors only
+  // (Natural → Red Mahogany, lightest to darkest). Photos live at
+  // /colors/ on www; do not add extra custom-blend chips.
   exotic_timber_oil: {
     line: 'Exotic Timber Oil',
-    note: 'Tri-oil blend (tung + linseed + alkyd) with UV-resistant pigments. Final look varies with your wood species, age, and lighting. Custom-blend tones are shop-mixed to order — we confirm the final tone with a test patch on your wood.',
-    grouped: true,
-    groups: [
-      { label: 'Exotic Timber Oil tones', colors: [
-        { name: 'Natural',      img: 'https://cdn.jsdelivr.net/gh/PeeChug/sss-calculator-host@796b76e609a24b6a5506891e1b0f9ae6903a280d/colors/timber-natural.jpg' },
-        { name: 'Cedar',        img: 'https://cdn.jsdelivr.net/gh/PeeChug/sss-calculator-host@796b76e609a24b6a5506891e1b0f9ae6903a280d/colors/timber-cedar.jpg' },
-        { name: 'Redwood',      img: 'https://cdn.jsdelivr.net/gh/PeeChug/sss-calculator-host@796b76e609a24b6a5506891e1b0f9ae6903a280d/colors/timber-redwood.jpg' },
-        { name: 'Red Mahogany', img: 'https://cdn.jsdelivr.net/gh/PeeChug/sss-calculator-host@796b76e609a24b6a5506891e1b0f9ae6903a280d/colors/timber-red-mahogany.jpg' }
-      ]},
-      // Custom shop-mixed blends of the four stock tones (round 15 —
-      // names ours, per Adrian "make names for them too"). Hex chips
-      // are close approximations; final tone confirmed by test patch.
-      { label: 'Custom-blend tones (shop-mixed)', colors: [
-        { name: 'Carolina Honey',       hex: '#C68A45' },
-        { name: 'Saluda Amber',         hex: '#B06E2F' },
-        { name: 'Blue Ridge Chestnut',  hex: '#8A5A33' },
-        { name: 'Foothills Walnut',     hex: '#6E4A2B' },
-        { name: 'Lowcountry Driftwood', hex: '#9C8A70' },
-        { name: 'Palmetto Ember',       hex: '#A0522D' }
-      ]}
+    note: 'Tri-oil blend (tung + linseed + alkyd) with UV-resistant pigments. Final look varies with your wood species, age, and lighting. Four shop colors — we confirm the final tone with a test patch on your wood.',
+    grouped: false,
+    colors: [
+      { name: 'Natural',      img: '/colors/exotic-timber-oil-natural.jpg' },
+      { name: 'Cedar',        img: '/colors/exotic-timber-oil-cedar.jpg' },
+      { name: 'Redwood',      img: '/colors/exotic-timber-oil-redwood.jpg' },
+      { name: 'Red Mahogany', img: '/colors/exotic-timber-oil-red-mahogany.jpg' }
     ]
   },
   // EXPERT Stain & Seal — Performance oil tier
@@ -2746,7 +2735,7 @@ function buildInteriorJobberLineItem(p, idx, total) {
   const rooms = m.rooms || [];
   const cp = m.colorPlan || {};
   const tierMeta = TIER_META.interior_paint[p.tier] || {};
-  const name = `Interior Painting — ${rooms.length} room${rooms.length === 1 ? '' : 's'}${total > 1 ? ` (#${idx + 1})` : ''}`;
+  const name = `Interior Painting — ${rooms.length} room${rooms.length === 1 ? '' : 's'}`;
   const lines = [];
   const pushSection = (heading) => { lines.push(''); lines.push(heading); };
   const kv = (label, value) => `${label}: ${value}`;
@@ -4137,7 +4126,7 @@ function buildExteriorJobberLineItem(p, idx, total) {
   const m = p.measurements || {};
   const tierMeta = TIER_META.exterior_paint[p.tier] || {};
   const cost = computeExteriorCost(p.tier, m);
-  const name = `Exterior Painting — ${(m.sqft || 0).toLocaleString()} sq ft siding${total > 1 ? ` (#${idx + 1})` : ''}`;
+  const name = `Exterior Painting — ${(m.sqft || 0).toLocaleString()} sq ft siding`;
   const lines = [];
   const pushSection = (h) => { lines.push(''); lines.push(h); };
   lines.push(`Paint: ${tierMeta.product || 'SW exterior'} — 2 coats, wash + prep included`);
@@ -4181,7 +4170,7 @@ function buildCabinetJobberLineItem(p, idx, total) {
   const areas = m.areas || [];
   const tierMeta = TIER_META.cabinet_paint[p.tier] || {};
   const pieces = m.pieceCount || areas.reduce((s, a) => s + cabinetPieceCount(a), 0);
-  const name = `Cabinet Painting — ${pieces} piece${pieces === 1 ? '' : 's'}${total > 1 ? ` (#${idx + 1})` : ''}`;
+  const name = `Cabinet Painting — ${pieces} piece${pieces === 1 ? '' : 's'}`;
   const lines = [];
   const pushSection = (h) => { lines.push(''); lines.push(h); };
   lines.push(`Finish: ${tierMeta.product || 'SW cabinet enamel'} — degrease, scuff-sand, adhesion prime + 2 enamel coats`);
@@ -5315,13 +5304,69 @@ function shouldSkipColorStage(p) {
    leaving, and Steps 4–9 can switch focus without rewinding the
    10-step bar.
    ============================================================ */
+function nextProjectOrd() {
+  let max = 0;
+  const consider = (q) => {
+    if (q && typeof q._ord === 'number' && q._ord > max) max = q._ord;
+  };
+  consider(state.activeProject);
+  (state.bundledProjects || []).forEach(consider);
+  return max + 1;
+}
+
+function assignProjectOrdIfNeeded(p) {
+  if (!p || typeof p._ord === 'number') return;
+  p._ord = nextProjectOrd();
+}
+
 function quoteProjects() {
   const list = [];
   if (state.activeProject && state.activeProject.type) list.push(state.activeProject);
   (state.bundledProjects || []).forEach((p) => {
     if (p && p.type) list.push(p);
   });
+  list.forEach(assignProjectOrdIfNeeded);
+  list.sort((a, b) => (Number(a._ord) || 0) - (Number(b._ord) || 0));
   return list;
+}
+
+const QUOTE_TITLE_STAIN = {
+  fence: 'Fence',
+  deck: 'Deck',
+  pergola: 'Pergola',
+  barn: 'Barn',
+  ceiling: 'Wooden Ceiling'
+};
+const QUOTE_TITLE_PAINT = {
+  interior: 'Interior Painting',
+  exterior: 'Exterior Painting',
+  cabinet: 'Cabinet Painting'
+};
+
+function oxfordAnd(items) {
+  const list = (items || []).filter(Boolean);
+  if (!list.length) return '';
+  if (list.length === 1) return list[0];
+  if (list.length === 2) return list[0] + ' and ' + list[1];
+  return list.slice(0, -1).join(', ') + ', and ' + list[list.length - 1];
+}
+
+function buildQuoteTitle(projects) {
+  const src = Array.isArray(projects) ? projects : quoteProjects();
+  const seen = new Set();
+  const stainNouns = [];
+  const paintPhrases = [];
+  src.forEach((p) => {
+    if (!p || !p.type || seen.has(p.type)) return;
+    seen.add(p.type);
+    if (QUOTE_TITLE_PAINT[p.type]) paintPhrases.push(QUOTE_TITLE_PAINT[p.type]);
+    else stainNouns.push(QUOTE_TITLE_STAIN[p.type] || ((PROJECT_META[p.type] && PROJECT_META[p.type].name) || String(p.type).replace(/^./, (c) => c.toUpperCase())));
+  });
+  const stainPart = stainNouns.length ? oxfordAnd(stainNouns) + ' Staining' : '';
+  const parts = [];
+  if (stainPart) parts.push(stainPart);
+  paintPhrases.forEach((x) => parts.push(x));
+  return oxfordAnd(parts) || 'Estimate';
 }
 
 function stainProjects() {
@@ -5452,6 +5497,7 @@ function addBlankProjectOfType(type) {
   ensureProjectUid(stub);
   stub.selectedDiscounts = quoteSelectedDiscounts().slice();
   stampProjectType(stub, type);
+  assignProjectOrdIfNeeded(stub);
   if (!state.activeProject.type) {
     state.activeProject = stub;
   } else {
@@ -9476,56 +9522,47 @@ function renderProjectBubbles() {
   if (!onQuoteWalk) { bar.style.display = 'none'; return; }
   if (totalProjects < 1) { bar.style.display = 'none'; return; }
 
-  // Build numbered labels using each project's stable per-type _seq.
-  // Backfill _seq on any older projects (e.g. drafts created before seq
-  // numbering existed) so they show a sensible #N too.
-  bundled.forEach(assignProjectSeqIfNeeded);
-  if (haveActive) assignProjectSeqIfNeeded(active);
-  const all = [
-    ...bundled.map((p, idx) => ({ kind: 'bundled', idx, project: p })),
-    ...(haveActive ? [{ kind: 'active', idx: bundled.length, project: active }] : [])
-  ];
+  // Display order matches stacked boxes: insertion _ord, not active-first.
+  const all = quoteProjects();
+  all.forEach(assignProjectSeqIfNeeded);
   const typeCounts = {};
-  all.forEach(item => {
-    const t = item.project.type;
-    typeCounts[t] = (typeCounts[t] || 0) + 1;
+  all.forEach((p) => {
+    typeCounts[p.type] = (typeCounts[p.type] || 0) + 1;
   });
-  const labels = all.map(item => {
-    const t = item.project.type;
-    const meta = PROJECT_META[t];
-    if (typeCounts[t] > 1 && typeof item.project._seq === 'number') {
-      return `${meta.icon} ${meta.name} #${item.project._seq}`;
+  const labels = all.map((p) => {
+    const meta = PROJECT_META[p.type];
+    if (typeCounts[p.type] > 1 && typeof p._seq === 'number') {
+      return `${meta.icon} ${meta.name} #${p._seq}`;
     }
     return `${meta.icon} ${meta.name}`;
   });
   const html = `
     <span class="project-bubbles-label">Projects in this quote:</span>
-    ${all.map((item, i) => {
-      const isActive = (item.kind === 'active');
-      const price = item.kind === 'bundled'
-        ? (item.project._cached && item.project._cached.subtotal) || 0
-        : (computeProjectTotal().subtotal || 0);
-      const needs = !measurementsAreComplete(item.project);
+    ${all.map((p, i) => {
+      const isActive = (p === state.activeProject);
+      const price = isActive
+        ? (computeProjectTotal().subtotal || 0)
+        : (p._cached && p._cached.subtotal) || 0;
+      const needs = !measurementsAreComplete(p);
+      const uid = ensureProjectUid(p);
       return `
-        <button type="button" class="project-bubble ${isActive ? 'active' : ''} ${needs ? 'needs-input' : ''}" data-bubble-kind="${item.kind}" data-bubble-idx="${item.idx}">
-          <span class="pb-ico">${PROJECT_META[item.project.type].icon}</span>
-          <span>${labels[i].replace(PROJECT_META[item.project.type].icon + ' ', '')}</span>
+        <button type="button" class="project-bubble ${isActive ? 'active' : ''} ${needs ? 'needs-input' : ''}" data-bubble-uid="${uid}">
+          <span class="pb-ico">${PROJECT_META[p.type].icon}</span>
+          <span>${labels[i].replace(PROJECT_META[p.type].icon + ' ', '')}</span>
           ${price > 0 ? `<span class="pb-price">$${Math.round(price).toLocaleString()}</span>` : (needs ? '<span class="pb-price">needs info</span>' : '')}
         </button>`;
     }).join('')}
-    ${onProjects ? '' : '<button type="button" class="project-bubble add-new" data-bubble-kind="add" data-bubble-idx="-1">＋ Add</button>'}
+    ${onProjects ? '' : '<button type="button" class="project-bubble add-new" data-bubble-kind="add">＋ Add</button>'}
   `;
   bar.innerHTML = html;
   bar.style.display = 'flex';
   bar.querySelectorAll('.project-bubble').forEach(b => {
     b.addEventListener('click', () => {
-      const kind = b.dataset.bubbleKind;
-      const idx = parseInt(b.dataset.bubbleIdx, 10);
-      if (kind === 'add') {
+      if (b.dataset.bubbleKind === 'add') {
         goToProjectsPageToAdd();
         return;
       }
-      const target = kind === 'active' ? state.activeProject : state.bundledProjects[idx];
+      const target = projectByUid(b.dataset.bubbleUid);
       if (!target) return;
       if (state.currentStage === 3 && quoteProjects().length >= 2) {
         activateMeasureProject(target);
@@ -9533,13 +9570,12 @@ function renderProjectBubbles() {
         if (block) try { block.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (e) {}
         return;
       }
-      if (kind === 'active') {
+      if (target === state.activeProject) {
         renderProjectBubbles();
         try { renderEditingProjectBanner(); } catch (e) {}
         return;
       }
-      swapFocusTo(target);
-      rerenderCurrentQuoteStage();
+      focusQuoteProject(target);
     });
   });
 }
@@ -11853,7 +11889,7 @@ function buildJobberLineItem(p, idx, total) {
   const titleMap = isRestoration ? PROJECT_LINE_ITEM_RESTORATION : PROJECT_LINE_ITEM_BASE;
   const projectName = titleMap[p.type]
                    || (PROJ.name || (p.type || 'Project').replace(/^./, c => c.toUpperCase())) + ' Staining';
-  const name = `${projectName}${total > 1 ? ` (#${idx + 1})` : ''}`;
+  const name = projectName;
   const lines = [];
   // Section helper — blank line above an ALL-CAPS header so the
   // sections are scannable without leaning on emoji visual cues.
@@ -12149,10 +12185,10 @@ function buildCloudPayload() {
   // set `_cached` on state.activeProject. Without this stamp, the
   // subtotal we send to the cloud (and downstream to Jobber) is 0.
   // That's what was producing $0 line items in Jobber's UI.
-  const allProjects = [
-    ...(state.activeProject.type ? [{ ...state.activeProject, _cached: totals.active }] : []),
-    ...state.bundledProjects
-  ];
+  const orderedProjects = quoteProjects();
+  const allProjects = orderedProjects.map((p) => (
+    p === state.activeProject ? { ...p, _cached: totals.active } : p
+  ));
 
   // Combined display fields (legacy compat) — derived from the
   // structured fields when present, otherwise from the existing
@@ -12203,6 +12239,7 @@ function buildCloudPayload() {
     // attributes.requestId so the quote is linked to the inbound
     // request in Jobber's request tracker.
     jobberRequestId: state.jobberRequestId || '',
+    quoteTitle: buildQuoteTitle(allProjects),
     projects: allProjects.map((p, idx) => {
       let jobberLine = { name: '', description: '' };
       try { jobberLine = buildJobberLineItem(p, idx, allProjects.length); }
@@ -12223,6 +12260,7 @@ function buildCloudPayload() {
         productConfirmed: !!p.productConfirmed,
         tierConfirmed: !!p.tierConfirmed,
         _seq: p._seq,
+        _ord: p._ord,
         selectedColor: p.selectedColor,
         hoa: p.hoa, previousStain: p.previousStain,
         measurements: p.measurements,
@@ -17410,7 +17448,7 @@ renderDashboard();
   }, { capture: true });
 })();
   // Expose for inline onclick=/onchange= handlers in markup.
-  Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, goToProjectsPageToAdd, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, returnToDashboard, cancelNewQuote, refreshDashboardHard, pickCustSearchResult, clearPickedCustomer, convertJobberRequestToQuote, copyJobberErrorToClipboard, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, onFolderToggle, onDashSearchInput, openRowMenu, closeRowMenu, resumeCloudQuote, resumeLocalDraft, deleteLocalDraft, moveCloudQuote, duplicateCloudQuote, permanentlyDeleteCloud, duplicateCurrentForEdit, toggleBulkMode, toggleBulkRow, bulkClearSelection, bulkSetStatus, bulkPermanentlyDelete, openPricingAdmin, closePricingAdmin, switchPricingAdminTab, savePricingAdmin, resetPricingAdmin, removeReferencePhoto, signOutAndReload, openChangePinPrompt, closeRepMenu, adminCreateRep, adminResetRepPin, adminDeleteRep, adminRevokeDevice, adminRevokeAllDevices, toggleAdminDevicesShowAll, resetSwDeviceTag, resetSwAllDevices, toggleSwReferral, setSwReferral, openTechIssueDialog, closeTechIssueDialog, techNoteSave, techNoteResolve, toggleDashDateFilter, switchPaGroup, openProjectSwitchDialog, closeProjectSwitchDialog, confirmAddAnotherProject, confirmSwitchProject, openJobberPanel, closeJobberPanel, jobberConnect, jobberManualRefresh, jobberDisconnectConfirm, jobberTestConnection, pushFinishedQuoteToJobber, resendFinishedToJobber, sendQuoteToCustomer, resendViewedQuoteToJobber, resendCurrentQuoteFromSuccess, resendCurrentViewedToJobber, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, toggleEditPanel, applyCustomColor, removeCustomAddon, renderFinalBreakdown, openInteriorPricingSheet, focusQuoteProject, quoteProjects, state });
+  Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, goToProjectsPageToAdd, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, returnToDashboard, cancelNewQuote, refreshDashboardHard, pickCustSearchResult, clearPickedCustomer, convertJobberRequestToQuote, copyJobberErrorToClipboard, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, onFolderToggle, onDashSearchInput, openRowMenu, closeRowMenu, resumeCloudQuote, resumeLocalDraft, deleteLocalDraft, moveCloudQuote, duplicateCloudQuote, permanentlyDeleteCloud, duplicateCurrentForEdit, toggleBulkMode, toggleBulkRow, bulkClearSelection, bulkSetStatus, bulkPermanentlyDelete, openPricingAdmin, closePricingAdmin, switchPricingAdminTab, savePricingAdmin, resetPricingAdmin, removeReferencePhoto, signOutAndReload, openChangePinPrompt, closeRepMenu, adminCreateRep, adminResetRepPin, adminDeleteRep, adminRevokeDevice, adminRevokeAllDevices, toggleAdminDevicesShowAll, resetSwDeviceTag, resetSwAllDevices, toggleSwReferral, setSwReferral, openTechIssueDialog, closeTechIssueDialog, techNoteSave, techNoteResolve, toggleDashDateFilter, switchPaGroup, openProjectSwitchDialog, closeProjectSwitchDialog, confirmAddAnotherProject, confirmSwitchProject, openJobberPanel, closeJobberPanel, jobberConnect, jobberManualRefresh, jobberDisconnectConfirm, jobberTestConnection, pushFinishedQuoteToJobber, resendFinishedToJobber, sendQuoteToCustomer, resendViewedQuoteToJobber, resendCurrentQuoteFromSuccess, resendCurrentViewedToJobber, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, toggleEditPanel, applyCustomColor, removeCustomAddon, renderFinalBreakdown, openInteriorPricingSheet, focusQuoteProject, quoteProjects, buildQuoteTitle, buildCloudPayload, COLORS, state });
 
   }
 
