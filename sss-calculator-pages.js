@@ -543,6 +543,13 @@ const STAIN_TRANSPARENCIES = [
   'Semi-Transparent', 'Semi-Solid', 'Solid (opaque)', 'Unsure'
 ];
 
+/** Shop Exotic Oil chip labels: filename minus .jpg, drop product prefix, Title Case. No extra words. */
+function exoticOilShopNameFromImg(img) {
+  const stem = String(img || '').split('/').pop().replace(/\.jpe?g$/i, '');
+  const kebab = stem.replace(/^exotic-timber-oil-/, '');
+  return kebab.split('-').filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
 /* ============================================================
    COLOR LIBRARIES — REAL IMAGES FROM EXPERT'S WEBSITE
    ============================================================ */
@@ -550,7 +557,7 @@ const COLORS = {
   // Exotic Timber Oil — Essential oil tier. 4 SW stock + 4 SSS shop mixes.
   exotic_timber_oil: {
     line: 'Exotic Timber Oil',
-    note: 'Tri-oil blend (tung + linseed + alkyd) with UV-resistant pigments. Final look varies with your wood species, age, and lighting. Stock colors are Sherwin-Williams. Shop mixes are SSS blends. We confirm the final tone with a test patch on your wood.',
+    note: 'Tri-oil blend (tung + linseed + alkyd) with UV-resistant pigments. Final look varies with your wood species, age, and lighting. Stock colors are Sherwin-Williams. Custom-blend photos are SSS mixes. We confirm the final tone with a test patch on your wood.',
     grouped: true,
     groups: [
       { label: 'Stock (Sherwin-Williams)', colors: [
@@ -559,15 +566,14 @@ const COLORS = {
         { name: 'Redwood',      img: '/colors/timber-redwood.jpg' },
         { name: 'Red Mahogany', img: '/colors/timber-red-mahogany.jpg' }
       ]},
-      // First four git shop names (not Redwood / Red Mahogany). Photos
-      // 01.jpg → 04.jpg, lightest to darkest. Dropped Lowcountry Driftwood
-      // and Palmetto Ember so the picker stays 4 stock + 4 shop.
-      { label: 'Shop mix (SSS)', colors: [
-        { name: 'Carolina Honey',      img: '/colors/exotic-timber-oil-carolina-honey.jpg' },
-        { name: 'Saluda Amber',         img: '/colors/exotic-timber-oil-saluda-amber.jpg' },
-        { name: 'Blue Ridge Chestnut',  img: '/colors/exotic-timber-oil-blue-ridge-chestnut.jpg' },
-        { name: 'Foothills Walnut',     img: '/colors/exotic-timber-oil-foothills-walnut.jpg' }
-      ]}
+      // Shop chip names = filename minus .jpg, Title Case from the kebab
+      // after exotic-timber-oil-. Do not prefix Shop. Lightest → darkest.
+      { colors: [
+        '/colors/exotic-timber-oil-carolina-honey.jpg',
+        '/colors/exotic-timber-oil-saluda-amber.jpg',
+        '/colors/exotic-timber-oil-blue-ridge-chestnut.jpg',
+        '/colors/exotic-timber-oil-foothills-walnut.jpg'
+      ].map((img) => ({ name: exoticOilShopNameFromImg(img), img })) }
     ]
   },
   // EXPERT Stain & Seal — Performance oil tier
@@ -8782,7 +8788,7 @@ function renderColorStage() {
   if (lib.grouped) {
     html = lib.groups.map(g => `
       <div class="color-group">
-        <h4 class="color-group-label">${g.label} <small>· ${g.colors.length}</small></h4>
+        ${g.label ? `<h4 class="color-group-label">${g.label} <small>· ${g.colors.length}</small></h4>` : ''}
         <div class="color-grid">${g.colors.map(renderSwatch).join('')}</div>
       </div>
     `).join('');
