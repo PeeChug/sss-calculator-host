@@ -543,13 +543,6 @@ const STAIN_TRANSPARENCIES = [
   'Semi-Transparent', 'Semi-Solid', 'Solid (opaque)', 'Unsure'
 ];
 
-/** Shop Exotic Oil chip labels: filename minus .jpg, drop product prefix, Title Case. No extra words. */
-function exoticOilShopNameFromImg(img) {
-  const stem = String(img || '').split('/').pop().replace(/\.jpe?g$/i, '');
-  const kebab = stem.replace(/^exotic-timber-oil-/, '');
-  return kebab.split('-').filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-}
-
 /* ============================================================
    COLOR LIBRARIES — REAL IMAGES FROM EXPERT'S WEBSITE
    ============================================================ */
@@ -566,14 +559,14 @@ const COLORS = {
         { name: 'Redwood',      img: '/colors/timber-redwood.jpg' },
         { name: 'Red Mahogany', img: '/colors/timber-red-mahogany.jpg' }
       ]},
-      // Shop chip names = filename minus .jpg, Title Case from the kebab
-      // after exotic-timber-oil-. Do not prefix Shop. Lightest → darkest.
+      // Shop photos 01.jpg → 04.jpg (lightest → darkest). Names from Adrian:
+      // Driftwood, Ember, Espresso, Walnut. No Shop prefix. No invented SC names.
       { colors: [
-        '/colors/exotic-timber-oil-carolina-honey.jpg',
-        '/colors/exotic-timber-oil-saluda-amber.jpg',
-        '/colors/exotic-timber-oil-blue-ridge-chestnut.jpg',
-        '/colors/exotic-timber-oil-foothills-walnut.jpg'
-      ].map((img) => ({ name: exoticOilShopNameFromImg(img), img })) }
+        { name: 'Driftwood', img: '/colors/exotic-timber-oil-driftwood.jpg' },
+        { name: 'Ember',     img: '/colors/exotic-timber-oil-ember.jpg' },
+        { name: 'Espresso',  img: '/colors/exotic-timber-oil-espresso.jpg' },
+        { name: 'Walnut',    img: '/colors/exotic-timber-oil-walnut.jpg' }
+      ]}
     ]
   },
   // EXPERT Stain & Seal — Performance oil tier
