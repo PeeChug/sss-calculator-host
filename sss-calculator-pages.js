@@ -560,8 +560,8 @@ const COLORS = {
         { name: 'Red Mahogany', img: '/colors/timber-red-mahogany.jpg' }
       ]},
       // Shop photos. Display order: Driftwood, Ember, Walnut, Espresso last.
-      // No Shop prefix. No invented SC names.
-      { colors: [
+      // Group heading names the section. Chip names have no Shop prefix.
+      { label: 'Shop mix (SSS)', colors: [
         { name: 'Driftwood', img: '/colors/exotic-timber-oil-driftwood.jpg' },
         { name: 'Ember',     img: '/colors/exotic-timber-oil-ember.jpg' },
         { name: 'Walnut',    img: '/colors/exotic-timber-oil-walnut.jpg' },
