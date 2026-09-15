@@ -191,10 +191,10 @@ Crew iPad
             └─ GET /calc-photos/:id  → R2
 
 Public marketing / lead form (must survive deploys)
-  └─ /api/lead  /api/google-rating
-        Either original lead.ts in the websites repo
-        or fallback proxy functions/api/[[path]].ts
-           → https://39d00fb0.superior-stain-solutions.pages.dev
+  └─ /api/lead  /api/google-rating  /api/lead-photo/:key
+        Chalk functions/api/lead.ts (no Jobber, no LEAD_WEBHOOK)
+        + google-rating.ts + lead-photo/[key].ts
+        Never proxy /api/* to 39d00fb0
 ```
 
 **Save vs push vs send:**
@@ -224,7 +224,9 @@ If a D1 row already has `chalk_quote_id` and `force` is not set, push **re-syncs
 | `…/calc-backend/schema.sql` | D1 schema. |
 | `…/functions/_functions/[name].ts` | Pages Function router (keep the brackets). |
 | `…/functions/calc-photos/[id].ts` | Private-ish photo GET from R2. |
-| `…/functions/api/[[path]].ts` | Fallback proxy for public `/api/*`. |
+| `…/functions/api/lead.ts` | Chalk website form (`fileWebsiteLead`). No Jobber. |
+| `…/functions/api/google-rating.ts` | Public Google rating JSON. |
+| `…/functions/api/lead-photo/[key].ts` | Lead photo GET from R2. |
 | `…/wrangler.toml` | Bindings. Keep **both** lead and calc D1/R2. |
 | `…/APPLY.md` | How to copy into `akg696/websites`. |
 | `…/REBUILD-PLAN.md` | Research plan. **Status: isolation + Chalk implemented. Phase 1 walnut notes are stale.** |
@@ -455,15 +457,13 @@ D1 tables: `reps`, `devices`, `quotes` (includes `chalk_quote_id`, `chalk_quote_
 
 `wrangler.toml` keeps `LEADS_DB` + `LEAD_PHOTOS` so a Functions deploy does not drop the public form.
 
-If the websites repo already has `functions/api/lead.ts` and `google-rating.ts`, **leave them**. The drop-in `[[path]].ts` is only for calculator-host direct uploads that do not include those sources.
+Ship Origin-equivalent Chalk handlers from this drop-in on every overlay:
 
-Fallback proxy:
+- `website-employee-portal-dropin/functions/api/lead.ts`
+- `website-employee-portal-dropin/functions/api/google-rating.ts`
+- `website-employee-portal-dropin/functions/api/lead-photo/[key].ts`
 
-- File: `website-employee-portal-dropin/functions/api/[[path]].ts`
-- Upstream pin: `https://39d00fb0.superior-stain-solutions.pages.dev`
-- Loop guard header: `x-sss-api-proxy`
-
-Do not send customer test leads through it.
+**Never** add `functions/api/[[path]].ts` that proxies `/api/*` to `39d00fb0`. That hash still posts Jobber via `LEAD_WEBHOOK_*`. Do not POST `/api/lead` as a test.
 
 ---
 
