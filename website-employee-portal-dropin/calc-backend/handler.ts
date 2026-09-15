@@ -165,15 +165,23 @@ function officeQuoteUrlFromStored(row: { chalk_quote_id?: string | null; chalk_w
   return 'https://app.chalkcrm.com/quotes/' + id;
 }
 
-async function resolveChalkOfficeQuoteUrl(env: CalcEnv, chalkId: string): Promise<string> {
+async function resolveChalkQuoteLinks(
+  env: CalcEnv,
+  chalkId: string,
+): Promise<{ appUrl: string; hubUrl: string }> {
   const fallback = chalkAdminQuoteUrl(env, chalkId);
   const linked = await chalkJson(env, '/api/quotes/' + encodeURIComponent(chalkId) + '/link', {
     method: 'POST',
     body: '{}',
   });
   const app = String(linked.data?.app_url || '').trim();
-  if (linked.status < 400 && app && !app.includes('hub.chalkcrm.com')) return app;
-  return fallback;
+  const hub = String(linked.data?.hub_url || '').trim();
+  const appUrl = linked.status < 400 && app && !app.includes('hub.chalkcrm.com') ? app : fallback;
+  return { appUrl, hubUrl: hub };
+}
+
+async function resolveChalkOfficeQuoteUrl(env: CalcEnv, chalkId: string): Promise<string> {
+  return (await resolveChalkQuoteLinks(env, chalkId)).appUrl;
 }
 
 function projectDisplayName(p: any): string {
@@ -479,9 +487,21 @@ function mapChalkClientNode(raw: any, fallback?: any): Json {
   const id = String(client.id || fb.id || '').trim();
   let firstName = String(client.first_name || client.firstName || '').trim();
   let lastName = String(client.last_name || client.lastName || '').trim();
-  if (!firstName && !lastName) {
-    const split = splitName(String(client.name || client.display_name || fb.title || fb.name || ''));
-    firstName = split.first === 'Customer' && !client.name ? '' : split.first;
+  const displayish = String(
+    client.name ||
+      client.display_name ||
+      client.displayName ||
+      client.full_name ||
+      client.client_name ||
+      client.title ||
+      fb.title ||
+      fb.name ||
+      fb.customerName ||
+      '',
+  ).trim();
+  if (!firstName && !lastName && displayish) {
+    const split = splitName(displayish);
+    firstName = split.first === 'Customer' && !displayish ? '' : split.first;
     lastName = split.last;
   }
   return {
@@ -490,7 +510,7 @@ function mapChalkClientNode(raw: any, fallback?: any): Json {
     companyName: client.company_name || client.companyName || '',
     firstName,
     lastName,
-    displayName: client.display_name || client.name || fb.title || fb.name || '',
+    displayName: displayish || [firstName, lastName].filter(Boolean).join(' '),
     email: primaryEmail,
     phone: primaryPhone,
     archived: Boolean(client.archived_at || client.archived || fb.archived || fb.archived_at),
@@ -622,10 +642,14 @@ function dashboardItem(row: {
     quoteId: row.quote_id || payload.quoteId || '',
     status: row.status,
     customer: {
-      name: customer.name || '',
+      name:
+        customer.name ||
+        `${customer.firstName || ''} ${customer.lastName || ''}`.trim() ||
+        customer.companyName ||
+        '',
       phone: customer.phone || '',
       email: customer.email || '',
-      address: customer.address || '',
+      address: customer.address || customer.street1 || '',
       firstName: customer.firstName || '',
       lastName: customer.lastName || '',
       companyName: customer.companyName || '',
@@ -938,10 +962,39 @@ async function ingestClientHits(env: CalcEnv, data: unknown, take: (node: Json |
   for (const row of chalkList(data).slice(0, 8)) {
     if ((row?.kind || row?.type) && row.kind !== 'client' && row.type !== 'client') continue;
     const inner = row?.client && typeof row.client === 'object' ? { ...row, ...row.client } : row;
-    const id = String(inner?.id || '').trim();
+    const id = String(inner?.id || inner?.client_id || inner?.clientId || '').trim();
     if (id) take(await hydrateChalkClient(env, id, inner));
     else take(mapChalkClientNode(inner));
   }
+}
+
+function last10Digits(s: unknown): string {
+  const d = String(s || '').replace(/\D/g, '');
+  return d.length >= 10 ? d.slice(-10) : d;
+}
+
+async function findExistingChalkClient(env: CalcEnv, customer: any): Promise<Json | null> {
+  const phone = last10Digits(customer?.phone);
+  const email = String(customer?.email || '')
+    .trim()
+    .toLowerCase();
+  const queries = [customer?.phone, customer?.email]
+    .map((v) => String(v || '').trim())
+    .filter((v) => v.length >= 2);
+  const seen = new Set<string>();
+  for (const q of queries) {
+    const key = q.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const hits = await lookupChalkClients(env, q);
+    const match = hits.find((h) => {
+      if (phone && last10Digits(h.phone) === phone) return true;
+      if (email && String(h.email || '').trim().toLowerCase() === email) return true;
+      return false;
+    });
+    if (match?.id) return match;
+  }
+  return null;
 }
 
 async function lookupChalkClients(env: CalcEnv, q: string): Promise<Json[]> {
@@ -1258,15 +1311,23 @@ async function handleChalk(
     const customer = payload.customer || {};
     let first = String(customer.firstName || '').trim();
     let last = String(customer.lastName || '').trim();
+    const typedName = String(customer.name || customer.companyName || '').trim();
     if (!first) {
-      const split = splitName(customer.name || customer.companyName || 'Customer');
+      const split = splitName(typedName || 'Customer');
       first = split.first;
       last = last || split.last;
+    }
+    if (!typedName && first === 'Customer' && !customer.jobberClientId) {
+      return json({ ok: false, error: 'customer_required', detail: 'Name and phone or email are required before pushing to Chalk.' }, 400);
     }
     const clientBody: Json = customer.companyName
       ? { company_name: customer.companyName, first_name: first, last_name: last, lead_source: 'Employee calc (Pages draft)' }
       : { first_name: first, last_name: last, lead_source: 'Employee calc (Pages draft)' };
     let clientId = String(customer.jobberClientId || '').trim();
+    if (!clientId) {
+      const existing = await findExistingChalkClient(env, customer);
+      if (existing?.id) clientId = String(existing.id);
+    }
     if (!clientId) {
       const created = await chalkJson(env, '/api/clients', { method: 'POST', body: JSON.stringify(clientBody) });
       const createdClient = unwrap(created.data, ['id']);
@@ -1289,11 +1350,14 @@ async function handleChalk(
     }
     let propertyId = String(customer.jobberPropertyId || '').trim();
     if (!propertyId) {
+      const street1 = String(customer.street1 || '').trim();
+      const typedAddr = String(customer.address || '').trim();
+      const street = street1 && typedAddr && !typedAddr.includes(street1) ? typedAddr : street1 || typedAddr;
       const prop = await chalkJson(env, '/api/properties', {
         method: 'POST',
         body: JSON.stringify({
           client_id: clientId,
-          street1: customer.street1 || customer.address || '',
+          street1: street,
           street2: customer.street2 || '',
           city: customer.city || '',
           province: customer.province || 'SC',
@@ -1390,6 +1454,14 @@ async function handleChalk(
       sendPayload = {};
     }
     await attachQuotePhotos(env, _request, chalkId, sendPayload);
+    await resolveChalkOfficeQuoteUrl(env, chalkId);
+    const customer = sendPayload.customer || {};
+    if (customer.phone && customer.jobberClientId) {
+      await chalkJson(env, '/api/clients/' + encodeURIComponent(String(customer.jobberClientId)) + '/phones', {
+        method: 'POST',
+        body: JSON.stringify({ number: String(customer.phone), label: 'Mobile', sms_ok: 1, is_primary: 1 }),
+      }).catch(() => undefined);
+    }
     const sent = await chalkJson(env, '/api/quotes/' + encodeURIComponent(chalkId) + '/send', {
       method: 'POST',
       body: JSON.stringify({ email: true, sms: true }),
