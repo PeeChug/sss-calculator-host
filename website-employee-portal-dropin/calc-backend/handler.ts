@@ -1154,6 +1154,33 @@ function quoteDiscount(payload: any): { cents: number; reason: string } {
   return { cents, reason: labels.length ? labels.join(' + ') : 'Quote discount' };
 }
 
+function roomFanoutLines(p: any): any[] {
+  const raw = p?._jobberRoomLineItems;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (r) => r && (String(r.name || '').trim() || r.totalPrice != null || r.unitPrice != null),
+  );
+}
+
+function pushCustomLine(
+  line_items: Json[],
+  sentLineItems: Json[],
+  name: string,
+  description: string,
+  dollars: number,
+): void {
+  const n = stripHashSuffix(String(name || 'Work').trim()) || 'Work';
+  const amount = Number.isFinite(dollars) ? dollars : 0;
+  line_items.push({
+    name: n,
+    description: String(description || ''),
+    quantity: 1,
+    unit: 'each',
+    unit_price_cents: dollarsToCents(amount),
+  });
+  sentLineItems.push({ name: n, unitPrice: amount, totalPrice: amount });
+}
+
 export function buildQuoteLineItems(payload: any): {
   line_items: Json[];
   sentLineItems: Json[];
@@ -1162,10 +1189,16 @@ export function buildQuoteLineItems(payload: any): {
 } {
   // Custom lines only: calc dollars in unit_price_cents. Never set product_id.
   // Discounts go on the quote (discount_cents), not as a negative line.
+  // Paint rooms/sides/areas fan out when `_jobberRoomLineItems` is present;
+  // stain stays one line per project.
   const projects = Array.isArray(payload?.projects) ? payload.projects : [];
   const discount = quoteDiscount(payload);
   const hasProjectLines = projects.some(
-    (p: any) => String(p?._jobberName || '').trim() || p?.preDiscountSubtotal != null || p?.subtotal != null,
+    (p: any) =>
+      String(p?._jobberName || '').trim() ||
+      p?.preDiscountSubtotal != null ||
+      p?.subtotal != null ||
+      (Array.isArray(p?._jobberRoomLineItems) && p._jobberRoomLineItems.length),
   );
 
   const line_items: Json[] = [];
@@ -1173,17 +1206,33 @@ export function buildQuoteLineItems(payload: any): {
 
   if (hasProjectLines) {
     for (const p of projects) {
+      const rooms = roomFanoutLines(p);
+      if (rooms.length) {
+        for (const r of rooms) {
+          pushCustomLine(
+            line_items,
+            sentLineItems,
+            String(r.name || p._jobberName || p.type || 'Work'),
+            String(r.description || ''),
+            Number(r.totalPrice ?? r.unitPrice ?? 0),
+          );
+        }
+        const paintOrder = paintOrderFromDescription(p._jobberDescription);
+        if (paintOrder.length && line_items.length) {
+          const last = line_items[line_items.length - 1] as { description?: string };
+          const extra = paintOrder.join('\n');
+          last.description = [String(last.description || '').trim(), extra].filter(Boolean).join('\n\n');
+        }
+        continue;
+      }
       const dollars = Number(p.preDiscountSubtotal ?? p.subtotal ?? 0);
-      const name = stripHashSuffix(String(p._jobberName || p.type || 'Work'));
-      const description = String(p._jobberDescription || '');
-      line_items.push({
-        name,
-        description,
-        quantity: 1,
-        unit: 'each',
-        unit_price_cents: dollarsToCents(dollars),
-      });
-      sentLineItems.push({ name, unitPrice: dollars, totalPrice: dollars });
+      pushCustomLine(
+        line_items,
+        sentLineItems,
+        String(p._jobberName || p.type || 'Work'),
+        String(p._jobberDescription || ''),
+        dollars,
+      );
     }
   }
 
