@@ -1,5 +1,5 @@
 /**
- * Headless Chrome harness for per-project tier/color and interior tablet color UI.
+ * Headless Chrome harness for estimator pass mp15.
  * Stubs auth. 403 /api/lead. Does not Generate/Send.
  */
 import http from 'node:http';
@@ -10,7 +10,7 @@ import puppeteer from 'puppeteer-core';
 const ROOT = '/workspace';
 const MEDIA = '/cursor/stores/bc-ca593e7d-8bb2-401a-b937-2a1360dc3147/media';
 const JS = fs.readFileSync(path.join(ROOT, 'sss-calculator-pages.js'), 'utf8');
-const PORT = 8765;
+const PORT = 8766;
 
 const HTML = `<!doctype html><html><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -20,6 +20,15 @@ const HTML = `<!doctype html><html><head>
 <sss-calculator></sss-calculator>
 <script>${JS}</script>
 </body></html>`;
+
+const REAL_ADDR = {
+  source: 'places',
+  street1: '100 N Main St',
+  city: 'Greenville',
+  province: 'SC',
+  postalCode: '29601',
+  label: '100 N Main St, Greenville, SC 29601',
+};
 
 function startServer() {
   return new Promise((resolve) => {
@@ -102,16 +111,15 @@ function interiorProject(ord) {
   };
 }
 
-async function shadow(page) {
-  return page.$('sss-calculator');
-}
-
 async function sEval(page, fn, ...args) {
   return page.$eval('sss-calculator', (el, fnSrc, argList) => {
     const fn2 = eval('(' + fnSrc + ')');
     return fn2(el.shadowRoot, ...argList);
   }, fn.toString(), args);
 }
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+function fail(msg) { throw new Error(msg); }
 
 async function boot(page) {
   await page.setRequestInterception(true);
@@ -128,12 +136,19 @@ async function boot(page) {
     if (url.includes('getPricingRules')) {
       return req.respond({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
     }
+    if (url.includes('searchAddresses')) {
+      return req.respond({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, nodes: [REAL_ADDR] }),
+      });
+    }
     if (url.includes('listQuotes') || url.includes('/_functions/')) {
       return req.respond({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, quotes: [] }) });
     }
     req.continue();
   });
-  await page.goto(`http://127.0.0.1:${PORT}/employee-portal/?v=mp14`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`http://127.0.0.1:${PORT}/employee-portal/?v=mp15`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('sss-calculator');
   await page.waitForFunction(() => {
     const el = document.querySelector('sss-calculator');
@@ -154,13 +169,15 @@ async function loadQuote(page, projects, stage) {
     window.state.bundledProjects = plist.slice(1);
     window.state.currentStage = stageN;
     window.state.maxStageReached = Math.max(stageN, 10);
-    window.state.customer = { name: 'Test Homeowner', phone: '8645550100', email: '', address: '1 Test St', firstName: 'Test', lastName: 'Homeowner' };
+    window.state.customer = {
+      name: 'Test Homeowner', phone: '8645550100', email: 'test@example.com',
+      address: '', firstName: 'Test', lastName: 'Homeowner',
+      street1: '', city: '', province: '', postalCode: '',
+    };
     window.showStage(stageN);
   }, projects, stage);
-  await new Promise((r) => setTimeout(r, 250));
+  await sleep(280);
 }
-
-function fail(msg) { throw new Error(msg); }
 
 async function main() {
   fs.mkdirSync(MEDIA, { recursive: true });
@@ -179,137 +196,238 @@ async function main() {
   try {
     await boot(page);
 
-    // --- Fence + Deck: change Fence tier only ---
-    await loadQuote(page, [blankStain('fence', 1), blankStain('deck', 2)], 6);
-    let snap = await page.evaluate(() => window.__sssQuoteSnapshot());
-    if (snap.applyToAll) fail('apply-to-all must start off');
-    const cbOn = await sEval(page, (root) => {
-      const cb = root.querySelector('#applyAllProjectsCb');
-      return !!(cb && cb.checked);
-    });
-    if (cbOn) fail('apply-to-all checkbox must be unchecked');
-
+    // 1. Property address autofill — real Greenville street
+    await loadQuote(page, [blankStain('fence', 1)], 1);
     await sEval(page, (root) => {
-      const fence = root.querySelector('.finish-block[data-uid="p_fence"]');
-      const card = fence.querySelector('.tier-card[data-tier="essential"]');
+      const inp = root.getElementById('custAddress');
+      inp.value = '100 N Main';
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await sleep(500);
+    const addrUi = await sEval(page, (root) => {
+      const box = root.getElementById('addrSearchResults');
+      const rows = [...(box ? box.querySelectorAll('.addr-result') : [])].map((r) => r.textContent.trim());
+      return { display: box && box.style.display, rows, html: box && box.innerHTML };
+    });
+    if (!addrUi.rows.length) fail('address suggestions missing: ' + JSON.stringify(addrUi));
+    if (!addrUi.rows.some((r) => /100 N Main St/.test(r))) fail('real address not listed: ' + JSON.stringify(addrUi));
+    await sEval(page, (root) => {
+      const row = root.querySelector('.addr-result');
+      row.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    });
+    await sleep(150);
+    const cust = await page.evaluate(() => window.__sssQuoteSnapshot().customer);
+    if (cust.street1 !== '100 N Main St') fail('street1 not filled: ' + JSON.stringify(cust));
+    if (cust.city !== 'Greenville' || cust.province !== 'SC' || cust.postalCode !== '29601') {
+      fail('city/state/zip not filled: ' + JSON.stringify(cust));
+    }
+    await sEval(page, (root) => {
+      const field = root.querySelector('.addr-search');
+      field.scrollIntoView({ block: 'center' });
+    });
+    await sleep(80);
+    await page.screenshot({ path: path.join(MEDIA, 'address-autofill.png'), fullPage: false });
+    console.log('PASS address autofill', cust);
+
+    // 2. Compact apply-to-all
+    await loadQuote(page, [blankStain('fence', 1), blankStain('deck', 2)], 6);
+    const applyUi = await sEval(page, (root) => {
+      const bar = root.querySelector('.apply-all-bar');
+      const cb = root.querySelector('#applyAllProjectsCb');
+      const check = root.querySelector('.apply-all-check');
+      const text = bar && bar.textContent.replace(/\s+/g, ' ').trim();
+      const cs = bar && getComputedStyle(bar);
+      const ccs = check && getComputedStyle(check);
+      const br = bar && bar.getBoundingClientRect();
+      return {
+        text,
+        checked: !!(cb && cb.checked),
+        insideStack: !!(bar && bar.parentElement && bar.parentElement.classList.contains('finish-stack')),
+        firstChild: !!(bar && bar.parentElement && bar.parentElement.firstElementChild === bar),
+        padTop: cs && cs.paddingTop,
+        bg: cs && cs.backgroundColor,
+        radius: ccs && ccs.borderRadius,
+        h: br && Math.round(br.height),
+      };
+    });
+    if (applyUi.checked) fail('apply-to-all must start off');
+    if (!applyUi.insideStack || !applyUi.firstChild) fail('apply-all must sit in stacked chrome: ' + JSON.stringify(applyUi));
+    if (applyUi.h > 44) fail('apply-all still too tall: ' + JSON.stringify(applyUi));
+    if (!/Use on all 2 projects/i.test(applyUi.text)) fail('compact copy missing: ' + applyUi.text);
+    await sEval(page, (root) => {
+      const bar = root.querySelector('.apply-all-bar');
+      bar.scrollIntoView({ block: 'start' });
+    });
+    await sleep(80);
+    await page.screenshot({ path: path.join(MEDIA, 'apply-to-all-compact.png'), fullPage: false });
+    console.log('PASS compact apply-to-all', applyUi);
+
+    // 3. HOA brand + transparency enables Next (no product name / required color)
+    await loadQuote(page, [blankStain('fence', 1, { productType: null, productConfirmed: false, tierConfirmed: false })], 5);
+    await sEval(page, (root) => {
+      const card = root.querySelector('.product-choice-card[data-product="hoa"]');
       card.click();
     });
-    await new Promise((r) => setTimeout(r, 200));
-    snap = await page.evaluate(() => window.__sssQuoteSnapshot());
-    const fence = snap.projects.find((p) => p.type === 'fence');
-    const deck = snap.projects.find((p) => p.type === 'deck');
-    if (fence.tier !== 'essential') fail('Fence tier should be essential, got ' + fence.tier);
-    if (deck.tier !== 'performance') fail('Deck tier leaked, got ' + deck.tier);
-    await page.screenshot({ path: path.join(MEDIA, 'tier-per-project.png'), fullPage: true });
-    console.log('PASS Fence tier only; Deck unchanged');
+    await sleep(200);
+    const hoaMid = await sEval(page, (root) => {
+      const brand = root.getElementById('hoaBrand');
+      const trans = root.getElementById('hoaTransparency');
+      const next = root.getElementById('stage5Next');
+      brand.value = brand.options[1].value;
+      brand.dispatchEvent(new Event('change', { bubbles: true }));
+      return {
+        brand: brand.value,
+        nextAfterBrand: next.disabled,
+        transOpts: [...trans.options].map((o) => o.value).filter(Boolean),
+      };
+    });
+    if (!hoaMid.nextAfterBrand) fail('Next should stay disabled with brand only');
+    const hoaDone = await sEval(page, (root) => {
+      const trans = root.getElementById('hoaTransparency');
+      const color = root.getElementById('hoaColor');
+      const name = root.getElementById('hoaProductName');
+      const next = root.getElementById('stage5Next');
+      trans.value = trans.options[1].value;
+      trans.dispatchEvent(new Event('change', { bubbles: true }));
+      color.value = '';
+      name.value = '';
+      return {
+        brand: root.getElementById('hoaBrand').value,
+        transparency: trans.value,
+        color: color.value,
+        productName: name.value,
+        nextDisabled: next.disabled,
+        validate: window.validateStage(5),
+      };
+    });
+    if (hoaDone.nextDisabled) fail('Next should enable with brand + transparency: ' + JSON.stringify(hoaDone));
+    if (!hoaDone.validate) fail('validateStage(5) should pass without HOA color: ' + JSON.stringify(hoaDone));
+    const hoaSnap = await page.evaluate(() => window.__sssQuoteSnapshot());
+    if (!hoaSnap.projects[0].hoa.brand || !hoaSnap.projects[0].hoa.transparency) {
+      fail('HOA payload missing brand/transparency: ' + JSON.stringify(hoaSnap.projects[0].hoa));
+    }
+    if (hoaSnap.projects[0].hoa.color) fail('test required empty color, got ' + hoaSnap.projects[0].hoa.color);
+    await sEval(page, (root) => {
+      root.getElementById('hoaPanel').scrollIntoView({ block: 'center' });
+    });
+    await sleep(80);
+    await page.screenshot({ path: path.join(MEDIA, 'hoa-next-enabled.png'), fullPage: false });
+    console.log('PASS HOA Next', hoaDone);
 
-    // Apply-to-all still copies
+    // 4. TBD dotted chip among colors, not first, not a banner
+    await loadQuote(page, [blankStain('fence', 1, { productType: 'oil', selectedColor: null })], 7);
+    const tbdUi = await sEval(page, (root) => {
+      const grid = root.getElementById('colorGrid');
+      const banner = grid.querySelector('.tbd-color-banner, .tbd-color-btn');
+      const bannerShown = !!(banner && getComputedStyle(banner).display !== 'none');
+      const chips = [...grid.querySelectorAll('.color-swatch')];
+      const tbdIdx = chips.findIndex((c) => c.classList.contains('tbd-swatch'));
+      const tbd = chips[tbdIdx];
+      const chip = tbd && tbd.querySelector('.chip');
+      const cs = tbd && getComputedStyle(tbd);
+      const ccs = chip && getComputedStyle(chip);
+      tbd.click();
+      return {
+        bannerShown,
+        tbdIdx,
+        total: chips.length,
+        name: tbd && tbd.textContent.trim(),
+        border: cs && cs.borderTopStyle,
+        chipBorder: ccs && ccs.borderTopStyle,
+      };
+    });
+    if (tbdUi.bannerShown) fail('TBD banner still visible');
+    if (tbdUi.tbdIdx < 1) fail('TBD chip must not be first: ' + JSON.stringify(tbdUi));
+    if (!/Pick on site/i.test(tbdUi.name)) fail('TBD not reworded: ' + tbdUi.name);
+    if (tbdUi.border !== 'dotted' && tbdUi.chipBorder !== 'dotted') fail('TBD not dotted: ' + JSON.stringify(tbdUi));
+    const tbdSnap = await page.evaluate(() => window.__sssQuoteSnapshot());
+    if (!tbdSnap.projects[0].selectedColor || !tbdSnap.projects[0].selectedColor.tbd) {
+      fail('TBD did not persist: ' + JSON.stringify(tbdSnap.projects[0].selectedColor));
+    }
+    await sEval(page, (root) => {
+      const tbd = root.querySelector('.tbd-swatch');
+      tbd.scrollIntoView({ block: 'center' });
+    });
+    await sleep(80);
+    await page.screenshot({ path: path.join(MEDIA, 'tbd-dotted-chip.png'), fullPage: false });
+    console.log('PASS TBD dotted chip', tbdUi);
+
+    // 5. Interior mode buttons
+    await loadQuote(page, [interiorProject(1)], 7);
+    const clickMode = async (mode) => {
+      await sEval(page, (root, m) => {
+        const btn = root.querySelector('[data-color-mode="' + m + '"]');
+        if (!btn) throw new Error('missing mode ' + m);
+        btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+        btn.click();
+      }, mode);
+      await sleep(220);
+      return page.evaluate(() => {
+        const snap = window.__sssQuoteSnapshot();
+        const p = snap.projects.find((x) => x.type === 'interior') || snap.projects[0];
+        const root = document.querySelector('sss-calculator').shadowRoot;
+        const titles = [...root.querySelectorAll('.int-color-picker summary strong, .int-sec-title')].map((el) => el.textContent.trim());
+        const on = [...root.querySelectorAll('.int-mode-card')].map((b) => ({
+          mode: b.getAttribute('data-color-mode'),
+          on: b.classList.contains('on'),
+        }));
+        return { mode: p.colorPlan && p.colorPlan.mode, titles, on, payload: p.colorPlan };
+      });
+    };
+    const single = await clickMode('single');
+    if (single.mode !== 'single') fail('single mode did not stick: ' + JSON.stringify(single));
+    if (!single.titles.some((t) => /walls & ceilings|One color for walls/i.test(t))) {
+      fail('single pickers missing: ' + JSON.stringify(single.titles));
+    }
+    const split = await clickMode('split');
+    if (split.mode !== 'split') fail('split mode did not stick: ' + JSON.stringify(split));
+    if (!split.titles.some((t) => /Wall color/i.test(t)) || !split.titles.some((t) => /Ceiling color/i.test(t))) {
+      fail('split pickers missing: ' + JSON.stringify(split.titles));
+    }
+    const perRoom = await clickMode('perRoom');
+    if (perRoom.mode !== 'perRoom') fail('perRoom mode did not stick: ' + JSON.stringify(perRoom));
+    if (!perRoom.titles.some((t) => /room by room/i.test(t))) fail('perRoom pickers missing: ' + JSON.stringify(perRoom.titles));
+    await sEval(page, (root) => {
+      const planner = root.querySelector('.int-color-planner');
+      planner.scrollIntoView({ block: 'start' });
+    });
+    await sleep(80);
+    const plannerBox = await sEval(page, (root) => {
+      const planner = root.querySelector('.int-color-planner');
+      const r = planner.getBoundingClientRect();
+      return { x: r.x, y: r.y, width: r.width, height: Math.min(r.height, 1100), hostW: root.host ? root.host.getBoundingClientRect().width : 768 };
+    });
+    if (plannerBox.width < 500) fail('planner not full width: ' + JSON.stringify(plannerBox));
+    await page.screenshot({
+      path: path.join(MEDIA, 'interior-modes-working.png'),
+      clip: {
+        x: Math.max(0, plannerBox.x - 8),
+        y: Math.max(0, plannerBox.y - 8),
+        width: Math.min(768, plannerBox.width + 16),
+        height: Math.min(1200, plannerBox.height + 16),
+      },
+    });
+    console.log('PASS interior modes', { single: single.mode, split: split.mode, perRoom: perRoom.mode, titles: perRoom.titles });
+
+    // Regression: Fence + Deck tier isolation + apply-all copy
+    await loadQuote(page, [blankStain('fence', 1), blankStain('deck', 2)], 6);
+    await sEval(page, (root) => {
+      const fence = root.querySelector('.finish-block[data-uid="p_fence"]');
+      fence.querySelector('.tier-card[data-tier="essential"]').click();
+    });
+    await sleep(200);
+    let snap = await page.evaluate(() => window.__sssQuoteSnapshot());
+    if (snap.projects.find((p) => p.type === 'fence').tier !== 'essential') fail('Fence tier');
+    if (snap.projects.find((p) => p.type === 'deck').tier !== 'performance') fail('Deck leaked');
     await sEval(page, (root) => {
       const cb = root.querySelector('#applyAllProjectsCb');
       cb.checked = true;
       cb.dispatchEvent(new Event('change', { bubbles: true }));
     });
-    await new Promise((r) => setTimeout(r, 200));
+    await sleep(200);
     snap = await page.evaluate(() => window.__sssQuoteSnapshot());
-    if (!snap.applyToAll) fail('apply-to-all should turn on');
-    const deck2 = snap.projects.find((p) => p.type === 'deck');
-    if (deck2.tier !== 'essential') fail('apply-to-all should copy Fence essential onto Deck, got ' + deck2.tier);
-    console.log('PASS apply-to-all copies tier');
-
-    // --- Fence + Interior: Interior color/TBD only ---
-    await loadQuote(page, [blankStain('fence', 1, { selectedColor: { name: 'Cedar', line: 'EXPERT' } }), interiorProject(2)], 7);
-    await sEval(page, (root) => {
-      const block = root.querySelector('.finish-block[data-uid="p_interior"]');
-      const tbd = block.querySelector('[data-int-tbd-all]');
-      tbd.click();
-    });
-    await new Promise((r) => setTimeout(r, 250));
-    snap = await page.evaluate(() => window.__sssQuoteSnapshot());
-    const fenceC = snap.projects.find((p) => p.type === 'fence');
-    const intC = snap.projects.find((p) => p.type === 'interior');
-    if (fenceC.selectedColor?.name !== 'Cedar') fail('Fence color leaked, got ' + JSON.stringify(fenceC.selectedColor));
-    if (!intC.selectedColor?.tbd && intC.selectedColor?.name !== 'To be determined') {
-      fail('Interior TBD did not stick: ' + JSON.stringify(intC.selectedColor));
-    }
-    await page.screenshot({ path: path.join(MEDIA, 'color-per-project.png'), fullPage: true });
-    console.log('PASS Interior TBD only; Fence color unchanged');
-
-    await sEval(page, (root) => {
-      const block = root.querySelector('.finish-block[data-uid="p_interior"]');
-      block.scrollIntoView({ block: 'start' });
-    });
-    await new Promise((r) => setTimeout(r, 150));
-    const intBox = await sEval(page, (root) => {
-      const block = root.querySelector('.finish-block[data-uid="p_interior"]');
-      const r = block.getBoundingClientRect();
-      return { x: r.x, y: r.y, width: r.width, height: Math.min(r.height, 1180) };
-    });
-    await page.screenshot({
-      path: path.join(MEDIA, 'interior-color-tablet.png'),
-      clip: {
-        x: Math.max(0, intBox.x - 8),
-        y: Math.max(0, intBox.y - 8),
-        width: Math.min(768, intBox.width + 16),
-        height: Math.min(1200, intBox.height + 16),
-      },
-    });
-    const layout = await sEval(page, (root) => {
-      const block = root.querySelector('.finish-block[data-uid="p_interior"]');
-      const planner = block.querySelector('.int-color-planner');
-      const banner = block.querySelector('.tbd-color-banner');
-      const mode = block.querySelector('.int-mode-grid');
-      const host = block.querySelector('#colorGrid') || block.querySelector('[data-fid="colorGrid"]') || block.querySelector('[id$="_colorGrid"]');
-      const pr = planner.getBoundingClientRect();
-      const br = banner.getBoundingClientRect();
-      const mr = mode.getBoundingClientRect();
-      const hr = host.getBoundingClientRect();
-      const cs = getComputedStyle(host);
-      return {
-        plannerW: Math.round(pr.width),
-        bannerW: Math.round(br.width),
-        bannerH: Math.round(br.height),
-        modeW: Math.round(mr.width),
-        hostW: Math.round(hr.width),
-        hostDisplay: cs.display,
-        hostCols: cs.gridTemplateColumns,
-        crushed: pr.width < 500 || br.height < 40 || br.width < 500,
-      };
-    });
-    if (layout.crushed) fail('Interior color UI crushed on tablet: ' + JSON.stringify(layout));
-    console.log('PASS Interior color tablet layout', layout);
-
-    // Multi-room payload cents
-    const payload = await page.evaluate(() => {
-      const intP = window.quoteProjects().find((p) => p.type === 'interior');
-      const rooms = window.buildInteriorRoomLineItems(intP, 0);
-      const sum = rooms.reduce((s, r) => s + r.unit_price_cents, 0);
-      return {
-        lines: rooms.map((r) => ({ name: r.name, cents: r.unit_price_cents, dollars: r.totalPrice })),
-        sum,
-        unique: new Set(rooms.map((r) => r.unit_price_cents)).size,
-      };
-    });
-    if (payload.lines.length < 2) fail('expected 2+ interior room lines');
-    if (payload.lines.some((l) => !l.cents)) fail('every room line needs cents: ' + JSON.stringify(payload));
-    if (payload.unique === 1 && payload.lines.length > 1) {
-      // identical prices can happen for identical rooms; still must not be 0
-    }
-    const firstIsTotal = payload.lines[0].cents === payload.sum && payload.lines.slice(1).every((l) => l.cents === 0);
-    if (firstIsTotal) fail('project total dumped on line 1: ' + JSON.stringify(payload));
-    console.log('PASS multi-room payload', payload);
-
-    // Paint payload screenshot overlay
-    await page.setViewport({ width: 900, height: 700 });
-    await page.setContent(`<!doctype html><html><body style="font-family:Instrument Sans,system-ui;background:#1a2540;color:#f7f5f1;padding:32px">
-      <h1 style="margin:0 0 8px;font-size:22px">Chalk line items (dry-run)</h1>
-      <p style="opacity:.8;margin:0 0 18px">Each paint room has its own cents. Stain stays one line. No product_id.</p>
-      <table style="width:100%;border-collapse:collapse;background:#fff;color:#1a2540;border-radius:12px;overflow:hidden">
-        <tr style="background:#2d6e4e;color:#fff"><th style="text-align:left;padding:10px 12px">Line</th><th style="text-align:right;padding:10px 12px">unit_price_cents</th></tr>
-        ${payload.lines.map((l) => `<tr><td style="padding:10px 12px;border-top:1px solid #ece9e3">${l.name}</td><td style="padding:10px 12px;border-top:1px solid #ece9e3;text-align:right;font-variant-numeric:tabular-nums">${l.cents}</td></tr>`).join('')}
-        <tr><td style="padding:10px 12px;border-top:2px solid #1a2540;font-weight:700">Sum</td><td style="padding:10px 12px;border-top:2px solid #1a2540;text-align:right;font-weight:700">${payload.sum}</td></tr>
-      </table>
-    </body></html>`);
-    await page.screenshot({ path: path.join(MEDIA, 'chalk-line-item-prices.png') });
+    if (snap.projects.find((p) => p.type === 'deck').tier !== 'essential') fail('apply-all copy failed');
+    console.log('PASS apply-to-all still copies');
 
     if (leadHits.length) fail('POST /api/lead was attempted');
     console.log('ALL HARNESS CHECKS PASSED');

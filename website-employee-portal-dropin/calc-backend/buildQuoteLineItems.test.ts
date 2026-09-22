@@ -1,4 +1,4 @@
-import { allocateRoomLineCents, buildQuoteLineItems } from './handler.ts';
+import { allocateRoomLineCents, buildQuoteLineItems, suggestionFromPhoton, suggestionFromNominatim, suggestionFromParts, stateToAbbr } from './handler.ts';
 
 function assert(cond: unknown, msg: string): void {
   if (!cond) throw new Error(msg);
@@ -96,3 +96,39 @@ function eq(a: unknown, b: unknown, msg: string): void {
 }
 
 console.log('buildQuoteLineItems tests passed');
+
+{
+  eq(stateToAbbr('South Carolina'), 'SC', 'SC abbr');
+  const photon = suggestionFromPhoton({
+    properties: {
+      housenumber: '100',
+      street: 'N Main St',
+      city: 'Greenville',
+      state: 'South Carolina',
+      postcode: '29601',
+      countrycode: 'us',
+    },
+  });
+  eq(photon && photon.street1, '100 N Main St', 'photon street');
+  eq(photon && photon.city, 'Greenville', 'photon city');
+  eq(photon && photon.province, 'SC', 'photon state');
+  eq(photon && photon.postalCode, '29601', 'photon zip');
+  eq(photon && photon.source, 'places', 'photon source');
+  assert(!suggestionFromPhoton({ properties: { name: 'Main Street', city: 'Paris', countrycode: 'fr' } }), 'reject non-US');
+  assert(!suggestionFromParts({ street1: 'Main Street', city: 'Greenville', province: 'SC' }), 'require a house number');
+  const nom = suggestionFromNominatim({
+    address: {
+      house_number: '201',
+      road: 'W Washington St',
+      city: 'Greenville',
+      state: 'South Carolina',
+      postcode: '29601',
+      country_code: 'us',
+    },
+  });
+  eq(nom && nom.street1, '201 W Washington St', 'nominatim street');
+  eq(nom && nom.province, 'SC', 'nominatim state');
+}
+
+console.log('address suggestion tests passed');
+

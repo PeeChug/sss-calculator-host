@@ -254,7 +254,7 @@ const FENCE_STYLE_LABELS: Record<string, string> = {
 function stainProductName(p: any, swReferral: boolean): string {
   if (String(p?.productType) === 'hoa') {
     const h = p?.hoa || {};
-    return [h.brand, h.productName].filter(Boolean).join(' ') || 'HOA-specified product';
+    return [h.brand, h.transparency, h.productName].filter(Boolean).join(' ') || 'HOA-specified product';
   }
   const map: Record<string, string> = {
     'essential-oil': 'Exotic Timber Oil (tri-oil)',
@@ -425,9 +425,18 @@ function buildChalkOfficeNotes(payload: any): string {
       const m = p?.measurements || {};
       if (p?.type === 'fence' && m.linearft) bits.push(m.linearft + ' ln ft x ' + (m.height || '') + ' ft');
       if (p?.type === 'deck' && m.flat) bits.push(m.flat + ' sq ft');
+      if (p?.type === 'interior' && m.colorPlan && m.colorPlan.mode) {
+        const mode = String(m.colorPlan.mode);
+        bits.push(
+          mode === 'single' ? 'one color everywhere' : mode === 'perRoom' ? 'room-by-room colors' : 'walls + ceiling colors',
+        );
+      }
       if (p?.selectedColor) {
         const sc = p.selectedColor;
         bits.push(typeof sc === 'string' ? sc : sc.name || sc.label || '');
+      }
+      if (p?.productType === 'hoa' && p?.hoa) {
+        bits.push(['HOA', p.hoa.brand, p.hoa.transparency].filter(Boolean).join(' '));
       }
       lines.push('- ' + bits.filter(Boolean).join(' · '));
     }
@@ -1029,6 +1038,202 @@ async function lookupChalkClients(env: CalcEnv, q: string): Promise<Json[]> {
     .slice(0, 8);
 }
 
+const US_STATE_ABBR: Record<string, string> = {
+  alabama: 'AL', alaska: 'AK', arizona: 'AZ', arkansas: 'AR', california: 'CA',
+  colorado: 'CO', connecticut: 'CT', delaware: 'DE', florida: 'FL', georgia: 'GA',
+  hawaii: 'HI', idaho: 'ID', illinois: 'IL', indiana: 'IN', iowa: 'IA', kansas: 'KS',
+  kentucky: 'KY', louisiana: 'LA', maine: 'ME', maryland: 'MD', massachusetts: 'MA',
+  michigan: 'MI', minnesota: 'MN', mississippi: 'MS', missouri: 'MO', montana: 'MT',
+  nebraska: 'NE', nevada: 'NV', 'new hampshire': 'NH', 'new jersey': 'NJ',
+  'new mexico': 'NM', 'new york': 'NY', 'north carolina': 'NC', 'north dakota': 'ND',
+  ohio: 'OH', oklahoma: 'OK', oregon: 'OR', pennsylvania: 'PA', 'rhode island': 'RI',
+  'south carolina': 'SC', 'south dakota': 'SD', tennessee: 'TN', texas: 'TX', utah: 'UT',
+  vermont: 'VT', virginia: 'VA', washington: 'WA', 'west virginia': 'WV',
+  wisconsin: 'WI', wyoming: 'WY', 'district of columbia': 'DC',
+};
+
+export function stateToAbbr(raw: unknown): string {
+  const s = String(raw || '').trim();
+  if (!s) return '';
+  if (/^[A-Za-z]{2}$/.test(s)) return s.toUpperCase();
+  return US_STATE_ABBR[s.toLowerCase()] || '';
+}
+
+export function formatAddressLabel(street1: string, city: string, province: string, postalCode: string): string {
+  return [street1, city, [province, postalCode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+}
+
+export function suggestionFromParts(parts: {
+  street1?: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
+  source?: string;
+  id?: string;
+  propertyId?: string;
+  clientId?: string;
+  clientName?: string;
+}): Json | null {
+  const street1 = String(parts.street1 || '').trim();
+  if (!street1 || !/\d/.test(street1)) return null;
+  const city = String(parts.city || '').trim();
+  const province = stateToAbbr(parts.province) || String(parts.province || '').trim();
+  const postalCode = String(parts.postalCode || '').replace(/[^\d-]/g, '').trim();
+  return {
+    source: parts.source || 'places',
+    id: String(parts.id || parts.propertyId || ''),
+    propertyId: String(parts.propertyId || ''),
+    clientId: String(parts.clientId || ''),
+    clientName: String(parts.clientName || ''),
+    street1,
+    city,
+    province,
+    postalCode,
+    label: formatAddressLabel(street1, city, province, postalCode),
+  };
+}
+
+function mapChalkPropertyNode(raw: any): Json | null {
+  const p = raw && typeof raw === 'object' ? raw : {};
+  const nested = p.property && typeof p.property === 'object' ? { ...p, ...p.property } : p;
+  return suggestionFromParts({
+    source: 'chalk',
+    id: String(nested.id || nested.property_id || ''),
+    propertyId: String(nested.id || nested.property_id || ''),
+    clientId: String(nested.client_id || nested.clientId || ''),
+    clientName: String(nested.client_name || nested.clientName || nested.displayName || ''),
+    street1: nested.street1 || nested.street || nested.address1 || nested.line1,
+    city: nested.city,
+    province: nested.province || nested.state,
+    postalCode: nested.postal_code || nested.postalCode || nested.zip,
+  });
+}
+
+export function suggestionFromPhoton(feature: any): Json | null {
+  const props = feature?.properties || feature || {};
+  const country = String(props.countrycode || props.country || '').toLowerCase();
+  if (country && country !== 'us' && country !== 'usa' && country !== 'united states') return null;
+  const num = String(props.housenumber || props.house_number || '').trim();
+  const street = String(props.street || props.name || '').trim();
+  const street1 = [num, street].filter(Boolean).join(' ').trim() || String(props.name || '').trim();
+  return suggestionFromParts({
+    source: 'places',
+    street1,
+    city: props.city || props.town || props.village || props.district || props.county,
+    province: props.statecode || props.state,
+    postalCode: props.postcode || props.postalcode,
+  });
+}
+
+export function suggestionFromNominatim(hit: any): Json | null {
+  const a = hit?.address || {};
+  const country = String(a.country_code || hit?.country_code || '').toLowerCase();
+  if (country && country !== 'us') return null;
+  const street1 = [a.house_number, a.road || a.pedestrian || a.residential].filter(Boolean).join(' ').trim();
+  return suggestionFromParts({
+    source: 'places',
+    street1: street1 || String(hit?.display_name || '').split(',')[0],
+    city: a.city || a.town || a.village || a.hamlet || a.county,
+    province: a.state_code || a.state,
+    postalCode: a.postcode,
+  });
+}
+
+function dedupeAddressSuggestions(nodes: Json[]): Json[] {
+  const seen = new Set<string>();
+  const out: Json[] = [];
+  for (const n of nodes) {
+    if (!n) continue;
+    const key = String(n.label || '')
+      .toLowerCase()
+      .replace(/[.,]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(n);
+  }
+  return out.slice(0, 8);
+}
+
+async function lookupChalkProperties(env: CalcEnv, q: string): Promise<Json[]> {
+  const encoded = encodeURIComponent(q);
+  const found: Json[] = [];
+  const paths = [
+    '/api/properties?q=' + encoded,
+    '/api/search?q=' + encoded + '&kind=property',
+    '/api/search?q=' + encoded,
+  ];
+  const results = await Promise.all(paths.map((p) => chalkJson(env, p)));
+  for (const res of results) {
+    if (res.status >= 400) continue;
+    for (const row of chalkList(res.data).slice(0, 12)) {
+      const kind = String(row?.kind || row?.type || '').toLowerCase();
+      if (kind && kind !== 'property' && kind !== 'address') continue;
+      const mapped = mapChalkPropertyNode(row);
+      if (mapped) found.push(mapped);
+    }
+  }
+  try {
+    const clients = await lookupChalkClients(env, q);
+    for (const c of clients) {
+      const mapped = suggestionFromParts({
+        source: 'chalk',
+        id: String(c.propertyId || ''),
+        propertyId: String(c.propertyId || ''),
+        clientId: String(c.id || ''),
+        clientName: String(c.displayName || c.companyName || [c.firstName, c.lastName].filter(Boolean).join(' ') || ''),
+        street1: c.street1,
+        city: c.city,
+        province: c.province,
+        postalCode: c.postalCode,
+      });
+      if (mapped) found.push(mapped);
+    }
+  } catch {
+    /* client lookup is optional for address typeahead */
+  }
+  return dedupeAddressSuggestions(found);
+}
+
+async function lookupPlacesAddresses(q: string): Promise<Json[]> {
+  const encoded = encodeURIComponent(q);
+  const ua = 'SuperiorStainSolutions-Estimator/1.0 (contact@superiorstainsolutions.com)';
+  const hits: Json[] = [];
+  try {
+    const photon = await fetch(
+      'https://photon.komoot.io/api/?q=' + encoded + '&lat=34.8526&lon=-82.3940&limit=8&lang=en',
+      { headers: { Accept: 'application/json', 'User-Agent': ua } },
+    );
+    if (photon.ok) {
+      const data: any = await photon.json();
+      for (const f of data?.features || []) {
+        const mapped = suggestionFromPhoton(f);
+        if (mapped) hits.push(mapped);
+      }
+    }
+  } catch {
+    /* Photon is best-effort */
+  }
+  if (hits.length >= 4) return dedupeAddressSuggestions(hits);
+  try {
+    const nom = await fetch(
+      'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&countrycodes=us&limit=8&q=' + encoded,
+      { headers: { Accept: 'application/json', 'User-Agent': ua } },
+    );
+    if (nom.ok) {
+      const data: any = await nom.json();
+      for (const row of Array.isArray(data) ? data : []) {
+        const mapped = suggestionFromNominatim(row);
+        if (mapped) hits.push(mapped);
+      }
+    }
+  } catch {
+    /* Nominatim is fallback */
+  }
+  return dedupeAddressSuggestions(hits);
+}
+
 async function attachQuotePhotos(
   env: CalcEnv,
   request: Request,
@@ -1334,6 +1539,20 @@ async function handleChalk(
     if (!connected) return json({ ok: true, nodes: [], error: 'chalk_disconnected' });
     const nodes = await lookupChalkClients(env, q);
     return json({ ok: true, nodes: nodes.slice(0, Number(body.limit) || 8) });
+  }
+
+  if (name === 'searchAddresses') {
+    const q = String(body.q || '').trim();
+    if (q.length < 3) return json({ ok: true, nodes: [] });
+    const [chalkNodes, placeNodes] = await Promise.all([
+      connected ? lookupChalkProperties(env, q).catch(() => []) : Promise.resolve([]),
+      lookupPlacesAddresses(q).catch(() => []),
+    ]);
+    const nodes = dedupeAddressSuggestions([...(chalkNodes || []), ...(placeNodes || [])]).slice(
+      0,
+      Number(body.limit) || 8,
+    );
+    return json({ ok: true, nodes });
   }
 
   if (name === 'jobberRequests') {
