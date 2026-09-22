@@ -254,7 +254,7 @@ const FENCE_STYLE_LABELS: Record<string, string> = {
 function stainProductName(p: any, swReferral: boolean): string {
   if (String(p?.productType) === 'hoa') {
     const h = p?.hoa || {};
-    return [h.brand, h.productName].filter(Boolean).join(' ') || 'HOA-specified product';
+    return [h.brand, h.transparency, h.productName].filter(Boolean).join(' ') || 'HOA-specified product';
   }
   const map: Record<string, string> = {
     'essential-oil': 'Exotic Timber Oil (tri-oil)',
@@ -385,7 +385,7 @@ function buildMaterialsLines(payload: any): string[] {
 }
 
 /** Office / crew notes. Photos, materials, and rep notes live here. */
-function buildChalkOfficeNotes(payload: any): string {
+export function buildChalkOfficeNotes(payload: any): string {
   const lines: string[] = [];
   lines.push('INTERNAL - crew / office');
   const employee = String(payload?.repName || payload?.employee || '').trim();
@@ -422,14 +422,54 @@ function buildChalkOfficeNotes(payload: any): string {
     lines.push('Projects on this quote:');
     for (const p of projects) {
       const bits = [projectDisplayName(p)];
+      const extraNotes: string[] = [];
       const m = p?.measurements || {};
       if (p?.type === 'fence' && m.linearft) bits.push(m.linearft + ' ln ft x ' + (m.height || '') + ' ft');
       if (p?.type === 'deck' && m.flat) bits.push(m.flat + ' sq ft');
+      if (p?.type === 'interior' && m.colorPlan && m.colorPlan.mode === 'perRoom') {
+        bits.push('room-by-room colors');
+        const rooms = Array.isArray(m.rooms) ? m.rooms : [];
+        const per = (m.colorPlan.perRoom && typeof m.colorPlan.perRoom === 'object') ? m.colorPlan.perRoom : {};
+        for (const r of rooms) {
+          const entry = per[r?.id] || {};
+          const nested = !!(entry.wall || entry.ceiling || entry.trim);
+          const slots = nested
+            ? entry
+            : { wall: entry && entry.name ? entry : null, ceiling: null, trim: null };
+          const fmt = (c: any) => {
+            if (!c) return '—';
+            const name = String(c.name || '').trim();
+            if (!name) return '—';
+            if (c.tbd || c.isTbd || /^to be determined$/i.test(name)) return 'To be determined';
+            const code = String(c.code || '').trim();
+            return code ? `${name} (${code})` : name;
+          };
+          extraNotes.push(
+            '  ' +
+              String(r.label || 'Room') +
+              ' — walls ' +
+              fmt(slots.wall) +
+              ' / ceiling ' +
+              fmt(slots.ceiling) +
+              ' / trim ' +
+              fmt(slots.trim),
+          );
+        }
+      } else if (p?.type === 'interior' && m.colorPlan && m.colorPlan.mode) {
+        const mode = String(m.colorPlan.mode);
+        bits.push(
+          mode === 'single' ? 'one color everywhere' : 'walls + ceiling colors',
+        );
+      }
       if (p?.selectedColor) {
         const sc = p.selectedColor;
         bits.push(typeof sc === 'string' ? sc : sc.name || sc.label || '');
       }
+      if (p?.productType === 'hoa' && p?.hoa) {
+        bits.push(['HOA', p.hoa.brand, p.hoa.transparency].filter(Boolean).join(' '));
+      }
       lines.push('- ' + bits.filter(Boolean).join(' · '));
+      for (const extra of extraNotes) lines.push(extra);
     }
   }
   return lines.join('\n').trim();
@@ -1029,6 +1069,233 @@ async function lookupChalkClients(env: CalcEnv, q: string): Promise<Json[]> {
     .slice(0, 8);
 }
 
+const US_STATE_ABBR: Record<string, string> = {
+  alabama: 'AL', alaska: 'AK', arizona: 'AZ', arkansas: 'AR', california: 'CA',
+  colorado: 'CO', connecticut: 'CT', delaware: 'DE', florida: 'FL', georgia: 'GA',
+  hawaii: 'HI', idaho: 'ID', illinois: 'IL', indiana: 'IN', iowa: 'IA', kansas: 'KS',
+  kentucky: 'KY', louisiana: 'LA', maine: 'ME', maryland: 'MD', massachusetts: 'MA',
+  michigan: 'MI', minnesota: 'MN', mississippi: 'MS', missouri: 'MO', montana: 'MT',
+  nebraska: 'NE', nevada: 'NV', 'new hampshire': 'NH', 'new jersey': 'NJ',
+  'new mexico': 'NM', 'new york': 'NY', 'north carolina': 'NC', 'north dakota': 'ND',
+  ohio: 'OH', oklahoma: 'OK', oregon: 'OR', pennsylvania: 'PA', 'rhode island': 'RI',
+  'south carolina': 'SC', 'south dakota': 'SD', tennessee: 'TN', texas: 'TX', utah: 'UT',
+  vermont: 'VT', virginia: 'VA', washington: 'WA', 'west virginia': 'WV',
+  wisconsin: 'WI', wyoming: 'WY', 'district of columbia': 'DC',
+};
+
+export function stateToAbbr(raw: unknown): string {
+  const s = String(raw || '').trim();
+  if (!s) return '';
+  if (/^[A-Za-z]{2}$/.test(s)) return s.toUpperCase();
+  return US_STATE_ABBR[s.toLowerCase()] || '';
+}
+
+export function formatAddressLabel(street1: string, city: string, province: string, postalCode: string): string {
+  return [street1, city, [province, postalCode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+}
+
+export function suggestionFromParts(parts: {
+  street1?: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
+  source?: string;
+  id?: string;
+  propertyId?: string;
+  clientId?: string;
+  clientName?: string;
+}): Json | null {
+  const street1 = String(parts.street1 || '').trim();
+  if (!street1 || !/\d/.test(street1)) return null;
+  const city = String(parts.city || '').trim();
+  const province = stateToAbbr(parts.province) || String(parts.province || '').trim();
+  const postalCode = String(parts.postalCode || '').replace(/[^\d-]/g, '').trim();
+  return {
+    source: parts.source || 'places',
+    id: String(parts.id || parts.propertyId || ''),
+    propertyId: String(parts.propertyId || ''),
+    clientId: String(parts.clientId || ''),
+    clientName: String(parts.clientName || ''),
+    street1,
+    city,
+    province,
+    postalCode,
+    label: formatAddressLabel(street1, city, province, postalCode),
+  };
+}
+
+function mapChalkPropertyNode(raw: any): Json | null {
+  const p = raw && typeof raw === 'object' ? raw : {};
+  const nested = p.property && typeof p.property === 'object' ? { ...p, ...p.property } : p;
+  return suggestionFromParts({
+    source: 'chalk',
+    id: String(nested.id || nested.property_id || ''),
+    propertyId: String(nested.id || nested.property_id || ''),
+    clientId: String(nested.client_id || nested.clientId || ''),
+    clientName: String(nested.client_name || nested.clientName || nested.displayName || ''),
+    street1: nested.street1 || nested.street || nested.address1 || nested.line1,
+    city: nested.city,
+    province: nested.province || nested.state,
+    postalCode: nested.postal_code || nested.postalCode || nested.zip,
+  });
+}
+
+export function suggestionFromPhoton(feature: any): Json | null {
+  const props = feature?.properties || feature || {};
+  const country = String(props.countrycode || props.country || '').toLowerCase();
+  if (country && country !== 'us' && country !== 'usa' && country !== 'united states') return null;
+  const num = String(props.housenumber || props.house_number || '').trim();
+  const street = String(props.street || props.name || '').trim();
+  const street1 = [num, street].filter(Boolean).join(' ').trim() || String(props.name || '').trim();
+  return suggestionFromParts({
+    source: 'places',
+    street1,
+    city: props.city || props.town || props.village || props.district || props.county,
+    province: props.statecode || props.state,
+    postalCode: props.postcode || props.postalcode,
+  });
+}
+
+export function suggestionFromNominatim(hit: any): Json | null {
+  const a = hit?.address || {};
+  const country = String(a.country_code || hit?.country_code || '').toLowerCase();
+  if (country && country !== 'us') return null;
+  const street1 = [a.house_number, a.road || a.pedestrian || a.residential].filter(Boolean).join(' ').trim();
+  return suggestionFromParts({
+    source: 'places',
+    street1: street1 || String(hit?.display_name || '').split(',')[0],
+    city: a.city || a.town || a.village || a.hamlet || a.county,
+    province: a.state_code || a.state,
+    postalCode: a.postcode,
+  });
+}
+
+function dedupeAddressSuggestions(nodes: Json[]): Json[] {
+  const seen = new Set<string>();
+  const out: Json[] = [];
+  for (const n of nodes) {
+    if (!n) continue;
+    const key = String(n.label || '')
+      .toLowerCase()
+      .replace(/[.,]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(n);
+  }
+  return out.slice(0, 8);
+}
+
+export function scoreAddressSuggestion(n: Json, q: string): number {
+  const hay = [n.street1, n.city, n.province, n.postalCode, n.label]
+    .map((x) => String(x || '').toLowerCase())
+    .join(' ');
+  const qq = q.toLowerCase();
+  const num = (q.match(/\d+/) || [''])[0];
+  let score = 0;
+  if (num && hay.includes(num)) score += 50;
+  else if (num) score -= 25;
+  for (const t of qq.split(/[^a-z0-9]+/).filter((t) => t.length > 2)) {
+    if (hay.includes(t)) score += 8;
+  }
+  if (n.source === 'places') score += 6;
+  return score;
+}
+
+export function rankAddressSuggestions(nodes: Json[], q: string, limit = 8): Json[] {
+  return dedupeAddressSuggestions(nodes)
+    .map((n) => ({ n, s: scoreAddressSuggestion(n, q) }))
+    .filter((x) => x.s >= 8)
+    .sort((a, b) => b.s - a.s)
+    .slice(0, limit)
+    .map((x) => x.n);
+}
+
+async function lookupChalkProperties(env: CalcEnv, q: string): Promise<Json[]> {
+  const encoded = encodeURIComponent(q);
+  const found: Json[] = [];
+  const paths = [
+    '/api/properties?q=' + encoded,
+    '/api/search?q=' + encoded + '&kind=property',
+  ];
+  const results = await Promise.all(paths.map((p) => chalkJson(env, p)));
+  for (const res of results) {
+    if (res.status >= 400) continue;
+    for (const row of chalkList(res.data).slice(0, 12)) {
+      const kind = String(row?.kind || row?.type || '').toLowerCase();
+      if (kind && kind !== 'property' && kind !== 'address') continue;
+      const mapped = mapChalkPropertyNode(row);
+      if (mapped) found.push(mapped);
+    }
+  }
+  if (!/^\d/.test(q.trim())) {
+    try {
+      const clients = await lookupChalkClients(env, q);
+      for (const c of clients) {
+        const mapped = suggestionFromParts({
+          source: 'chalk',
+          id: String(c.propertyId || ''),
+          propertyId: String(c.propertyId || ''),
+          clientId: String(c.id || ''),
+          clientName: String(
+            c.displayName ||
+              c.companyName ||
+              [c.firstName, c.lastName].filter(Boolean).join(' ') ||
+              '',
+          ),
+          street1: c.street1,
+          city: c.city,
+          province: c.province,
+          postalCode: c.postalCode,
+        });
+        if (mapped) found.push(mapped);
+      }
+    } catch {
+      /* client lookup is optional for address typeahead */
+    }
+  }
+  return rankAddressSuggestions(found, q, 8);
+}
+
+async function lookupPlacesAddresses(q: string): Promise<Json[]> {
+  const encoded = encodeURIComponent(q);
+  const ua = 'SuperiorStainSolutions-Estimator/1.0 (contact@superiorstainsolutions.com)';
+  const hits: Json[] = [];
+  try {
+    const photon = await fetch(
+      'https://photon.komoot.io/api/?q=' + encoded + '&lat=34.8526&lon=-82.3940&limit=8&lang=en',
+      { headers: { Accept: 'application/json', 'User-Agent': ua } },
+    );
+    if (photon.ok) {
+      const data: any = await photon.json();
+      for (const f of data?.features || []) {
+        const mapped = suggestionFromPhoton(f);
+        if (mapped) hits.push(mapped);
+      }
+    }
+  } catch {
+    /* Photon is best-effort */
+  }
+  if (hits.length >= 4) return dedupeAddressSuggestions(hits);
+  try {
+    const nom = await fetch(
+      'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&countrycodes=us&limit=8&q=' + encoded,
+      { headers: { Accept: 'application/json', 'User-Agent': ua } },
+    );
+    if (nom.ok) {
+      const data: any = await nom.json();
+      for (const row of Array.isArray(data) ? data : []) {
+        const mapped = suggestionFromNominatim(row);
+        if (mapped) hits.push(mapped);
+      }
+    }
+  } catch {
+    /* Nominatim is fallback */
+  }
+  return dedupeAddressSuggestions(hits);
+}
+
 async function attachQuotePhotos(
   env: CalcEnv,
   request: Request,
@@ -1154,6 +1421,68 @@ function quoteDiscount(payload: any): { cents: number; reason: string } {
   return { cents, reason: labels.length ? labels.join(' + ') : 'Quote discount' };
 }
 
+function roomFanoutLines(p: any): any[] {
+  const raw = p?._jobberRoomLineItems;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (r) =>
+      r &&
+      (String(r.name || '').trim() ||
+        r.totalPrice != null ||
+        r.unitPrice != null ||
+        r.unit_price_cents != null ||
+        r.amount != null),
+  );
+}
+
+function roomLineCents(r: any): number {
+  if (!r || typeof r !== 'object') return 0;
+  if (r.unit_price_cents != null && Number.isFinite(Number(r.unit_price_cents))) {
+    return Math.round(Number(r.unit_price_cents));
+  }
+  const dollars = Number(r.totalPrice ?? r.unitPrice ?? r.amount ?? r.price ?? 0);
+  return dollarsToCents(dollars);
+}
+
+/** Per-room cents. Never dump the project total on line 1 with $0 on the rest. */
+export function allocateRoomLineCents(rooms: any[], projectDollars: number): number[] {
+  const projectCents = dollarsToCents(projectDollars);
+  const raw = rooms.map(roomLineCents);
+  const sum = raw.reduce((a, b) => a + b, 0);
+  const restZero = raw.length > 1 && raw.slice(1).every((c) => c === 0);
+  const allOnFirst = restZero && projectCents > 0 && raw[0] === projectCents;
+  const allZero = raw.every((c) => c === 0);
+  if (!allOnFirst && !allZero && sum > 0) return raw;
+  if (projectCents <= 0) return raw;
+  const n = rooms.length;
+  const even = Math.floor(projectCents / n);
+  return rooms.map((_, i) => (i === n - 1 ? projectCents - even * (n - 1) : even));
+}
+
+function pushCustomLine(
+  line_items: Json[],
+  sentLineItems: Json[],
+  name: string,
+  description: string,
+  dollars: number,
+  centsOverride?: number,
+): void {
+  const n = stripHashSuffix(String(name || 'Work').trim()) || 'Work';
+  const cents =
+    centsOverride != null && Number.isFinite(centsOverride)
+      ? Math.round(centsOverride)
+      : dollarsToCents(Number.isFinite(dollars) ? dollars : 0);
+  const amount = cents / 100;
+  line_items.push({
+    name: n,
+    description: String(description || ''),
+    quantity: 1,
+    unit: 'each',
+    unit_price_cents: cents,
+  });
+  sentLineItems.push({ name: n, unitPrice: amount, totalPrice: amount });
+}
+
 export function buildQuoteLineItems(payload: any): {
   line_items: Json[];
   sentLineItems: Json[];
@@ -1162,10 +1491,16 @@ export function buildQuoteLineItems(payload: any): {
 } {
   // Custom lines only: calc dollars in unit_price_cents. Never set product_id.
   // Discounts go on the quote (discount_cents), not as a negative line.
+  // Paint rooms/sides/areas fan out when `_jobberRoomLineItems` is present;
+  // stain stays one line per project.
   const projects = Array.isArray(payload?.projects) ? payload.projects : [];
   const discount = quoteDiscount(payload);
   const hasProjectLines = projects.some(
-    (p: any) => String(p?._jobberName || '').trim() || p?.preDiscountSubtotal != null || p?.subtotal != null,
+    (p: any) =>
+      String(p?._jobberName || '').trim() ||
+      p?.preDiscountSubtotal != null ||
+      p?.subtotal != null ||
+      (Array.isArray(p?._jobberRoomLineItems) && p._jobberRoomLineItems.length),
   );
 
   const line_items: Json[] = [];
@@ -1173,17 +1508,36 @@ export function buildQuoteLineItems(payload: any): {
 
   if (hasProjectLines) {
     for (const p of projects) {
+      const rooms = roomFanoutLines(p);
+      if (rooms.length) {
+        const projectDollars = Number(p.preDiscountSubtotal ?? p.subtotal ?? 0);
+        const centsList = allocateRoomLineCents(rooms, projectDollars);
+        rooms.forEach((r: any, i: number) => {
+          pushCustomLine(
+            line_items,
+            sentLineItems,
+            String(r.name || p._jobberName || p.type || 'Work'),
+            String(r.description || ''),
+            centsList[i] / 100,
+            centsList[i],
+          );
+        });
+        const paintOrder = paintOrderFromDescription(p._jobberDescription);
+        if (paintOrder.length && line_items.length) {
+          const last = line_items[line_items.length - 1] as { description?: string };
+          const extra = paintOrder.join('\n');
+          last.description = [String(last.description || '').trim(), extra].filter(Boolean).join('\n\n');
+        }
+        continue;
+      }
       const dollars = Number(p.preDiscountSubtotal ?? p.subtotal ?? 0);
-      const name = stripHashSuffix(String(p._jobberName || p.type || 'Work'));
-      const description = String(p._jobberDescription || '');
-      line_items.push({
-        name,
-        description,
-        quantity: 1,
-        unit: 'each',
-        unit_price_cents: dollarsToCents(dollars),
-      });
-      sentLineItems.push({ name, unitPrice: dollars, totalPrice: dollars });
+      pushCustomLine(
+        line_items,
+        sentLineItems,
+        String(p._jobberName || p.type || 'Work'),
+        String(p._jobberDescription || ''),
+        dollars,
+      );
     }
   }
 
@@ -1247,6 +1601,21 @@ async function handleChalk(
     if (!connected) return json({ ok: true, nodes: [], error: 'chalk_disconnected' });
     const nodes = await lookupChalkClients(env, q);
     return json({ ok: true, nodes: nodes.slice(0, Number(body.limit) || 8) });
+  }
+
+  if (name === 'searchAddresses') {
+    const q = String(body.q || '').trim();
+    if (q.length < 3) return json({ ok: true, nodes: [] });
+    const [chalkNodes, placeNodes] = await Promise.all([
+      connected ? lookupChalkProperties(env, q).catch(() => []) : Promise.resolve([]),
+      lookupPlacesAddresses(q).catch(() => []),
+    ]);
+    const nodes = rankAddressSuggestions(
+      [...(placeNodes || []), ...(chalkNodes || [])],
+      q,
+      Number(body.limit) || 8,
+    );
+    return json({ ok: true, nodes });
   }
 
   if (name === 'jobberRequests') {
