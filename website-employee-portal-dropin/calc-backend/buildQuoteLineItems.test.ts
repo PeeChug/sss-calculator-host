@@ -1,4 +1,4 @@
-import { allocateRoomLineCents, buildQuoteLineItems, suggestionFromPhoton, suggestionFromNominatim, suggestionFromParts, stateToAbbr } from './handler.ts';
+import { allocateRoomLineCents, buildQuoteLineItems, suggestionFromPhoton, suggestionFromNominatim, suggestionFromParts, stateToAbbr, rankAddressSuggestions } from './handler.ts';
 
 function assert(cond: unknown, msg: string): void {
   if (!cond) throw new Error(msg);
@@ -128,6 +128,17 @@ console.log('buildQuoteLineItems tests passed');
   });
   eq(nom && nom.street1, '201 W Washington St', 'nominatim street');
   eq(nom && nom.province, 'SC', 'nominatim state');
+
+  const ranked = rankAddressSuggestions(
+    [
+      { source: 'chalk', street1: '319 Starling Ave', city: 'Easley', province: 'SC', postalCode: '', label: '319 Starling Ave, Easley, SC' },
+      { source: 'places', street1: '100 N Main St', city: 'Greenville', province: 'SC', postalCode: '29601', label: '100 N Main St, Greenville, SC 29601' },
+    ],
+    '100 N Main Greenville SC',
+    5,
+  );
+  eq(ranked.length, 1, 'unrelated Chalk streets dropped');
+  eq(ranked[0].street1, '100 N Main St', 'Places street ranks first');
 }
 
 console.log('address suggestion tests passed');

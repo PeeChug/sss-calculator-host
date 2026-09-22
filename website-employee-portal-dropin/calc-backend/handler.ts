@@ -1156,13 +1156,37 @@ function dedupeAddressSuggestions(nodes: Json[]): Json[] {
   return out.slice(0, 8);
 }
 
+export function scoreAddressSuggestion(n: Json, q: string): number {
+  const hay = [n.street1, n.city, n.province, n.postalCode, n.label]
+    .map((x) => String(x || '').toLowerCase())
+    .join(' ');
+  const qq = q.toLowerCase();
+  const num = (q.match(/\d+/) || [''])[0];
+  let score = 0;
+  if (num && hay.includes(num)) score += 50;
+  else if (num) score -= 25;
+  for (const t of qq.split(/[^a-z0-9]+/).filter((t) => t.length > 2)) {
+    if (hay.includes(t)) score += 8;
+  }
+  if (n.source === 'places') score += 6;
+  return score;
+}
+
+export function rankAddressSuggestions(nodes: Json[], q: string, limit = 8): Json[] {
+  return dedupeAddressSuggestions(nodes)
+    .map((n) => ({ n, s: scoreAddressSuggestion(n, q) }))
+    .filter((x) => x.s >= 8)
+    .sort((a, b) => b.s - a.s)
+    .slice(0, limit)
+    .map((x) => x.n);
+}
+
 async function lookupChalkProperties(env: CalcEnv, q: string): Promise<Json[]> {
   const encoded = encodeURIComponent(q);
   const found: Json[] = [];
   const paths = [
     '/api/properties?q=' + encoded,
     '/api/search?q=' + encoded + '&kind=property',
-    '/api/search?q=' + encoded,
   ];
   const results = await Promise.all(paths.map((p) => chalkJson(env, p)));
   for (const res of results) {
@@ -1174,26 +1198,33 @@ async function lookupChalkProperties(env: CalcEnv, q: string): Promise<Json[]> {
       if (mapped) found.push(mapped);
     }
   }
-  try {
-    const clients = await lookupChalkClients(env, q);
-    for (const c of clients) {
-      const mapped = suggestionFromParts({
-        source: 'chalk',
-        id: String(c.propertyId || ''),
-        propertyId: String(c.propertyId || ''),
-        clientId: String(c.id || ''),
-        clientName: String(c.displayName || c.companyName || [c.firstName, c.lastName].filter(Boolean).join(' ') || ''),
-        street1: c.street1,
-        city: c.city,
-        province: c.province,
-        postalCode: c.postalCode,
-      });
-      if (mapped) found.push(mapped);
+  if (!/^\d/.test(q.trim())) {
+    try {
+      const clients = await lookupChalkClients(env, q);
+      for (const c of clients) {
+        const mapped = suggestionFromParts({
+          source: 'chalk',
+          id: String(c.propertyId || ''),
+          propertyId: String(c.propertyId || ''),
+          clientId: String(c.id || ''),
+          clientName: String(
+            c.displayName ||
+              c.companyName ||
+              [c.firstName, c.lastName].filter(Boolean).join(' ') ||
+              '',
+          ),
+          street1: c.street1,
+          city: c.city,
+          province: c.province,
+          postalCode: c.postalCode,
+        });
+        if (mapped) found.push(mapped);
+      }
+    } catch {
+      /* client lookup is optional for address typeahead */
     }
-  } catch {
-    /* client lookup is optional for address typeahead */
   }
-  return dedupeAddressSuggestions(found);
+  return rankAddressSuggestions(found, q, 8);
 }
 
 async function lookupPlacesAddresses(q: string): Promise<Json[]> {
@@ -1548,8 +1579,9 @@ async function handleChalk(
       connected ? lookupChalkProperties(env, q).catch(() => []) : Promise.resolve([]),
       lookupPlacesAddresses(q).catch(() => []),
     ]);
-    const nodes = dedupeAddressSuggestions([...(chalkNodes || []), ...(placeNodes || [])]).slice(
-      0,
+    const nodes = rankAddressSuggestions(
+      [...(placeNodes || []), ...(chalkNodes || [])],
+      q,
       Number(body.limit) || 8,
     );
     return json({ ok: true, nodes });
