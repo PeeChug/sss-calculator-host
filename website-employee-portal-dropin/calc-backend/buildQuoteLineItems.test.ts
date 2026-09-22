@@ -1,4 +1,4 @@
-import { allocateRoomLineCents, buildQuoteLineItems, suggestionFromPhoton, suggestionFromNominatim, suggestionFromParts, stateToAbbr, rankAddressSuggestions } from './handler.ts';
+import { allocateRoomLineCents, buildQuoteLineItems, buildChalkOfficeNotes, suggestionFromPhoton, suggestionFromNominatim, suggestionFromParts, stateToAbbr, rankAddressSuggestions } from './handler.ts';
 
 function assert(cond: unknown, msg: string): void {
   if (!cond) throw new Error(msg);
@@ -158,6 +158,67 @@ function eq(a: unknown, b: unknown, msg: string): void {
 }
 
 console.log('buildQuoteLineItems tests passed');
+
+{
+  const payload = {
+    projects: [
+      {
+        type: 'interior',
+        _jobberName: 'Interior Painting',
+        preDiscountSubtotal: 2324,
+        selectedColor: { name: 'Room-by-room wall, ceiling & trim colors' },
+        measurements: {
+          rooms: [
+            { id: 'room-a', label: 'Living Room' },
+            { id: 'room-b', label: 'Bedroom' },
+          ],
+          colorPlan: {
+            mode: 'perRoom',
+            perRoom: {
+              'room-a': {
+                wall: { name: 'Agreeable Gray', code: 'SW 7029' },
+                ceiling: { name: 'Extra White', code: 'SW 7006' },
+                trim: { name: 'Greek Villa', code: 'SW 7551' },
+              },
+              'room-b': {
+                wall: { name: 'Naval', code: 'SW 6244' },
+                ceiling: { name: 'Untinted Ceiling White', code: 'no tint' },
+                trim: { name: 'To be determined', tbd: true },
+              },
+            },
+          },
+        },
+        _jobberRoomLineItems: [
+          {
+            name: 'Interior Painting — Living Room',
+            description: '14 × 12 ft, 8 ft ceilings\n- Wall: Agreeable Gray (SW 7029)\n- Ceiling: Extra White (SW 7006)\n- Trim: Greek Villa (SW 7551)',
+            totalPrice: 1240, unitPrice: 1240, unit_price_cents: 124000,
+          },
+          {
+            name: 'Interior Painting — Bedroom',
+            description: '12 × 11 ft, 8 ft ceilings\n- Wall: Naval (SW 6244)\n- Ceiling: Untinted Ceiling White (no tint)\n- Trim: To be determined',
+            totalPrice: 1084, unitPrice: 1084, unit_price_cents: 108400,
+          },
+        ],
+      },
+    ],
+    totals: { bundleDiscount: 0, totalDiscountSavings: 0, final: 2324 },
+  };
+  const { line_items } = buildQuoteLineItems(payload);
+  eq(line_items.length, 2, 'per-room stays two priced lines, not six');
+  assert(!line_items.some((l: any) => l.product_id), 'per-room never product_id');
+  eq(line_items.map((l: any) => l.unit_price_cents), [124000, 108400], 'each room keeps its own cents');
+  assert(String(line_items[0].description).includes('Wall: Agreeable Gray (SW 7029)'), 'living wall on line');
+  assert(String(line_items[0].description).includes('Ceiling: Extra White (SW 7006)'), 'living ceiling on line');
+  assert(String(line_items[0].description).includes('Trim: Greek Villa (SW 7551)'), 'living trim on line');
+  assert(String(line_items[1].description).includes('Trim: To be determined'), 'bedroom trim TBD on line');
+  const notes = buildChalkOfficeNotes(payload);
+  assert(notes.includes('Living Room — walls Agreeable Gray (SW 7029) / ceiling Extra White (SW 7006) / trim Greek Villa (SW 7551)'), 'office notes living colors');
+  assert(notes.includes('Bedroom — walls Naval (SW 6244)'), 'office notes bedroom wall');
+  assert(notes.includes('trim To be determined'), 'office notes bedroom trim TBD');
+}
+
+console.log('per-room wall/ceiling/trim line + office note tests passed');
 
 {
   eq(stateToAbbr('South Carolina'), 'SC', 'SC abbr');

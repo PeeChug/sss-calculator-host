@@ -385,7 +385,7 @@ function buildMaterialsLines(payload: any): string[] {
 }
 
 /** Office / crew notes. Photos, materials, and rep notes live here. */
-function buildChalkOfficeNotes(payload: any): string {
+export function buildChalkOfficeNotes(payload: any): string {
   const lines: string[] = [];
   lines.push('INTERNAL - crew / office');
   const employee = String(payload?.repName || payload?.employee || '').trim();
@@ -422,13 +422,43 @@ function buildChalkOfficeNotes(payload: any): string {
     lines.push('Projects on this quote:');
     for (const p of projects) {
       const bits = [projectDisplayName(p)];
+      const extraNotes: string[] = [];
       const m = p?.measurements || {};
       if (p?.type === 'fence' && m.linearft) bits.push(m.linearft + ' ln ft x ' + (m.height || '') + ' ft');
       if (p?.type === 'deck' && m.flat) bits.push(m.flat + ' sq ft');
-      if (p?.type === 'interior' && m.colorPlan && m.colorPlan.mode) {
+      if (p?.type === 'interior' && m.colorPlan && m.colorPlan.mode === 'perRoom') {
+        bits.push('room-by-room colors');
+        const rooms = Array.isArray(m.rooms) ? m.rooms : [];
+        const per = (m.colorPlan.perRoom && typeof m.colorPlan.perRoom === 'object') ? m.colorPlan.perRoom : {};
+        for (const r of rooms) {
+          const entry = per[r?.id] || {};
+          const nested = !!(entry.wall || entry.ceiling || entry.trim);
+          const slots = nested
+            ? entry
+            : { wall: entry && entry.name ? entry : null, ceiling: null, trim: null };
+          const fmt = (c: any) => {
+            if (!c) return '—';
+            const name = String(c.name || '').trim();
+            if (!name) return '—';
+            if (c.tbd || c.isTbd || /^to be determined$/i.test(name)) return 'To be determined';
+            const code = String(c.code || '').trim();
+            return code ? `${name} (${code})` : name;
+          };
+          extraNotes.push(
+            '  ' +
+              String(r.label || 'Room') +
+              ' — walls ' +
+              fmt(slots.wall) +
+              ' / ceiling ' +
+              fmt(slots.ceiling) +
+              ' / trim ' +
+              fmt(slots.trim),
+          );
+        }
+      } else if (p?.type === 'interior' && m.colorPlan && m.colorPlan.mode) {
         const mode = String(m.colorPlan.mode);
         bits.push(
-          mode === 'single' ? 'one color everywhere' : mode === 'perRoom' ? 'room-by-room colors' : 'walls + ceiling colors',
+          mode === 'single' ? 'one color everywhere' : 'walls + ceiling colors',
         );
       }
       if (p?.selectedColor) {
@@ -439,6 +469,7 @@ function buildChalkOfficeNotes(payload: any): string {
         bits.push(['HOA', p.hoa.brand, p.hoa.transparency].filter(Boolean).join(' '));
       }
       lines.push('- ' + bits.filter(Boolean).join(' · '));
+      for (const extra of extraNotes) lines.push(extra);
     }
   }
   return lines.join('\n').trim();
