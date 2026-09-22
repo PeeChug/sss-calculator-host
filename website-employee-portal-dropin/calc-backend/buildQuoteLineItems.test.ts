@@ -95,6 +95,68 @@ function eq(a: unknown, b: unknown, msg: string): void {
   eq(cents.reduce((s: number, c: number) => s + c, 0), 210000, 'fan-out sums to project');
 }
 
+{
+  const payload = {
+    projects: [
+      {
+        type: 'fence',
+        _jobberName: 'Fence Staining & Restoration',
+        preDiscountSubtotal: 2640,
+      },
+      {
+        type: 'deck',
+        _jobberName: 'Deck Staining & Restoration',
+        preDiscountSubtotal: 1920,
+      },
+      {
+        type: 'interior',
+        _jobberName: 'Interior Painting',
+        preDiscountSubtotal: 2100,
+        _jobberDescription: 'PAINT (ESTIMATED ORDER)\n~8 gal SuperPaint',
+        _jobberRoomLineItems: [
+          { name: 'Interior Painting — Living Room', description: '14 × 12', totalPrice: 1240, unitPrice: 1240, unit_price_cents: 124000 },
+          { name: 'Interior Painting — Bedroom', description: '12 × 11', totalPrice: 860, unitPrice: 860, unit_price_cents: 86000 },
+        ],
+      },
+      {
+        type: 'exterior',
+        _jobberName: 'Exterior Painting',
+        preDiscountSubtotal: 5400,
+        _jobberDescription: 'PAINT (ESTIMATED ORDER)\n~12 gal Duration',
+        _jobberRoomLineItems: [
+          { name: 'Exterior Painting — Front', description: '40 × 10', totalPrice: 2400, unitPrice: 2400, unit_price_cents: 240000 },
+          { name: 'Exterior Painting — Rear', description: '36 × 10', totalPrice: 2160, unitPrice: 2160, unit_price_cents: 216000 },
+          { name: 'Exterior Painting — trim, doors & details', description: 'Entry doors', totalPrice: 840, unitPrice: 840, unit_price_cents: 84000 },
+        ],
+      },
+    ],
+    totals: { bundleDiscount: 0, totalDiscountSavings: 0, final: 12060 },
+  };
+  const { line_items } = buildQuoteLineItems(payload);
+  eq(
+    line_items.map((l: any) => [l.name, l.unit_price_cents]),
+    [
+      ['Fence Staining & Restoration', 264000],
+      ['Deck Staining & Restoration', 192000],
+      ['Interior Painting — Living Room', 124000],
+      ['Interior Painting — Bedroom', 86000],
+      ['Exterior Painting — Front', 240000],
+      ['Exterior Painting — Rear', 216000],
+      ['Exterior Painting — trim, doors & details', 84000],
+    ],
+    'mixed quote: stain one line each, paint rooms/sides own cents',
+  );
+  assert(!line_items.some((l: any) => l.product_id), 'mixed quote never product_id');
+  assert(line_items[0].unit_price_cents !== 1206000, 'must not dump quote total on line 1');
+  const interior = line_items.filter((l: any) => String(l.name).startsWith('Interior'));
+  const exterior = line_items.filter((l: any) => String(l.name).startsWith('Exterior'));
+  eq(interior.reduce((s: number, l: any) => s + l.unit_price_cents, 0), 210000, 'interior rooms sum to interior project');
+  eq(exterior.reduce((s: number, l: any) => s + l.unit_price_cents, 0), 540000, 'exterior sides sum to exterior project');
+  assert(String(interior[interior.length - 1].description).includes('PAINT (ESTIMATED ORDER)'), 'interior gallons on last interior line');
+  assert(String(exterior[exterior.length - 1].description).includes('PAINT (ESTIMATED ORDER)'), 'exterior gallons on last exterior line');
+  assert(!String(line_items[0].description || '').includes('PAINT (ESTIMATED ORDER)'), 'stain line has no paint gallons');
+}
+
 console.log('buildQuoteLineItems tests passed');
 
 {

@@ -3815,6 +3815,26 @@ function extColorPlan(p) {
   }
   return m.colorPlan;
 }
+function pickCabinetColorMode(ev, mode) {
+  if (ev) {
+    try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {}
+  }
+  if (mode !== 'single' && mode !== 'twoTone') return;
+  const now = Date.now();
+  if (pickCabinetColorMode._at && now - pickCabinetColorMode._at < 200 && pickCabinetColorMode._mode === mode) return;
+  pickCabinetColorMode._at = now;
+  pickCabinetColorMode._mode = mode;
+  const proj = (ev && activateFinishProjectFromEvent(ev)) || state.activeProject;
+  if (!proj) return;
+  const cp = cabColorPlan(proj);
+  cp.mode = mode;
+  syncCabinetSelectedColor(proj);
+  afterFinishChoice(7);
+  if (!rerenderActiveFinishColor()) {
+    try { renderCabinetColorStage(); } catch (e) {}
+  }
+}
+
 function cabColorPlan(p) {
   const proj = p || state.activeProject;
   const m = proj.measurements || (proj.measurements = {});
@@ -3822,6 +3842,43 @@ function cabColorPlan(p) {
     m.colorPlan = { _cab: true, mode: 'single', main: null, island: null, sheen: CABINET_DEFAULT_SHEEN };
   }
   return m.colorPlan;
+}
+
+function pickXSwatchColor(ev, el) {
+  if (ev) {
+    try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {}
+  }
+  if (!el) return;
+  const now = Date.now();
+  const key = (el.getAttribute('data-x-tbd') || el.getAttribute('data-x-target') || '') + '|' +
+    (el.getAttribute('data-code') || el.getAttribute('data-x-tbd') || '');
+  if (pickXSwatchColor._at && now - pickXSwatchColor._at < 200 && pickXSwatchColor._key === key) return;
+  pickXSwatchColor._at = now;
+  pickXSwatchColor._key = key;
+  const proj = (ev && activateFinishProjectFromEvent(ev)) || state.activeProject;
+  if (!proj) return;
+  const target = el.getAttribute('data-x-tbd') || el.getAttribute('data-x-target');
+  if (!target) return;
+  const paintCab = isCabinet(proj);
+  const cp = paintCab ? cabColorPlan(proj) : extColorPlan(proj);
+  if (el.hasAttribute('data-x-tbd')) {
+    cp[target] = tbdColor();
+  } else {
+    cp[target] = {
+      name: el.getAttribute('data-name'),
+      code: el.getAttribute('data-code'),
+      hex: el.getAttribute('data-hex')
+    };
+  }
+  if (paintCab) syncCabinetSelectedColor(proj);
+  else syncExteriorSelectedColor(proj);
+  afterFinishChoice(7);
+  if (!rerenderActiveFinishColor()) {
+    try {
+      if (paintCab) renderCabinetColorStage();
+      else renderExteriorColorStage();
+    } catch (e) {}
+  }
 }
 
 // Compact family accordion picker shared by exterior + cabinet.
@@ -3835,7 +3892,8 @@ function xPickerHtml(target, title, current, allowClear) {
     const swatches = f.colors.map(c => `
       <button type="button" class="int-swatch ${current && current.code === c.code && current.name === c.name ? 'on' : ''}"
         data-x-target="${target}" data-name="${escapeHtml(c.name)}" data-code="${escapeHtml(c.code)}" data-hex="${c.hex}"
-        style="background:${c.hex};" title="${escapeHtml(c.name)} (${escapeHtml(c.code)})">
+        style="background:${c.hex};" title="${escapeHtml(c.name)} (${escapeHtml(c.code)})"
+        onpointerdown="pickXSwatchColor(event,this)" onclick="pickXSwatchColor(event,this)">
         <span class="int-swatch-name">${escapeHtml(c.name)}</span>
       </button>`).join('');
     return `<details style="border:1px solid var(--line);border-radius:10px;margin-bottom:6px;background:var(--paper);">
@@ -3855,8 +3913,10 @@ function xPickerHtml(target, title, current, allowClear) {
     <div class="int-sec" style="margin-top:14px;" data-x-picker="${target}">
       <div class="int-sec-title">${title}</div>
       <div style="margin:4px 0 8px;">${cur}</div>
-      ${tbdIntSwatchHtml(target, current).replace('data-tbd-target=', 'data-x-tbd=')}
       ${famBlocks}
+      ${tbdIntSwatchHtml(target, current)
+        .replace('data-tbd-target=', 'data-x-tbd=')
+        .replace('<button type="button"', '<button type="button" onpointerdown="pickXSwatchColor(event,this)" onclick="pickXSwatchColor(event,this)"')}
       <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap;">
         <input type="text" placeholder="Any SW color — name or code" data-x-custom="${target}"
           style="flex:1;min-width:180px;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-size:13.5px;">
@@ -3904,24 +3964,26 @@ function syncCabinetSelectedColor(p) {
 function wireXPickers(rerender, cp, sheenMap) {
   const grid = __doc.getElementById('colorGrid');
   if (!grid) return;
-  grid.querySelectorAll('[data-x-target]').forEach(sw => sw.addEventListener('click', (e) => {
-    activateFinishProjectFromEvent(e);
-    cp[sw.getAttribute('data-x-target')] = {
-      name: sw.getAttribute('data-name'), code: sw.getAttribute('data-code'), hex: sw.getAttribute('data-hex')
-    };
-    rerender();
-  }));
-  grid.querySelectorAll('[data-x-tbd]').forEach(b => b.addEventListener('click', (e) => {
-    activateFinishProjectFromEvent(e);
-    cp[b.getAttribute('data-x-tbd')] = tbdColor();
-    rerender();
-  }));
-  grid.querySelectorAll('[data-x-clear]').forEach(b => b.addEventListener('click', (e) => {
+  const bind = (sel, fn) => {
+    grid.querySelectorAll(sel).forEach((el) => {
+      const run = (e) => {
+        const now = Date.now();
+        if (el._xAt && now - el._xAt < 200) return;
+        el._xAt = now;
+        fn(e, el);
+      };
+      el.addEventListener('pointerdown', run);
+      el.addEventListener('click', run);
+    });
+  };
+  // Color chips and TBD use pickXSwatchColor inline so tablet pointerdown
+  // lands even when stacked finish swallows the later click.
+  bind('[data-x-clear]', (e, b) => {
     activateFinishProjectFromEvent(e);
     cp[b.getAttribute('data-x-clear')] = null;
     rerender();
-  }));
-  grid.querySelectorAll('[data-x-custom-set]').forEach(b => b.addEventListener('click', (e) => {
+  });
+  bind('[data-x-custom-set]', (e, b) => {
     activateFinishProjectFromEvent(e);
     const t = b.getAttribute('data-x-custom-set');
     const inp = grid.querySelector(`[data-x-custom="${t}"]`);
@@ -3930,12 +3992,12 @@ function wireXPickers(rerender, cp, sheenMap) {
     const codeMatch = v.match(/SW\s?\d{4}/i);
     cp[t] = { name: v.replace(/SW\s?\d{4}/i, '').trim() || v, code: codeMatch ? codeMatch[0].toUpperCase().replace(/SW\s?/, 'SW ') : '', hex: '#d8d4cc' };
     rerender();
-  }));
-  grid.querySelectorAll('[data-x-sheen]').forEach(b => b.addEventListener('click', (e) => {
+  });
+  bind('[data-x-sheen]', (e, b) => {
     activateFinishProjectFromEvent(e);
     const key = sheenMap[b.getAttribute('data-x-sheen')];
     if (key) { cp[key] = b.getAttribute('data-sheen'); rerender(); }
-  }));
+  });
 }
 
 function renderExteriorColorStage() {
@@ -3998,7 +4060,8 @@ function renderCabinetColorStage() {
   }
   const hasIsland = cabinetAreas().some(a => a.type === 'island');
   const modeBtn = (mode, ico, title, sub) => `
-    <button type="button" class="int-mode-card ${cp.mode === mode ? 'on' : ''}" data-cabc-mode="${mode}">
+    <button type="button" class="int-mode-card ${cp.mode === mode ? 'on' : ''}" data-cabc-mode="${mode}"
+      onpointerdown="pickCabinetColorMode(event,'${mode}')" onclick="pickCabinetColorMode(event,'${mode}')">
       <span class="imc-ico">${ico}</span><span class="imc-title">${title}</span><span class="imc-sub">${sub}</span>
     </button>`;
   __doc.getElementById('colorGrid').innerHTML = `
@@ -5720,7 +5783,7 @@ function tbdSwatchHtml(selected) {
   const on = !!(selected && isTbdColor(selected));
   return `<div class="color-swatch tbd-swatch ${on ? 'selected' : ''}" data-color="To be determined" data-tbd="1" role="button" tabindex="0">
         <div class="chip tbd-chip hex-only"></div>
-        <div class="name">Pick on site</div>
+        <div class="name">To Be Determined</div>
       </div>`;
 }
 
@@ -5728,7 +5791,7 @@ function tbdIntSwatchHtml(target, selected) {
   const on = isTbdColor(selected);
   return `<button type="button" class="int-swatch tbd-swatch ${on ? 'on' : ''}" data-tbd-target="${escapeHtml(target)}">
       <span class="sw-chip tbd-chip"></span>
-      <span class="sw-name">Pick on site</span>
+      <span class="sw-name">To Be Determined</span>
     </button>`;
 }
 
@@ -9299,7 +9362,10 @@ function renderColorStage() {
   __doc.getElementById('colorGrid').outerHTML = `<div id="colorGrid">${html}</div>`;
 
   __doc.querySelectorAll('#colorGrid .color-swatch, #colorGrid [data-tbd]').forEach(sw => {
-    sw.addEventListener('click', (e) => {
+    const onPick = (e) => {
+      const now = Date.now();
+      if (sw._stainPickAt && now - sw._stainPickAt < 200) return;
+      sw._stainPickAt = now;
       const proj = activateFinishProjectFromEvent(e) || state.activeProject;
       const name = sw.dataset.color;
       if (sw.dataset.tbd) {
@@ -9335,7 +9401,9 @@ function renderColorStage() {
       const needsCode = c.isCustom && !proj.customColorCode;
       __doc.getElementById('stage7Next').disabled = needsCode;
       afterFinishChoice(7);
-    });
+    };
+    sw.addEventListener('pointerdown', onPick);
+    sw.addEventListener('click', onPick);
   });
   const sc = state.activeProject.selectedColor;
   const needsCode = sc && sc.isCustom && !sc.tbd && !state.activeProject.customColorCode;
@@ -17986,7 +18054,7 @@ renderDashboard();
   }, { capture: true });
 })();
   // Expose for inline onclick=/onchange= handlers in markup.
-  Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, goToProjectsPageToAdd, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, returnToDashboard, cancelNewQuote, refreshDashboardHard, pickCustSearchResult, pickAddrSearchResult, pickInteriorColorMode, clearPickedCustomer, convertJobberRequestToQuote, copyJobberErrorToClipboard, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, onFolderToggle, onDashSearchInput, openRowMenu, closeRowMenu, resumeCloudQuote, resumeLocalDraft, deleteLocalDraft, moveCloudQuote, duplicateCloudQuote, permanentlyDeleteCloud, duplicateCurrentForEdit, toggleBulkMode, toggleBulkRow, bulkClearSelection, bulkSetStatus, bulkPermanentlyDelete, openPricingAdmin, closePricingAdmin, switchPricingAdminTab, savePricingAdmin, resetPricingAdmin, removeReferencePhoto, signOutAndReload, openChangePinPrompt, closeRepMenu, adminCreateRep, adminResetRepPin, adminDeleteRep, adminRevokeDevice, adminRevokeAllDevices, toggleAdminDevicesShowAll, resetSwDeviceTag, resetSwAllDevices, toggleSwReferral, setSwReferral, openTechIssueDialog, closeTechIssueDialog, techNoteSave, techNoteResolve, toggleDashDateFilter, switchPaGroup, openProjectSwitchDialog, closeProjectSwitchDialog, confirmAddAnotherProject, confirmSwitchProject, openJobberPanel, closeJobberPanel, jobberConnect, jobberManualRefresh, jobberDisconnectConfirm, jobberTestConnection, pushFinishedQuoteToJobber, resendFinishedToJobber, sendQuoteToCustomer, resendViewedQuoteToJobber, resendCurrentQuoteFromSuccess, resendCurrentViewedToJobber, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, toggleEditPanel, applyCustomColor, removeCustomAddon, renderFinalBreakdown, openInteriorPricingSheet, focusQuoteProject, quoteProjects, buildQuoteTitle, buildCloudPayload, insertQuoteLinkToken, COLORS, state, colorIsChosen, isTbdColor, tbdColor, COLOR_TBD, validateStage, lockAuthBehindGate, buildInteriorRoomLineItems, buildExteriorSideLineItems, buildCabinetAreaLineItems, shouldApplyToAllProjects, __sssQuoteSnapshot() { return { applyToAll: !!state._applyToAllStain, customer: { address: state.customer && state.customer.address, street1: state.customer && state.customer.street1, city: state.customer && state.customer.city, province: state.customer && state.customer.province, postalCode: state.customer && state.customer.postalCode, jobberPropertyId: state.customer && state.customer.jobberPropertyId }, projects: quoteProjects().map((p) => ({ type: p.type, uid: p._uid, tier: p.tier, tierConfirmed: !!p.tierConfirmed, productType: p.productType, hoa: p.hoa ? { brand: p.hoa.brand || '', transparency: p.hoa.transparency || '', color: p.hoa.color || '', productName: p.hoa.productName || '' } : null, selectedColor: p.selectedColor ? { name: p.selectedColor.name, tbd: !!(p.selectedColor.tbd || p.selectedColor.isTbd) } : null, colorPlan: p.measurements && p.measurements.colorPlan ? JSON.parse(JSON.stringify(p.measurements.colorPlan)) : null })) }; } });
+  Object.assign(window, { nextStage, prevStage, showStage, addAnotherProject, goToProjectsPageToAdd, cancelAddProject, cancelEditBundled, collapseActiveProject, editBundledProject, removeBundledProject, resetQuote, startNewQuote, finalizeQuote, generatePDF, returnToDashboard, cancelNewQuote, refreshDashboardHard, pickCustSearchResult, pickAddrSearchResult, pickInteriorColorMode, pickCabinetColorMode, pickXSwatchColor, refreshAllProjectCaches, clearPickedCustomer, convertJobberRequestToQuote, copyJobberErrorToClipboard, clearAllDrafts, resumeDraft, deleteDraft, saveAndReturnToDashboard, onFolderToggle, onDashSearchInput, openRowMenu, closeRowMenu, resumeCloudQuote, resumeLocalDraft, deleteLocalDraft, moveCloudQuote, duplicateCloudQuote, permanentlyDeleteCloud, duplicateCurrentForEdit, toggleBulkMode, toggleBulkRow, bulkClearSelection, bulkSetStatus, bulkPermanentlyDelete, openPricingAdmin, closePricingAdmin, switchPricingAdminTab, savePricingAdmin, resetPricingAdmin, removeReferencePhoto, signOutAndReload, openChangePinPrompt, closeRepMenu, adminCreateRep, adminResetRepPin, adminDeleteRep, adminRevokeDevice, adminRevokeAllDevices, toggleAdminDevicesShowAll, resetSwDeviceTag, resetSwAllDevices, toggleSwReferral, setSwReferral, openTechIssueDialog, closeTechIssueDialog, techNoteSave, techNoteResolve, toggleDashDateFilter, switchPaGroup, openProjectSwitchDialog, closeProjectSwitchDialog, confirmAddAnotherProject, confirmSwitchProject, openJobberPanel, closeJobberPanel, jobberConnect, jobberManualRefresh, jobberDisconnectConfirm, jobberTestConnection, pushFinishedQuoteToJobber, resendFinishedToJobber, sendQuoteToCustomer, resendViewedQuoteToJobber, resendCurrentQuoteFromSuccess, resendCurrentViewedToJobber, openSideTracker, closeSideTracker, clearTrackerRow, openInfoModal, closeInfoModal, openMeasureTutorial, closeMeasureTutorial, setProduct, setTier, toggleAddonInline, setAddonInlineQty, toggleEditPanel, applyCustomColor, removeCustomAddon, renderFinalBreakdown, openInteriorPricingSheet, focusQuoteProject, quoteProjects, buildQuoteTitle, buildCloudPayload, insertQuoteLinkToken, COLORS, state, colorIsChosen, isTbdColor, tbdColor, COLOR_TBD, validateStage, lockAuthBehindGate, buildInteriorRoomLineItems, buildExteriorSideLineItems, buildCabinetAreaLineItems, shouldApplyToAllProjects, __sssQuoteSnapshot() { return { applyToAll: !!state._applyToAllStain, customer: { address: state.customer && state.customer.address, street1: state.customer && state.customer.street1, city: state.customer && state.customer.city, province: state.customer && state.customer.province, postalCode: state.customer && state.customer.postalCode, jobberPropertyId: state.customer && state.customer.jobberPropertyId }, projects: quoteProjects().map((p) => ({ type: p.type, uid: p._uid, tier: p.tier, tierConfirmed: !!p.tierConfirmed, productType: p.productType, hoa: p.hoa ? { brand: p.hoa.brand || '', transparency: p.hoa.transparency || '', color: p.hoa.color || '', productName: p.hoa.productName || '' } : null, selectedColor: p.selectedColor ? { name: p.selectedColor.name, tbd: !!(p.selectedColor.tbd || p.selectedColor.isTbd) } : null, colorPlan: p.measurements && p.measurements.colorPlan ? JSON.parse(JSON.stringify(p.measurements.colorPlan)) : null })) }; } });
 
   }
 

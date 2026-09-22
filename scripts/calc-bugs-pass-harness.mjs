@@ -1,16 +1,20 @@
 /**
- * Headless Chrome harness for estimator pass mp15.
+ * Headless Chrome harness for estimator pass mp16.
+ * Mixed-quote Chalk lines, exterior/cabinet color+TBD, TBD chip rename.
  * Stubs auth. 403 /api/lead. Does not Generate/Send.
  */
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import puppeteer from 'puppeteer-core';
 
 const ROOT = '/workspace';
 const MEDIA = '/cursor/stores/bc-ca593e7d-8bb2-401a-b937-2a1360dc3147/media';
 const JS = fs.readFileSync(path.join(ROOT, 'sss-calculator-pages.js'), 'utf8');
 const PORT = 8766;
+const PAYLOAD_PATH = '/tmp/mixed-chalk-payload.json';
+const LINES_PATH = '/tmp/mixed-chalk-lines.json';
 
 const HTML = `<!doctype html><html><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -20,15 +24,6 @@ const HTML = `<!doctype html><html><head>
 <sss-calculator></sss-calculator>
 <script>${JS}</script>
 </body></html>`;
-
-const REAL_ADDR = {
-  source: 'places',
-  street1: '100 N Main St',
-  city: 'Greenville',
-  province: 'SC',
-  postalCode: '29601',
-  label: '100 N Main St, Greenville, SC 29601',
-};
 
 function startServer() {
   return new Promise((resolve) => {
@@ -47,11 +42,14 @@ function startServer() {
 }
 
 function blankStain(type, ord, extra = {}) {
+  const measurements = type === 'fence'
+    ? { linearft: 180, height: 6, style: 'privacy' }
+    : type === 'pergola'
+      ? { length: 12, width: 12, sqft: 144 }
+      : { flat: 320, rail: 40, stairs: 0 };
   return Object.assign({
     type,
-    measurements: type === 'fence'
-      ? { linearft: 180, height: 6, style: 'privacy' }
-      : { flat: 320, rail: 40, stairs: 0 },
+    measurements,
     condition: 'soft_wash',
     productType: 'oil',
     tier: 'performance',
@@ -59,7 +57,7 @@ function blankStain(type, ord, extra = {}) {
     productConfirmed: true,
     tierConfirmed: true,
     woodAge: 'weathered',
-    selectedColor: null,
+    selectedColor: { name: 'Cedar', code: '', line: 'EXPERT Stain & Seal' },
     addons: {},
     serviceAddons: {},
     selectedDiscounts: [],
@@ -82,7 +80,7 @@ function interiorProject(ord) {
     conditionConfirmed: true,
     tier: 'performance',
     tierConfirmed: true,
-    selectedColor: null,
+    selectedColor: { name: 'Agreeable Gray', code: 'SW 7029', brand: 'Sherwin-Williams' },
     addons: {},
     serviceAddons: {},
     selectedDiscounts: [],
@@ -107,6 +105,95 @@ function interiorProject(ord) {
           extras: {}, drywall: 'none', notes: '',
         },
       ],
+      colorPlan: {
+        mode: 'split',
+        wall: { name: 'Agreeable Gray', code: 'SW 7029', hex: '#d1cbc0' },
+        ceiling: { name: 'Extra White', code: 'SW 7006', hex: '#EEEFEA' },
+        trim: { name: 'Extra White', code: 'SW 7006', hex: '#EEEFEA' },
+        perRoom: {},
+      },
+    },
+  };
+}
+
+function exteriorProject(ord, extra = {}) {
+  return Object.assign({
+    type: 'exterior',
+    productType: 'exterior_paint',
+    productConfirmed: true,
+    condition: null,
+    conditionConfirmed: true,
+    tier: 'performance',
+    tierConfirmed: true,
+    selectedColor: null,
+    addons: {},
+    serviceAddons: {},
+    selectedDiscounts: [],
+    customAddons: [],
+    hoa: {},
+    previousStain: { wasStained: false },
+    referencePhotos: [],
+    _uid: 'p_exterior',
+    _ord: ord,
+    measurements: {
+      sides: [
+        { id: 'side-a', preset: 'Front', label: 'Front', len: 40, height: 10, substrate: 'wood', peel: 'none', notes: '' },
+        { id: 'side-b', preset: 'Rear', label: 'Rear', len: 36, height: 10, substrate: 'wood', peel: 'none', notes: '' },
+      ],
+      ext: {
+        trimFascia: 80, soffit: 0, gutters: 0, windows: 4, shutters: 0,
+        doors: 1, garage1: 0, garage2: 0, porchCeilingSqFt: 0,
+        railingLnFt: 0, columns: 0, pre1978: false,
+      },
+      colorPlan: {
+        _ext: true,
+        body: null,
+        trim: { name: 'Extra White', code: 'SW 7006', hex: '#EEEFEA' },
+        door: null,
+        shutters: null,
+        bodySheen: 'Satin',
+        trimSheen: 'Gloss',
+        doorSheen: 'Gloss',
+      },
+    },
+  }, extra);
+}
+
+function cabinetProject(ord) {
+  return {
+    type: 'cabinet',
+    productType: 'cabinet_paint',
+    productConfirmed: true,
+    condition: null,
+    conditionConfirmed: true,
+    tier: 'performance',
+    tierConfirmed: true,
+    selectedColor: null,
+    addons: {},
+    serviceAddons: {},
+    selectedDiscounts: [],
+    customAddons: [],
+    hoa: {},
+    previousStain: { wasStained: false },
+    referencePhotos: [],
+    _uid: 'p_cabinet',
+    _ord: ord,
+    measurements: {
+      areas: [
+        {
+          id: 'cab-a', type: 'kitchen', label: 'Kitchen',
+          doors: 12, drawers: 6, glassDoors: 0, endPanels: 2,
+          crownLnFt: 0, insideBoxes: 0, finish: 'painted',
+          oakGrain: false, thermofoil: false, notes: '',
+        },
+        {
+          id: 'cab-b', type: 'island', label: 'Island',
+          doors: 4, drawers: 4, glassDoors: 0, endPanels: 0,
+          crownLnFt: 0, insideBoxes: 0, finish: 'painted',
+          oakGrain: false, thermofoil: false, notes: '',
+        },
+      ],
+      colorPlan: { _cab: true, mode: 'single', main: null, island: null, sheen: 'Satin' },
     },
   };
 }
@@ -136,19 +223,12 @@ async function boot(page) {
     if (url.includes('getPricingRules')) {
       return req.respond({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
     }
-    if (url.includes('searchAddresses')) {
-      return req.respond({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ ok: true, nodes: [REAL_ADDR] }),
-      });
-    }
     if (url.includes('listQuotes') || url.includes('/_functions/')) {
       return req.respond({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, quotes: [] }) });
     }
     req.continue();
   });
-  await page.goto(`http://127.0.0.1:${PORT}/employee-portal/?v=mp15`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`http://127.0.0.1:${PORT}/employee-portal/?v=mp16`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('sss-calculator');
   await page.waitForFunction(() => {
     const el = document.querySelector('sss-calculator');
@@ -176,7 +256,57 @@ async function loadQuote(page, projects, stage) {
     };
     window.showStage(stageN);
   }, projects, stage);
-  await sleep(280);
+  await sleep(320);
+}
+
+function runHandler(payload) {
+  fs.writeFileSync(PAYLOAD_PATH, JSON.stringify(payload));
+  const script = `
+    import { readFileSync, writeFileSync } from 'node:fs';
+    import { buildQuoteLineItems } from '/workspace/website-employee-portal-dropin/calc-backend/handler.ts';
+    const payload = JSON.parse(readFileSync('${PAYLOAD_PATH}', 'utf8'));
+    const { line_items } = buildQuoteLineItems(payload);
+    const dump = line_items.map((l) => ({
+      name: l.name,
+      unit_price_cents: l.unit_price_cents,
+      description: String(l.description || ''),
+      product_id: l.product_id || null,
+    }));
+    writeFileSync('${LINES_PATH}', JSON.stringify(dump, null, 2));
+    console.log(JSON.stringify(dump));
+  `;
+  const r = spawnSync(process.execPath, ['--experimental-strip-types', '--input-type=module', '-e', script], {
+    encoding: 'utf8',
+    maxBuffer: 4 * 1024 * 1024,
+  });
+  if (r.status !== 0) {
+    throw new Error('handler dump failed: ' + (r.stderr || r.stdout));
+  }
+  return JSON.parse(fs.readFileSync(LINES_PATH, 'utf8'));
+}
+
+async function screenshotLines(page, lines, outName) {
+  const rows = lines.map((l) =>
+    `<div class="row"><span class="name">${String(l.name).replace(/</g, '&lt;')}</span>` +
+    `<span class="cents">${l.unit_price_cents}</span></div>`
+  ).join('');
+  await page.setContent(`<!doctype html><html><head><meta charset="utf-8">
+<style>
+  html,body{margin:0;background:#f7f5f1;color:#1a2540;font:15px/1.45 system-ui,sans-serif}
+  .wrap{padding:28px 32px;max-width:720px}
+  h1{font-size:18px;margin:0 0 6px;color:#1a2540}
+  p{margin:0 0 16px;color:#5a6378;font-size:13px}
+  .row{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid #ece9e3}
+  .name{font-weight:700}
+  .cents{font-family:ui-monospace,monospace;color:#2d6e4e;font-weight:700}
+</style></head><body>
+<div class="wrap">
+  <h1>Chalk quote lines (handler dry-run)</h1>
+  <p>buildQuoteLineItems output. unit_price_cents per line. No POST /api/lead.</p>
+  ${rows}
+</div></body></html>`);
+  await sleep(80);
+  await page.screenshot({ path: path.join(MEDIA, outName), fullPage: true });
 }
 
 async function main() {
@@ -196,126 +326,279 @@ async function main() {
   try {
     await boot(page);
 
-    // 1. Property address autofill — real Greenville street
-    await loadQuote(page, [blankStain('fence', 1)], 1);
-    await sEval(page, (root) => {
-      const inp = root.getElementById('custAddress');
-      inp.value = '100 N Main';
-      inp.dispatchEvent(new Event('input', { bubbles: true }));
+    // 1. Mixed quote Chalk lines: Fence + Deck + Interior (2 rooms) + Exterior (2 sides)
+    const mixedProjects = [
+      blankStain('fence', 1),
+      blankStain('deck', 2),
+      interiorProject(3),
+      exteriorProject(4, {
+        selectedColor: { name: 'Naval body / Extra White trim', code: 'SW 6244', brand: 'Sherwin-Williams' },
+        measurements: {
+          sides: [
+            { id: 'side-a', preset: 'Front', label: 'Front', len: 40, height: 10, substrate: 'wood', peel: 'none', notes: '' },
+            { id: 'side-b', preset: 'Rear', label: 'Rear', len: 36, height: 10, substrate: 'wood', peel: 'none', notes: '' },
+          ],
+          ext: {
+            trimFascia: 80, soffit: 0, gutters: 0, windows: 4, shutters: 0,
+            doors: 1, garage1: 0, garage2: 0, porchCeilingSqFt: 0,
+            railingLnFt: 0, columns: 0, pre1978: false,
+          },
+          colorPlan: {
+            _ext: true,
+            body: { name: 'Naval', code: 'SW 6244', hex: '#2f3d4c' },
+            trim: { name: 'Extra White', code: 'SW 7006', hex: '#EEEFEA' },
+            door: null, shutters: null,
+            bodySheen: 'Satin', trimSheen: 'Gloss', doorSheen: 'Gloss',
+          },
+        },
+      }),
+    ];
+    await page.evaluate((plist) => {
+      window.state._applyToAllStain = false;
+      window.state.activeProject = plist[0];
+      window.state.bundledProjects = plist.slice(1);
+      window.state.customer = {
+        name: 'Test Homeowner', phone: '8645550100', email: 'test@example.com',
+        address: '100 N Main St', firstName: 'Test', lastName: 'Homeowner',
+        street1: '100 N Main St', city: 'Greenville', province: 'SC', postalCode: '29601',
+      };
+      window.refreshAllProjectCaches();
+    }, mixedProjects);
+    const payload = await page.evaluate(() => window.buildCloudPayload());
+    if (!payload || !payload.projects || payload.projects.length !== 4) {
+      fail('mixed payload projects: ' + JSON.stringify(payload && payload.projects && payload.projects.map((p) => p.type)));
+    }
+    const types = payload.projects.map((p) => p.type);
+    if (types.join(',') !== 'fence,deck,interior,exterior') fail('project order: ' + types.join(','));
+
+    const frontend = payload.projects.flatMap((p) => {
+      const rooms = Array.isArray(p._jobberRoomLineItems) ? p._jobberRoomLineItems : [];
+      if (rooms.length) {
+        return rooms.map((r) => ({
+          type: p.type,
+          name: r.name,
+          unit_price_cents: r.unit_price_cents,
+          totalPrice: r.totalPrice,
+        }));
+      }
+      return [{ type: p.type, name: p._jobberName, unit_price_cents: Math.round(Number(p.preDiscountSubtotal || 0) * 100), totalPrice: p.preDiscountSubtotal }];
     });
-    await sleep(500);
-    const addrUi = await sEval(page, (root) => {
-      const box = root.getElementById('addrSearchResults');
-      const rows = [...(box ? box.querySelectorAll('.addr-result') : [])].map((r) => r.textContent.trim());
-      return { display: box && box.style.display, rows, html: box && box.innerHTML };
+    console.log('FRONTEND_LINES', JSON.stringify(frontend, null, 2));
+
+    const fenceLines = frontend.filter((l) => l.type === 'fence');
+    const deckLines = frontend.filter((l) => l.type === 'deck');
+    const intLines = frontend.filter((l) => l.type === 'interior');
+    const extLines = frontend.filter((l) => l.type === 'exterior');
+    if (fenceLines.length !== 1) fail('fence should be one line: ' + JSON.stringify(fenceLines));
+    if (deckLines.length !== 1) fail('deck should be one line: ' + JSON.stringify(deckLines));
+    if (intLines.length < 2) fail('interior should fan rooms: ' + JSON.stringify(intLines));
+    if (!intLines.some((l) => /Living/i.test(l.name)) || !intLines.some((l) => /Bedroom/i.test(l.name))) {
+      fail('interior room names: ' + JSON.stringify(intLines));
+    }
+    if (extLines.length < 2) fail('exterior should fan sides: ' + JSON.stringify(extLines));
+    if (!extLines.some((l) => /Front/i.test(l.name)) || !extLines.some((l) => /Rear/i.test(l.name))) {
+      fail('exterior side names: ' + JSON.stringify(extLines));
+    }
+    const intSum = intLines.reduce((s, l) => s + l.unit_price_cents, 0);
+    const extSum = extLines.reduce((s, l) => s + l.unit_price_cents, 0);
+    const intProj = Math.round(Number(payload.projects.find((p) => p.type === 'interior').preDiscountSubtotal) * 100);
+    const extProj = Math.round(Number(payload.projects.find((p) => p.type === 'exterior').preDiscountSubtotal) * 100);
+    if (intSum !== intProj) fail('interior room cents ' + intSum + ' != project ' + intProj);
+    if (extSum !== extProj) fail('exterior side cents ' + extSum + ' != project ' + extProj);
+    if (intLines[0].unit_price_cents === intProj && intLines.slice(1).every((l) => l.unit_price_cents === 0)) {
+      fail('interior dumped total on line 1');
+    }
+    if (extLines[0].unit_price_cents === extProj && extLines.slice(1).every((l) => l.unit_price_cents === 0)) {
+      fail('exterior dumped total on line 1');
+    }
+
+    const lines = runHandler(payload);
+    console.log('HANDLER_LINES', JSON.stringify(lines, null, 2));
+    if (lines.some((l) => l.product_id)) fail('handler product_id present');
+    if (lines.length < 6) fail('expected stain + rooms + sides, got ' + lines.length);
+    const quoteTotal = frontend.reduce((s, l) => s + l.unit_price_cents, 0);
+    if (lines[0].unit_price_cents === quoteTotal) fail('handler dumped quote total on line 1');
+    const hInt = lines.filter((l) => /^Interior/.test(l.name));
+    const hExt = lines.filter((l) => /^Exterior/.test(l.name));
+    if (hInt.length !== intLines.length) fail('handler interior count ' + hInt.length);
+    if (hExt.length !== extLines.length) fail('handler exterior count ' + hExt.length);
+    if (hInt[0].unit_price_cents !== intLines[0].unit_price_cents) fail('handler interior cents mismatch');
+    if (!String(hInt[hInt.length - 1].description).includes('PAINT (ESTIMATED ORDER)')) {
+      console.log('WARN interior gallons missing from last interior line', hInt[hInt.length - 1].description.slice(0, 200));
+    }
+    await screenshotLines(page, lines, 'chalk-lines-mixed-quote.png');
+    console.log('PASS mixed chalk lines', lines.map((l) => [l.name, l.unit_price_cents]));
+
+    // Reboot calc after setContent
+    await page.goto(`http://127.0.0.1:${PORT}/employee-portal/?v=mp16`, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => document.querySelector('sss-calculator')?.shadowRoot && typeof window.lockAuthBehindGate === 'function');
+    await page.evaluate(() => {
+      try { window.lockAuthBehindGate(false); } catch (e) {}
+      const gate = document.querySelector('sss-calculator').shadowRoot.getElementById('authGate');
+      if (gate) gate.style.display = 'none';
     });
-    if (!addrUi.rows.length) fail('address suggestions missing: ' + JSON.stringify(addrUi));
-    if (!addrUi.rows.some((r) => /100 N Main St/.test(r))) fail('real address not listed: ' + JSON.stringify(addrUi));
+
+    // 2. Exterior color + TBD on stacked quote (Fence + Exterior), apply-all off
+    await loadQuote(page, [
+      blankStain('fence', 1, { selectedColor: { name: 'Cedar', code: '', line: 'EXPERT Stain & Seal' } }),
+      exteriorProject(2),
+    ], 7);
+    const extUi = await sEval(page, (root) => {
+      const apply = root.querySelector('#applyAllProjectsCb');
+      const extBlock = root.querySelector('.finish-block[data-uid="p_exterior"]');
+      const fenceBlock = root.querySelector('.finish-block[data-uid="p_fence"]');
+      const modes = [...(extBlock ? extBlock.querySelectorAll('.int-mode-card') : [])].map((b) => b.textContent.trim());
+      const planner = extBlock && extBlock.querySelector('.int-color-planner');
+      const tbd = extBlock && [...extBlock.querySelectorAll('[data-x-tbd="body"]')].pop();
+      const swatches = extBlock ? [...extBlock.querySelectorAll('[data-x-target="body"].int-swatch:not(.tbd-swatch)')] : [];
+      const firstFam = extBlock && extBlock.querySelector('details');
+      if (firstFam) firstFam.open = true;
+      return {
+        applyOff: !(apply && apply.checked),
+        stacked: !!(extBlock && fenceBlock),
+        plannerW: planner && Math.round(planner.getBoundingClientRect().width),
+        tbdName: tbd && tbd.textContent.trim(),
+        tbdLast: !!(tbd && tbd.parentElement && [...tbd.parentElement.querySelectorAll('.int-swatch, details')].pop() === tbd || (tbd && !tbd.nextElementSibling?.matches?.('.int-swatch, details'))),
+        swatchCount: swatches.length,
+        banner: !!(extBlock && extBlock.querySelector('.tbd-color-banner')),
+        nextDisabled: root.getElementById('stage7Next') && root.getElementById('stage7Next').disabled,
+        modes,
+      };
+    });
+    if (!extUi.stacked) fail('exterior not stacked with fence: ' + JSON.stringify(extUi));
+    if (!extUi.applyOff) fail('apply-to-all should be off');
+    if (extUi.plannerW < 500) fail('exterior planner not tablet-wide: ' + JSON.stringify(extUi));
+    if (!/To Be Determined/i.test(extUi.tbdName || '')) fail('exterior TBD label: ' + extUi.tbdName);
+    if (extUi.banner) fail('exterior TBD banner still shown');
+
     await sEval(page, (root) => {
-      const row = root.querySelector('.addr-result');
-      row.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      const extBlock = root.querySelector('.finish-block[data-uid="p_exterior"]');
+      const fam = extBlock.querySelector('[data-x-picker="body"] details');
+      if (fam) fam.open = true;
+    });
+    await sleep(120);
+    await sEval(page, (root) => {
+      const extBlock = root.querySelector('.finish-block[data-uid="p_exterior"]');
+      const sw = extBlock.querySelector('[data-x-target="body"].int-swatch:not(.tbd-swatch)');
+      if (!sw) throw new Error('no exterior body swatch');
+      sw.scrollIntoView({ block: 'center' });
+      sw.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+      sw.click();
+    });
+    await sleep(280);
+    let snap = await page.evaluate(() => window.__sssQuoteSnapshot());
+    const extAfterColor = snap.projects.find((p) => p.type === 'exterior');
+    const fenceAfterColor = snap.projects.find((p) => p.type === 'fence');
+    if (!extAfterColor.selectedColor || extAfterColor.selectedColor.tbd) {
+      fail('exterior color click did not stick: ' + JSON.stringify(extAfterColor.selectedColor));
+    }
+    if (fenceAfterColor.selectedColor && fenceAfterColor.selectedColor.name !== 'Cedar') {
+      fail('fence color leaked: ' + JSON.stringify(fenceAfterColor.selectedColor));
+    }
+
+    await sEval(page, (root) => {
+      const extBlock = root.querySelector('.finish-block[data-uid="p_exterior"]');
+      const tbd = [...extBlock.querySelectorAll('[data-x-tbd="body"]')].pop();
+      tbd.scrollIntoView({ block: 'center' });
+      tbd.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+      tbd.click();
+    });
+    await sleep(280);
+    snap = await page.evaluate(() => window.__sssQuoteSnapshot());
+    const extTbd = snap.projects.find((p) => p.type === 'exterior');
+    const fenceTbd = snap.projects.find((p) => p.type === 'fence');
+    if (!extTbd.selectedColor || !extTbd.selectedColor.tbd) fail('exterior TBD did not stick: ' + JSON.stringify(extTbd.selectedColor));
+    if (fenceTbd.selectedColor && fenceTbd.selectedColor.name !== 'Cedar') fail('fence leaked after exterior TBD');
+    const nextOn = await sEval(page, (root) => {
+      const next = root.getElementById('stage7Next');
+      return { disabled: !!(next && next.disabled), text: next && next.textContent.trim() };
+    });
+    if (nextOn.disabled) fail('Next should enable after exterior TBD: ' + JSON.stringify(nextOn));
+
+    await sEval(page, (root) => {
+      const extBlock = root.querySelector('.finish-block[data-uid="p_exterior"]');
+      if (extBlock) extBlock.scrollIntoView({ block: 'start', inline: 'nearest' });
     });
     await sleep(150);
-    const cust = await page.evaluate(() => window.__sssQuoteSnapshot().customer);
-    if (cust.street1 !== '100 N Main St') fail('street1 not filled: ' + JSON.stringify(cust));
-    if (cust.city !== 'Greenville' || cust.province !== 'SC' || cust.postalCode !== '29601') {
-      fail('city/state/zip not filled: ' + JSON.stringify(cust));
+    const host = await page.$('sss-calculator');
+    const extHandle = await host.evaluateHandle((c) =>
+      c.shadowRoot.querySelector('.finish-block[data-uid="p_exterior"] .int-color-planner')
+      || c.shadowRoot.querySelector('.finish-block[data-uid="p_exterior"]')
+    );
+    const extEl = extHandle.asElement();
+    if (!extEl) fail('exterior planner handle missing');
+    await extEl.screenshot({ path: path.join(MEDIA, 'exterior-color-working.png') });
+    console.log('PASS exterior color', { color: extAfterColor.selectedColor, tbd: extTbd.selectedColor, nextOn });
+
+    // Cabinet modes + TBD, stacked with Fence, apply-all off
+    await loadQuote(page, [
+      blankStain('fence', 1, { selectedColor: { name: 'Cedar', code: '', line: 'EXPERT Stain & Seal' } }),
+      cabinetProject(2),
+    ], 7);
+    const clickCabMode = async (mode) => {
+      await sEval(page, (root, m) => {
+        const block = root.querySelector('.finish-block[data-uid="p_cabinet"]');
+        const btn = block.querySelector('[data-cabc-mode="' + m + '"]');
+        if (!btn) throw new Error('missing cabinet mode ' + m);
+        btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+        btn.click();
+      }, mode);
+      await sleep(220);
+      return page.evaluate(() => {
+        const snap = window.__sssQuoteSnapshot();
+        const cab = snap.projects.find((p) => p.type === 'cabinet');
+        const fence = snap.projects.find((p) => p.type === 'fence');
+        const root = document.querySelector('sss-calculator').shadowRoot;
+        const block = root.querySelector('.finish-block[data-uid="p_cabinet"]');
+        const titles = [...(block ? block.querySelectorAll('.int-sec-title') : [])].map((el) => el.textContent.trim());
+        const on = [...(block ? block.querySelectorAll('.int-mode-card') : [])].map((b) => ({
+          mode: b.getAttribute('data-cabc-mode'),
+          on: b.classList.contains('on'),
+        }));
+        return { mode: cab.colorPlan && cab.colorPlan.mode, titles, on, fenceColor: fence.selectedColor };
+      });
+    };
+    const cabSingle = await clickCabMode('single');
+    if (cabSingle.mode !== 'single') fail('cabinet single did not stick: ' + JSON.stringify(cabSingle));
+    if (cabSingle.fenceColor && cabSingle.fenceColor.name !== 'Cedar') fail('cabinet mode leaked onto fence');
+    const cabTwo = await clickCabMode('twoTone');
+    if (cabTwo.mode !== 'twoTone') fail('cabinet twoTone did not stick: ' + JSON.stringify(cabTwo));
+    if (!cabTwo.titles.some((t) => /Island/i.test(t))) fail('two-tone island picker missing: ' + JSON.stringify(cabTwo.titles));
+    await sEval(page, (root) => {
+      const block = root.querySelector('.finish-block[data-uid="p_cabinet"]');
+      const tbd = [...block.querySelectorAll('[data-x-tbd="main"]')].pop();
+      tbd.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+      tbd.click();
+    });
+    await sleep(220);
+    const cabAfterTbd = await page.evaluate(() => window.__sssQuoteSnapshot());
+    const cabPlan = cabAfterTbd.projects.find((p) => p.type === 'cabinet').colorPlan;
+    if (!cabPlan.main || !(cabPlan.main.tbd || cabPlan.main.isTbd || /to be determined/i.test(cabPlan.main.name || ''))) {
+      fail('cabinet TBD main missing: ' + JSON.stringify(cabPlan.main));
     }
-    await sEval(page, (root) => {
-      const field = root.querySelector('.addr-search');
-      field.scrollIntoView({ block: 'center' });
-    });
-    await sleep(80);
-    await page.screenshot({ path: path.join(MEDIA, 'address-autofill.png'), fullPage: false });
-    console.log('PASS address autofill', cust);
+    console.log('PASS cabinet modes+TBD', { single: cabSingle.mode, twoTone: cabTwo.mode });
 
-    // 2. Compact apply-to-all
-    await loadQuote(page, [blankStain('fence', 1), blankStain('deck', 2)], 6);
-    const applyUi = await sEval(page, (root) => {
-      const bar = root.querySelector('.apply-all-bar');
-      const cb = root.querySelector('#applyAllProjectsCb');
-      const check = root.querySelector('.apply-all-check');
-      const text = bar && bar.textContent.replace(/\s+/g, ' ').trim();
-      const cs = bar && getComputedStyle(bar);
-      const ccs = check && getComputedStyle(check);
-      const br = bar && bar.getBoundingClientRect();
-      return {
-        text,
-        checked: !!(cb && cb.checked),
-        insideStack: !!(bar && bar.parentElement && bar.parentElement.classList.contains('finish-stack')),
-        firstChild: !!(bar && bar.parentElement && bar.parentElement.firstElementChild === bar),
-        padTop: cs && cs.paddingTop,
-        bg: cs && cs.backgroundColor,
-        radius: ccs && ccs.borderRadius,
-        h: br && Math.round(br.height),
-      };
-    });
-    if (applyUi.checked) fail('apply-to-all must start off');
-    if (!applyUi.insideStack || !applyUi.firstChild) fail('apply-all must sit in stacked chrome: ' + JSON.stringify(applyUi));
-    if (applyUi.h > 44) fail('apply-all still too tall: ' + JSON.stringify(applyUi));
-    if (!/Use on all 2 projects/i.test(applyUi.text)) fail('compact copy missing: ' + applyUi.text);
+    // Deck (other stain type besides fence) TBD chip still works per-project
+    await loadQuote(page, [
+      blankStain('fence', 1, { selectedColor: { name: 'Cedar', code: '', line: 'EXPERT Stain & Seal' } }),
+      blankStain('deck', 2, { selectedColor: null }),
+    ], 7);
     await sEval(page, (root) => {
-      const bar = root.querySelector('.apply-all-bar');
-      bar.scrollIntoView({ block: 'start' });
+      const deck = root.querySelector('.finish-block[data-uid="p_deck"]');
+      const tbd = deck.querySelector('.tbd-swatch');
+      tbd.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+      tbd.click();
     });
-    await sleep(80);
-    await page.screenshot({ path: path.join(MEDIA, 'apply-to-all-compact.png'), fullPage: false });
-    console.log('PASS compact apply-to-all', applyUi);
+    await sleep(220);
+    snap = await page.evaluate(() => window.__sssQuoteSnapshot());
+    const deckP = snap.projects.find((p) => p.type === 'deck');
+    const fenceP = snap.projects.find((p) => p.type === 'fence');
+    if (!deckP.selectedColor || !deckP.selectedColor.tbd) fail('deck TBD failed: ' + JSON.stringify(deckP.selectedColor));
+    if (fenceP.selectedColor && fenceP.selectedColor.name !== 'Cedar') fail('deck TBD leaked onto fence');
+    console.log('PASS deck TBD per-project');
 
-    // 3. HOA brand + transparency enables Next (no product name / required color)
-    await loadQuote(page, [blankStain('fence', 1, { productType: null, productConfirmed: false, tierConfirmed: false })], 5);
-    await sEval(page, (root) => {
-      const card = root.querySelector('.product-choice-card[data-product="hoa"]');
-      card.click();
-    });
-    await sleep(200);
-    const hoaMid = await sEval(page, (root) => {
-      const brand = root.getElementById('hoaBrand');
-      const trans = root.getElementById('hoaTransparency');
-      const next = root.getElementById('stage5Next');
-      brand.value = brand.options[1].value;
-      brand.dispatchEvent(new Event('change', { bubbles: true }));
-      return {
-        brand: brand.value,
-        nextAfterBrand: next.disabled,
-        transOpts: [...trans.options].map((o) => o.value).filter(Boolean),
-      };
-    });
-    if (!hoaMid.nextAfterBrand) fail('Next should stay disabled with brand only');
-    const hoaDone = await sEval(page, (root) => {
-      const trans = root.getElementById('hoaTransparency');
-      const color = root.getElementById('hoaColor');
-      const name = root.getElementById('hoaProductName');
-      const next = root.getElementById('stage5Next');
-      trans.value = trans.options[1].value;
-      trans.dispatchEvent(new Event('change', { bubbles: true }));
-      color.value = '';
-      name.value = '';
-      return {
-        brand: root.getElementById('hoaBrand').value,
-        transparency: trans.value,
-        color: color.value,
-        productName: name.value,
-        nextDisabled: next.disabled,
-        validate: window.validateStage(5),
-      };
-    });
-    if (hoaDone.nextDisabled) fail('Next should enable with brand + transparency: ' + JSON.stringify(hoaDone));
-    if (!hoaDone.validate) fail('validateStage(5) should pass without HOA color: ' + JSON.stringify(hoaDone));
-    const hoaSnap = await page.evaluate(() => window.__sssQuoteSnapshot());
-    if (!hoaSnap.projects[0].hoa.brand || !hoaSnap.projects[0].hoa.transparency) {
-      fail('HOA payload missing brand/transparency: ' + JSON.stringify(hoaSnap.projects[0].hoa));
-    }
-    if (hoaSnap.projects[0].hoa.color) fail('test required empty color, got ' + hoaSnap.projects[0].hoa.color);
-    await sEval(page, (root) => {
-      root.getElementById('hoaPanel').scrollIntoView({ block: 'center' });
-    });
-    await sleep(80);
-    await page.screenshot({ path: path.join(MEDIA, 'hoa-next-enabled.png'), fullPage: false });
-    console.log('PASS HOA Next', hoaDone);
-
-    // 4. TBD dotted chip among colors, not first, not a banner
-    await loadQuote(page, [blankStain('fence', 1, { productType: 'oil', selectedColor: null })], 7);
+    // 3. Chip rename: To Be Determined, last, dotted, not a banner
+    await loadQuote(page, [blankStain('fence', 1, { selectedColor: null })], 7);
     const tbdUi = await sEval(page, (root) => {
       const grid = root.getElementById('colorGrid');
       const banner = grid.querySelector('.tbd-color-banner, .tbd-color-btn');
@@ -323,114 +606,45 @@ async function main() {
       const chips = [...grid.querySelectorAll('.color-swatch')];
       const tbdIdx = chips.findIndex((c) => c.classList.contains('tbd-swatch'));
       const tbd = chips[tbdIdx];
-      const chip = tbd && tbd.querySelector('.chip');
+      const chip = tbd && tbd.querySelector('.chip, .tbd-chip');
+      const other = chips.find((c) => !c.classList.contains('tbd-swatch'));
+      const otherChip = other && other.querySelector('.chip');
       const cs = tbd && getComputedStyle(tbd);
       const ccs = chip && getComputedStyle(chip);
-      tbd.click();
+      const tbdRect = tbd && tbd.getBoundingClientRect();
+      const otherRect = other && other.getBoundingClientRect();
       return {
         bannerShown,
         tbdIdx,
         total: chips.length,
-        name: tbd && tbd.textContent.trim(),
+        name: tbd && tbd.textContent.replace(/\s+/g, ' ').trim(),
         border: cs && cs.borderTopStyle,
         chipBorder: ccs && ccs.borderTopStyle,
+        chipH: chip && Math.round(chip.getBoundingClientRect().height),
+        chipW: chip && Math.round(chip.getBoundingClientRect().width),
+        otherH: otherChip && Math.round(otherChip.getBoundingClientRect().height),
+        otherW: otherChip && Math.round(otherChip.getBoundingClientRect().width),
+        swatchH: tbdRect && Math.round(tbdRect.height),
+        otherSwatchH: otherRect && Math.round(otherRect.height),
       };
     });
     if (tbdUi.bannerShown) fail('TBD banner still visible');
-    if (tbdUi.tbdIdx < 1) fail('TBD chip must not be first: ' + JSON.stringify(tbdUi));
-    if (!/Pick on site/i.test(tbdUi.name)) fail('TBD not reworded: ' + tbdUi.name);
+    if (tbdUi.tbdIdx !== tbdUi.total - 1) fail('TBD chip must be last: ' + JSON.stringify(tbdUi));
+    if (tbdUi.name !== 'To Be Determined') fail('TBD label exact mismatch: ' + JSON.stringify(tbdUi.name));
     if (tbdUi.border !== 'dotted' && tbdUi.chipBorder !== 'dotted') fail('TBD not dotted: ' + JSON.stringify(tbdUi));
-    const tbdSnap = await page.evaluate(() => window.__sssQuoteSnapshot());
-    if (!tbdSnap.projects[0].selectedColor || !tbdSnap.projects[0].selectedColor.tbd) {
-      fail('TBD did not persist: ' + JSON.stringify(tbdSnap.projects[0].selectedColor));
-    }
+    if (tbdUi.swatchH > (tbdUi.otherSwatchH || 0) * 1.5) fail('TBD chip much larger than neighbors: ' + JSON.stringify(tbdUi));
     await sEval(page, (root) => {
       const tbd = root.querySelector('.tbd-swatch');
       tbd.scrollIntoView({ block: 'center' });
     });
     await sleep(80);
-    await page.screenshot({ path: path.join(MEDIA, 'tbd-dotted-chip.png'), fullPage: false });
-    console.log('PASS TBD dotted chip', tbdUi);
-
-    // 5. Interior mode buttons
-    await loadQuote(page, [interiorProject(1)], 7);
-    const clickMode = async (mode) => {
-      await sEval(page, (root, m) => {
-        const btn = root.querySelector('[data-color-mode="' + m + '"]');
-        if (!btn) throw new Error('missing mode ' + m);
-        btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
-        btn.click();
-      }, mode);
-      await sleep(220);
-      return page.evaluate(() => {
-        const snap = window.__sssQuoteSnapshot();
-        const p = snap.projects.find((x) => x.type === 'interior') || snap.projects[0];
-        const root = document.querySelector('sss-calculator').shadowRoot;
-        const titles = [...root.querySelectorAll('.int-color-picker summary strong, .int-sec-title')].map((el) => el.textContent.trim());
-        const on = [...root.querySelectorAll('.int-mode-card')].map((b) => ({
-          mode: b.getAttribute('data-color-mode'),
-          on: b.classList.contains('on'),
-        }));
-        return { mode: p.colorPlan && p.colorPlan.mode, titles, on, payload: p.colorPlan };
-      });
-    };
-    const single = await clickMode('single');
-    if (single.mode !== 'single') fail('single mode did not stick: ' + JSON.stringify(single));
-    if (!single.titles.some((t) => /walls & ceilings|One color for walls/i.test(t))) {
-      fail('single pickers missing: ' + JSON.stringify(single.titles));
-    }
-    const split = await clickMode('split');
-    if (split.mode !== 'split') fail('split mode did not stick: ' + JSON.stringify(split));
-    if (!split.titles.some((t) => /Wall color/i.test(t)) || !split.titles.some((t) => /Ceiling color/i.test(t))) {
-      fail('split pickers missing: ' + JSON.stringify(split.titles));
-    }
-    const perRoom = await clickMode('perRoom');
-    if (perRoom.mode !== 'perRoom') fail('perRoom mode did not stick: ' + JSON.stringify(perRoom));
-    if (!perRoom.titles.some((t) => /room by room/i.test(t))) fail('perRoom pickers missing: ' + JSON.stringify(perRoom.titles));
-    await sEval(page, (root) => {
-      const planner = root.querySelector('.int-color-planner');
-      planner.scrollIntoView({ block: 'start' });
-    });
-    await sleep(80);
-    const plannerBox = await sEval(page, (root) => {
-      const planner = root.querySelector('.int-color-planner');
-      const r = planner.getBoundingClientRect();
-      return { x: r.x, y: r.y, width: r.width, height: Math.min(r.height, 1100), hostW: root.host ? root.host.getBoundingClientRect().width : 768 };
-    });
-    if (plannerBox.width < 500) fail('planner not full width: ' + JSON.stringify(plannerBox));
-    await page.screenshot({
-      path: path.join(MEDIA, 'interior-modes-working.png'),
-      clip: {
-        x: Math.max(0, plannerBox.x - 8),
-        y: Math.max(0, plannerBox.y - 8),
-        width: Math.min(768, plannerBox.width + 16),
-        height: Math.min(1200, plannerBox.height + 16),
-      },
-    });
-    console.log('PASS interior modes', { single: single.mode, split: split.mode, perRoom: perRoom.mode, titles: perRoom.titles });
-
-    // Regression: Fence + Deck tier isolation + apply-all copy
-    await loadQuote(page, [blankStain('fence', 1), blankStain('deck', 2)], 6);
-    await sEval(page, (root) => {
-      const fence = root.querySelector('.finish-block[data-uid="p_fence"]');
-      fence.querySelector('.tier-card[data-tier="essential"]').click();
-    });
-    await sleep(200);
-    let snap = await page.evaluate(() => window.__sssQuoteSnapshot());
-    if (snap.projects.find((p) => p.type === 'fence').tier !== 'essential') fail('Fence tier');
-    if (snap.projects.find((p) => p.type === 'deck').tier !== 'performance') fail('Deck leaked');
-    await sEval(page, (root) => {
-      const cb = root.querySelector('#applyAllProjectsCb');
-      cb.checked = true;
-      cb.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-    await sleep(200);
-    snap = await page.evaluate(() => window.__sssQuoteSnapshot());
-    if (snap.projects.find((p) => p.type === 'deck').tier !== 'essential') fail('apply-all copy failed');
-    console.log('PASS apply-to-all still copies');
+    await page.screenshot({ path: path.join(MEDIA, 'tbd-to-be-determined.png'), fullPage: false });
+    console.log('PASS TBD rename', tbdUi);
 
     if (leadHits.length) fail('POST /api/lead was attempted');
     console.log('ALL HARNESS CHECKS PASSED');
+    console.log('MIXED_LINE_LIST');
+    lines.forEach((l) => console.log(`${l.name}\t${l.unit_price_cents}`));
   } finally {
     await browser.close();
     server.close();
