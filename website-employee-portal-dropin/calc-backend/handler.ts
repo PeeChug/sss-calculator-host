@@ -1158,8 +1158,38 @@ function roomFanoutLines(p: any): any[] {
   const raw = p?._jobberRoomLineItems;
   if (!Array.isArray(raw)) return [];
   return raw.filter(
-    (r) => r && (String(r.name || '').trim() || r.totalPrice != null || r.unitPrice != null),
+    (r) =>
+      r &&
+      (String(r.name || '').trim() ||
+        r.totalPrice != null ||
+        r.unitPrice != null ||
+        r.unit_price_cents != null ||
+        r.amount != null),
   );
+}
+
+function roomLineCents(r: any): number {
+  if (!r || typeof r !== 'object') return 0;
+  if (r.unit_price_cents != null && Number.isFinite(Number(r.unit_price_cents))) {
+    return Math.round(Number(r.unit_price_cents));
+  }
+  const dollars = Number(r.totalPrice ?? r.unitPrice ?? r.amount ?? r.price ?? 0);
+  return dollarsToCents(dollars);
+}
+
+/** Per-room cents. Never dump the project total on line 1 with $0 on the rest. */
+export function allocateRoomLineCents(rooms: any[], projectDollars: number): number[] {
+  const projectCents = dollarsToCents(projectDollars);
+  const raw = rooms.map(roomLineCents);
+  const sum = raw.reduce((a, b) => a + b, 0);
+  const restZero = raw.length > 1 && raw.slice(1).every((c) => c === 0);
+  const allOnFirst = restZero && projectCents > 0 && raw[0] === projectCents;
+  const allZero = raw.every((c) => c === 0);
+  if (!allOnFirst && !allZero && sum > 0) return raw;
+  if (projectCents <= 0) return raw;
+  const n = rooms.length;
+  const even = Math.floor(projectCents / n);
+  return rooms.map((_, i) => (i === n - 1 ? projectCents - even * (n - 1) : even));
 }
 
 function pushCustomLine(
@@ -1168,15 +1198,20 @@ function pushCustomLine(
   name: string,
   description: string,
   dollars: number,
+  centsOverride?: number,
 ): void {
   const n = stripHashSuffix(String(name || 'Work').trim()) || 'Work';
-  const amount = Number.isFinite(dollars) ? dollars : 0;
+  const cents =
+    centsOverride != null && Number.isFinite(centsOverride)
+      ? Math.round(centsOverride)
+      : dollarsToCents(Number.isFinite(dollars) ? dollars : 0);
+  const amount = cents / 100;
   line_items.push({
     name: n,
     description: String(description || ''),
     quantity: 1,
     unit: 'each',
-    unit_price_cents: dollarsToCents(amount),
+    unit_price_cents: cents,
   });
   sentLineItems.push({ name: n, unitPrice: amount, totalPrice: amount });
 }
@@ -1208,15 +1243,18 @@ export function buildQuoteLineItems(payload: any): {
     for (const p of projects) {
       const rooms = roomFanoutLines(p);
       if (rooms.length) {
-        for (const r of rooms) {
+        const projectDollars = Number(p.preDiscountSubtotal ?? p.subtotal ?? 0);
+        const centsList = allocateRoomLineCents(rooms, projectDollars);
+        rooms.forEach((r: any, i: number) => {
           pushCustomLine(
             line_items,
             sentLineItems,
             String(r.name || p._jobberName || p.type || 'Work'),
             String(r.description || ''),
-            Number(r.totalPrice ?? r.unitPrice ?? 0),
+            centsList[i] / 100,
+            centsList[i],
           );
-        }
+        });
         const paintOrder = paintOrderFromDescription(p._jobberDescription);
         if (paintOrder.length && line_items.length) {
           const last = line_items[line_items.length - 1] as { description?: string };
