@@ -5061,22 +5061,45 @@ async function checkAuthAndGate() {
   let status = null;
   try {
     const r = await authFetch('/_functions/authStatus');
-    status = await r.json();
-    console.log('[SSS Auth] authStatus response:', status);
+    const raw = await r.text();
+    const interpreted = interpretAuthStatusPayload(r.ok, r.headers.get('content-type'), raw);
+    console.log('[SSS Auth] authStatus response:', interpreted.kind, interpreted.status);
+    if (interpreted.kind === 'unreachable') {
+      showAuthGate(false, 'auth_unreachable');
+      return;
+    }
+    status = interpreted.status;
+    if (interpreted.kind === 'signed_in') {
+      __currentRep = status.rep;
+      __authBootstrap = false;
+      hideAuthGate();
+      paintRepChip();
+      return;
+    }
+    __authBootstrap = interpreted.kind === 'bootstrap';
+    showAuthGate(__authBootstrap, null);
   } catch (e) {
     console.warn('[SSS Auth] authStatus fetch threw:', e);
-    showAuthGate(true, 'auth_unreachable');
-    return;
+    showAuthGate(false, 'auth_unreachable');
   }
-  if (status && status.ok && status.rep) {
-    __currentRep = status.rep;
-    __authBootstrap = false;
-    hideAuthGate();
-    paintRepChip();
-    return;
+}
+
+// HTML 404 / non-JSON / network failure is never "no reps." Only an
+// explicit `{ bootstrap: true }` JSON body from authStatus may open
+// first-admin. Otherwise techs would bootstrap over existing PINs.
+function interpretAuthStatusPayload(httpOk, contentType, rawText) {
+  const ctype = String(contentType || '').toLowerCase();
+  if (!httpOk || !ctype.includes('application/json')) {
+    return { kind: 'unreachable', status: null };
   }
-  __authBootstrap = !!(status && status.bootstrap);
-  showAuthGate(__authBootstrap, null);
+  let status = null;
+  try { status = JSON.parse(rawText); } catch (e) {
+    return { kind: 'unreachable', status: null };
+  }
+  if (!status || typeof status !== 'object') return { kind: 'unreachable', status: null };
+  if (status.ok && status.rep) return { kind: 'signed_in', status };
+  if (status.bootstrap === true) return { kind: 'bootstrap', status };
+  return { kind: 'signed_out', status };
 }
 
 function lockAuthBehindGate(on) {
