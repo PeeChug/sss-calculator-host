@@ -11794,6 +11794,7 @@ function finalizeQuote(sendMethod) {
     employee: (__currentRep && __currentRep.displayName) || state.customer.employee || '',
     repId:   (__currentRep && __currentRep._id) || '',
     repName: (__currentRep && __currentRep.displayName) || '',
+    repInitials: (__currentRep && __currentRep.initials) || '',
     paymentMethod: state.paymentMethod,
     sendMethod,
     notes: state.notes || '',
@@ -13093,6 +13094,7 @@ function buildCloudPayload() {
     employee: (__currentRep && __currentRep.displayName) || state.customer.employee || '',
     repId:   (__currentRep && __currentRep._id) || '',
     repName: (__currentRep && __currentRep.displayName) || '',
+    repInitials: (__currentRep && __currentRep.initials) || '',
     jobberJobNum: state.customer.jobberNum || '',
     // Jobber request linkage — set when the quote was started from
     // the Recent Jobber Requests panel on the dashboard. Survives

@@ -146,10 +146,71 @@ function chalkList(data: unknown): any[] {
   if (Array.isArray(data)) return data;
   if (typeof data !== 'object') return [];
   const obj = data as Record<string, unknown>;
-  for (const k of ['matches', 'clients', 'nodes', 'items', 'data', 'hits', 'results']) {
+  for (const k of ['matches', 'clients', 'nodes', 'items', 'data', 'hits', 'results', 'users']) {
     if (Array.isArray(obj[k])) return obj[k] as any[];
   }
   return [];
+}
+
+/** Same rule Chalk uses on Team initials (letters only, lowercased). */
+export function normalizeChalkInitials(value: unknown): string {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z]/g, '')
+    .slice(0, 4);
+}
+
+type ChalkTeamUser = {
+  id?: string;
+  initials?: string;
+  name?: string;
+  email?: string;
+  active?: number | boolean;
+};
+
+/**
+ * Map a PIN-session calc rep onto an existing Chalk team user.
+ * Does not create users. Unique initials on the shop is the link
+ * (calc AG ↔ Chalk ag, calc PJ ↔ Chalk pj). Shared inboxes like
+ * contact@ are ignored so they cannot steal the match.
+ */
+export function pickChalkUserForRep(
+  users: ChalkTeamUser[],
+  rep: { initials?: string; display_name?: string; displayName?: string; email?: string | null } | null,
+): ChalkTeamUser | null {
+  if (!rep || !Array.isArray(users) || !users.length) return null;
+  const active = users.filter((u) => u && u.id && Number(u.active ?? 1) !== 0);
+  const ini = normalizeChalkInitials(rep.initials);
+  if (ini.length >= 2) {
+    const hits = active.filter((u) => normalizeChalkInitials(u.initials) === ini);
+    if (hits.length === 1) return hits[0];
+  }
+  const email = String(rep.email || '')
+    .trim()
+    .toLowerCase();
+  const sharedInbox = email === 'contact@superiorstainsolutions.com';
+  if (email.includes('@') && !sharedInbox) {
+    const hits = active.filter((u) => String(u.email || '').trim().toLowerCase() === email);
+    if (hits.length === 1) return hits[0];
+  }
+  return null;
+}
+
+async function resolveChalkSalesperson(
+  env: CalcEnv,
+  rep: RepRow | null,
+): Promise<{ id: string; initials: string; name: string } | null> {
+  if (!rep) return null;
+  const res = await chalkJson(env, '/api/users');
+  if (res.status >= 400) return null;
+  const picked = pickChalkUserForRep(chalkList(res.data), rep);
+  if (!picked?.id) return null;
+  return {
+    id: String(picked.id),
+    initials: String(picked.initials || rep.initials || ''),
+    name: String(picked.name || rep.display_name || ''),
+  };
 }
 
 function chalkAdminQuoteUrl(env: CalcEnv, chalkId: string): string {
@@ -1752,12 +1813,14 @@ async function handleChalk(
       'Estimate';
     const officeNotes = buildChalkOfficeNotes(payload);
     // Leave deposit unset so Chalk applies the shop default (percent/bp in CRM prefs).
+    const salesperson = await resolveChalkSalesperson(env, rep);
     const quoteBody: Json = {
       client_id: clientId,
       property_id: propertyId,
       title,
       line_items,
     };
+    if (salesperson) quoteBody.salesperson_id = salesperson.id;
     if (discountCents > 0) {
       quoteBody.discount_cents = discountCents;
       quoteBody.discount_reason = discountReason.slice(0, 120);
@@ -1805,6 +1868,7 @@ async function handleChalk(
       sentFinalTotal: sentFinal,
       referencePhotoCount: attachments.attached,
       attachments,
+      chalkSalesperson: salesperson,
     });
   }
 
