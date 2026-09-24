@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Wrapper: never call raw `npx wrangler pages deploy` for superior-stain-solutions.
+set -euo pipefail
+root="$(cd "$(dirname "$0")/.." && pwd)"
+exec node "$root/scripts/guard-pages-deploy.mjs" pages deploy "$@"
