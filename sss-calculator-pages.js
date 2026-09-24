@@ -4891,9 +4891,11 @@ __doc.getElementById('quoteNum').textContent = state.quoteId;
 // ============================================================
 // The whole calc is gated behind sign-in. checkAuthAndGate runs once
 // at bootstrap and decides what to show:
-//   1. No reps exist yet (bootstrap path) → show "Create first admin" form
-//   2. Cookie missing/expired → show normal Sign-In form
+//   1. HTTP 200 JSON that explicitly says zero reps → "Create first admin"
+//   2. Cookie missing/expired (JSON, reps exist) → Sign-In form
 //   3. Cookie valid → hide the gate, calc is usable
+//   4. HTML 404 / non-JSON / 5xx / network error → red error ONLY.
+//      Never treat a failed auth call as an empty reps table.
 //
 // On successful sign-in we stash the rep in `__currentRep`, paint the
 // header chip, and never re-render the overlay until the rep signs
@@ -5065,6 +5067,7 @@ async function checkAuthAndGate() {
     const interpreted = interpretAuthStatusPayload(r.ok, r.headers.get('content-type'), raw);
     console.log('[SSS Auth] authStatus response:', interpreted.kind, interpreted.status);
     if (interpreted.kind === 'unreachable') {
+      __authBootstrap = false;
       showAuthGate(false, 'auth_unreachable');
       return;
     }
@@ -5080,13 +5083,15 @@ async function checkAuthAndGate() {
     showAuthGate(__authBootstrap, null);
   } catch (e) {
     console.warn('[SSS Auth] authStatus fetch threw:', e);
+    __authBootstrap = false;
     showAuthGate(false, 'auth_unreachable');
   }
 }
 
-// HTML 404 / non-JSON / network failure is never "no reps." Only an
-// explicit `{ bootstrap: true }` JSON body from authStatus may open
-// first-admin. Otherwise techs would bootstrap over existing PINs.
+// HTML 404 / non-JSON / 5xx / network failure is never "no reps."
+// Create-admin only when HTTP 200 JSON explicitly says the reps list
+// is empty (`bootstrap: true` or `reps: []`). Otherwise techs would
+// bootstrap over existing PINs.
 function interpretAuthStatusPayload(httpOk, contentType, rawText) {
   const ctype = String(contentType || '').toLowerCase();
   if (!httpOk || !ctype.includes('application/json')) {
@@ -5096,10 +5101,20 @@ function interpretAuthStatusPayload(httpOk, contentType, rawText) {
   try { status = JSON.parse(rawText); } catch (e) {
     return { kind: 'unreachable', status: null };
   }
-  if (!status || typeof status !== 'object') return { kind: 'unreachable', status: null };
+  if (!status || typeof status !== 'object' || Array.isArray(status)) {
+    return { kind: 'unreachable', status: null };
+  }
   if (status.ok && status.rep) return { kind: 'signed_in', status };
-  if (status.bootstrap === true) return { kind: 'bootstrap', status };
+  if (explicitZeroRepsJson(status)) return { kind: 'bootstrap', status };
   return { kind: 'signed_out', status };
+}
+
+function explicitZeroRepsJson(status) {
+  if (!status || typeof status !== 'object') return false;
+  if (status.bootstrap === true) return true;
+  if (Array.isArray(status.reps) && status.reps.length === 0) return true;
+  if (status.repCount === 0 || status.count === 0) return true;
+  return false;
 }
 
 function lockAuthBehindGate(on) {
@@ -5128,6 +5143,22 @@ function showAuthGate(bootstrap, errorCode) {
   const form     = __doc.getElementById('authForm');
   const help     = __doc.getElementById('authHelpLine');
   const status   = __doc.getElementById('authStatusLine');
+  const unreachable = errorCode === 'auth_unreachable';
+  // Failed auth calls never open first-admin. Red error only — hide
+  // the form so nobody can POST authCreateRep over existing PINs.
+  if (unreachable) {
+    __authBootstrap = false;
+    if (bsBanner) bsBanner.style.display = 'none';
+    if (bsFields) bsFields.style.display = 'none';
+    if (form)     form.style.display = 'none';
+    if (help)     help.style.display = 'none';
+    if (title)    title.textContent = 'Can\'t sign in';
+    if (sub)      sub.textContent = 'Check your connection and reload.';
+    if (submit)   submit.textContent = 'Sign in';
+    if (status) { status.style.display = 'none'; status.className = 'auth-status'; status.innerHTML = ''; }
+    showAuthError(prettyAuthError('auth_unreachable'));
+    return;
+  }
   if (bootstrap) {
     if (bsBanner) bsBanner.style.display = '';
     if (bsFields) bsFields.style.display = '';
@@ -5238,6 +5269,18 @@ async function onAuthSubmit(e) {
 
   try {
     if (__authBootstrap) {
+      // Extra belt: never POST authCreateRep unless the create-admin
+      // fields are actually on screen. Unreachable/HTML 404 hides them.
+      const formEl = __doc.getElementById('authForm');
+      const formOpen = formEl && formEl.style.display !== 'none';
+      const bsFields = __doc.getElementById('authBootstrapFields');
+      const bootstrapUi = bsFields && bsFields.style.display !== 'none';
+      if (!formOpen || !bootstrapUi) {
+        __authBootstrap = false;
+        hideAuthStatus();
+        showAuthError(prettyAuthError('auth_unreachable'));
+        return;
+      }
       const displayName = (__doc.getElementById('authDisplayName').value || '').trim();
       const email       = (__doc.getElementById('authEmail').value || '').trim();
       const r = await authFetch('/_functions/authCreateRep', {

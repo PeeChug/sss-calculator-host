@@ -10,10 +10,20 @@ function interpretAuthStatusPayload(httpOk: boolean, contentType: string | null,
   try { status = JSON.parse(rawText); } catch {
     return { kind: 'unreachable', status: null };
   }
-  if (!status || typeof status !== 'object') return { kind: 'unreachable', status: null };
+  if (!status || typeof status !== 'object' || Array.isArray(status)) {
+    return { kind: 'unreachable', status: null };
+  }
   if (status.ok && status.rep) return { kind: 'signed_in', status };
-  if (status.bootstrap === true) return { kind: 'bootstrap', status };
+  if (explicitZeroRepsJson(status)) return { kind: 'bootstrap', status };
   return { kind: 'signed_out', status };
+}
+
+function explicitZeroRepsJson(status: any) {
+  if (!status || typeof status !== 'object') return false;
+  if (status.bootstrap === true) return true;
+  if (Array.isArray(status.reps) && status.reps.length === 0) return true;
+  if (status.repCount === 0 || status.count === 0) return true;
+  return false;
 }
 
 test('HTML 404 is unreachable, not bootstrap', () => {
@@ -26,8 +36,18 @@ test('JSON parse failure is unreachable, not bootstrap', () => {
   assert.equal(r.kind, 'unreachable');
 });
 
+test('HTTP 500 JSON with bootstrap true is still unreachable', () => {
+  const r = interpretAuthStatusPayload(false, 'application/json', '{"ok":false,"bootstrap":true}');
+  assert.equal(r.kind, 'unreachable');
+});
+
 test('empty reps table is bootstrap only when flagged', () => {
   const r = interpretAuthStatusPayload(true, 'application/json; charset=utf-8', '{"ok":false,"bootstrap":true}');
+  assert.equal(r.kind, 'bootstrap');
+});
+
+test('HTTP 200 JSON with empty reps array is bootstrap', () => {
+  const r = interpretAuthStatusPayload(true, 'application/json', '{"ok":true,"reps":[]}');
   assert.equal(r.kind, 'bootstrap');
 });
 
